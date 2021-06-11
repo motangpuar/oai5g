@@ -818,7 +818,7 @@ void nr_mac_config_scc(gNB_MAC_INST *nrmac, NR_ServingCellConfigCommon_t *scc, c
   }
 
   if (get_softmodem_params()->phy_test) {
-    nrmac->pre_processor_dl = nr_preprocessor_phytest;
+    nrmac->pre_processor_dl.dl = nr_preprocessor_phytest;
     nrmac->pre_processor_ul = nr_ul_preprocessor_phytest;
   } else {
     nrmac->pre_processor_dl = nr_init_fr1_dlsch_preprocessor(0);

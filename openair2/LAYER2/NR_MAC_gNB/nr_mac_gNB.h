@@ -716,6 +716,8 @@ typedef struct {
   float ul_thr_ue;
   float dl_thr_ue;
   long pdsch_HARQ_ACK_Codebook;
+  /// Assoc slice
+  slice_id_t dl_id;
 } NR_UE_info_t;
 
 typedef struct {
@@ -730,12 +732,62 @@ typedef struct {
 
 #define UE_iterator(BaSe, VaR) NR_UE_info_t ** VaR##pptr=BaSe, *VaR; while ((VaR=*(VaR##pptr++)))
 
+/**
+ * definition of a scheduling algorithm implementation used in the
+ * default DL scheduler
+ */
+typedef struct {
+  char *name;
+  void *(*setup)(void);
+  void (*unset)(void **);
+  void (*run)(
+      module_id_t, frame_t, sub_frame_t, NR_UE_info_t **, int, int, uint16_t *, void *);
+  void *data;
+} nr_dl_sched_algo_t;
+
 typedef void (*nr_pp_impl_dl)(module_id_t mod_id,
                               frame_t frame,
                               sub_frame_t slot);
 typedef bool (*nr_pp_impl_ul)(module_id_t mod_id,
                               frame_t frame,
                               sub_frame_t slot);
+
+struct nr_slice_info_s;
+struct nr_slice_s;
+typedef struct {
+  int algorithm;
+
+  /// inform the slice algorithm about a new UE
+  void (*add_UE)(struct nr_slice_info_s *s, NR_UE_info_t **UE_list);
+  /// inform the slice algorithm about a UE that disconnected
+  void (*remove_UE)(struct nr_slice_info_s *s, NR_UE_info_t* rm_ue, int idx);
+  /// move a UE to a slice in DL/UL, -1 means don't move (no-op).
+  void (*move_UE)(struct nr_slice_info_s *s, NR_UE_info_t* assoc_ue, int old_idx, int new_idx);
+  /// get UE associated slice's index
+  int (*get_UE_slice_idx)(struct nr_slice_info_s *s, uint16_t rnti);
+  /// get UE's index from the slice
+  int (*get_UE_idx)(struct nr_slice_s *si, uint16_t rnti);
+
+  /// Adds a new slice through admission control. slice_params are
+  /// algorithm-specific parameters. sched is either a default_sched_ul_algo_t
+  /// or default_sched_dl_algo_t, depending on whether this implementation
+  /// handles UL/DL. If slice at index exists, updates existing
+  /// slice. Returns index of new slice or -1 on failure.
+  int (*addmod_slice)(struct nr_slice_info_s *s,
+                      int id,
+                      char *label,
+                      void *sched,
+                      void *slice_params);
+  /// Returns slice through slice_idx. 1 if successful, 0 if not.
+  int (*remove_slice)(struct nr_slice_info_s *s, uint8_t slice_idx);
+
+  nr_pp_impl_dl dl;
+  nr_dl_sched_algo_t dl_algo;
+
+  void (*destroy)(struct nr_slice_info_s **s);
+
+  struct nr_slice_info_s *slices;
+} nr_pp_impl_param_dl_t;
 
 typedef struct f1_config_t {
   f1ap_setup_req_t *setup_req;
@@ -835,7 +887,7 @@ typedef struct gNB_MAC_INST_s {
   uint32_t ulsch_max_frame_inactivity;
 
   /// DL preprocessor for differentiated scheduling
-  nr_pp_impl_dl pre_processor_dl;
+  nr_pp_impl_param_dl_t pre_processor_dl;
   /// UL preprocessor for differentiated scheduling
   nr_pp_impl_ul pre_processor_ul;
 

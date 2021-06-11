@@ -76,7 +76,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
                          nfapi_nr_tx_data_request_t *TX_req);
 
 /* \brief default FR1 DL preprocessor init routine, returns preprocessor to call */
-nr_pp_impl_dl nr_init_fr1_dlsch_preprocessor(int CC_id);
+nr_pp_impl_param_dl_t nr_init_fr1_dlsch_preprocessor(int CC_id);
 
 void schedule_nr_sib1(module_id_t module_idP,
                       frame_t frameP,
@@ -179,7 +179,7 @@ int nr_acknack_scheduling(gNB_MAC_INST *mac,
 int get_pdsch_to_harq_feedback(NR_PUCCH_Config_t *pucch_Config,
                                nr_dci_format_t dci_format,
                                uint8_t *pdsch_to_harq_feedback);
-  
+
 int nr_get_pucch_resource(NR_ControlResourceSet_t *coreset,
                           NR_PUCCH_Config_t *pucch_Config,
                           int CCEIndex);
