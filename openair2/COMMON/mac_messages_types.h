@@ -43,6 +43,8 @@
 #define NR_RRC_MAC_BCCH_DATA_IND(mSGpTR)        (mSGpTR)->ittiMsg.nr_rrc_mac_bcch_data_ind
 #define NR_RRC_MAC_SBCCH_DATA_IND(mSGpTR)       (mSGpTR)->ittiMsg.nr_rrc_mac_sbcch_data_ind
 
+#define NR_RRC_MAC_MEAS_DATA_IND(mSGpTR)        (mSGpTR)->ittiMsg.nr_rrc_mac_meas_data_ind
+
 #define RRC_MAC_BCCH_MBMS_DATA_REQ(mSGpTR)      (mSGpTR)->ittiMsg.rrc_mac_bcch_mbms_data_req
 #define RRC_MAC_BCCH_MBMS_DATA_IND(mSGpTR)      (mSGpTR)->ittiMsg.rrc_mac_bcch_mbms_data_ind
 
@@ -130,6 +132,14 @@ typedef struct NRRrcMacSBcchDataInd_s {
   uint8_t   rsrq;
   uint8_t   rsrp;
 } NRRrcMacSBcchDataInd;
+
+typedef struct NRRrcMacMeasDataInd_s {
+  uint8_t gnb_index;
+  uint8_t rsrp_dBm;
+  uint16_t Nid_cell;
+  uint8_t meas_type;            // (0) SS, (1) CSI
+  uint8_t is_neighboring_cell;  // (0) false, (1) true
+} NRRrcMacMeasDataInd;
 
 typedef struct RrcMacBcchMbmsDataReq_s {
   uint32_t  frame;

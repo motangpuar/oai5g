@@ -227,7 +227,7 @@ void release_mac_configuration(NR_UE_MAC_INST_t *mac)
   }
 
   memset(&mac->ssb_measurements, 0, sizeof(mac->ssb_measurements));
-  memset(&mac->csirs_measurements, 0, sizeof(mac->csirs_measurements));
+  memset(&mac->l1_measurements, 0, sizeof(mac->l1_measurements));
   memset(&mac->ul_time_alignment, 0, sizeof(mac->ul_time_alignment));
 }
 
