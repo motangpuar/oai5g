@@ -46,6 +46,7 @@
 #include "openair1/PHY/defs_gNB.h"
 
 #include "NR_MIB.h"
+#include "RRC/NR/nr_rrc_config.h"
 #include "LAYER2/NR_MAC_COMMON/nr_mac_common.h"
 #include "../../../../nfapi/oai_integration/vendor_ext.h"
 /* Softmodem params */
@@ -524,6 +525,20 @@ void nr_mac_config_scc(gNB_MAC_INST *nrmac, NR_ServingCellConfigCommon_t *scc, c
         ra->preambles.preamble_list[i] = i;
     }
   }
+
+  //configure SRS for secondary cell
+  int curr_bwp = NRRIV2BW(scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters.locationAndBandwidth,MAX_BWP_SIZE);
+
+  RC.nrmac[Mod_idP]->setup_srs_config[0] = calloc(1,sizeof(NR_SetupRelease_SRS_Config_t));
+  config_srs(scc,
+	     RC.nrmac[Mod_idP]->setup_srs_config[0],
+	     NULL,
+	     curr_bwp,
+	     0,   //lets assume ue_id = 0.
+	     0,   //res_id = 0 for initial BWP
+	     1,   //maxMIMO_Layers
+	     1);  //do_srsg
+  
   //NR_SCHED_UNLOCK(&nrmac->sched_lock);
 }
 

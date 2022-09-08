@@ -243,6 +243,7 @@ typedef struct {
   /// pre-configured ServingCellConfig that is default for every UE
   NR_ServingCellConfig_t *pre_ServingCellConfig;
   NR_ARFCN_ValueEUTRA_t ul_CarrierFreq;
+  
   long ul_Bandwidth;
   /// Outgoing MIB PDU for PHY
   uint8_t MIB_pdu[3];
@@ -869,6 +870,9 @@ typedef struct gNB_MAC_INST_s {
 
   pthread_mutex_t sched_lock;
 
+  //holds the SRS config for UEs of neighboring cells
+  //to be expanded to multiple users later
+  NR_SetupRelease_SRS_Config_t *setup_srs_config[1]; 
 } gNB_MAC_INST;
 
 #endif /*__LAYER2_NR_MAC_GNB_H__ */
