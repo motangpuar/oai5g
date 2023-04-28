@@ -269,7 +269,7 @@ static int get_ssb_arfcn(const f1ap_served_cell_info_t *cell_info, const NR_MIB_
   // offsetToPointA and kSSB are both on 15kHz SCS for FR1 and 60kHz SCS for FR2 (see 38.211 sections 7.4.3.1 and 4.4.4.2)
   // SSB uses the SCS of the cell and is 20 RBs wide, so use 10
   uint64_t freqssb = freqpointa + scaling * 15000 * (offsetToPointA * 12 + kssb)  + 10ll * 12 * (1 << scs) * 15000;
-  int bw_index = get_supported_band_index(scs, band, get_dl_bw(cell_info));
+  int bw_index = get_supported_band_index(scs, band > 256 ? FR2 : FR1, get_dl_bw(cell_info));
   int band_size_hz = get_supported_bw_mhz(band > 256 ? FR2 : FR1, bw_index) * 1000 * 1000;
   uint32_t ssb_arfcn = to_nrarfcn(band, freqssb, scs, band_size_hz);
 
