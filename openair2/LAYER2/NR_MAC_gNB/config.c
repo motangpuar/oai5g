@@ -407,10 +407,7 @@ static void config_common(gNB_MAC_INST *nrmac, int pdsch_AntennaPorts, int pusch
 
     if (periods_per_frame < 0)
       LOG_E(NR_MAC,"TDD configuration can not be done\n");
-    else {
-      LOG_I(NR_MAC,"TDD has been properly configurated\n");
-      nrmac->tdd_beam_association = (int16_t *)malloc16(periods_per_frame*sizeof(int16_t));
-    }
+
   }
 }
 
