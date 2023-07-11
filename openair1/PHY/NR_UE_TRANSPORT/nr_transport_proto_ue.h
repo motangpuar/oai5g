@@ -423,6 +423,21 @@ int32_t generate_nr_prach(PHY_VARS_NR_UE *ue, uint8_t gNB_id, int frame, uint8_t
 
 void dump_nrdlsch(PHY_VARS_NR_UE *ue,uint8_t gNB_id,uint8_t nr_slot_rx,unsigned int *coded_bits_per_codeword,int round,  unsigned char harq_pid);
 void nr_a_sum_b(c16_t *input_x, c16_t *input_y, unsigned short nb_rb);
+
+int nr_rx_psbch(PHY_VARS_NR_UE *ue,
+                UE_nr_rxtx_proc_t *proc,
+                int estimateSz,
+                struct complex16 dl_ch_estimates[][estimateSz],
+                NR_DL_FRAME_PARMS *frame_parms,
+                uint8_t *decoded_output,
+                c16_t rxdataF[][frame_parms->samples_per_slot_wCP],
+                uint16_t slss_id);
+
+void nr_tx_psbch(PHY_VARS_NR_UE *UE, uint32_t frame_tx, uint32_t slot_tx,
+                 sl_nr_tx_config_psbch_pdu_t *psbch_vars,
+                 c16_t **txdataF);
+
+int sl_nr_slss_search(PHY_VARS_NR_UE *UE, UE_nr_rxtx_proc_t *proc, int num_frames);
 /**@}*/
 #endif
 
