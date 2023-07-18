@@ -19,30 +19,55 @@
  *      contact@openairinterface.org
  */
 
+/*! \file xnap_common.c
+ * \brief xnap encoder,decoder dunctions for gNB
+ * \author Sreeshma Shiv <sreeshmau@iisc.ac.in>
+ * \date Dec 2023
+ * \version 1.0
+ */
+
+#include <stdio.h>
+#include <string.h>
 #include <stdint.h>
+
+#include "assertions.h"
+#include "conversions.h"
+#include "intertask_interface.h"
 #include "xnap_common.h"
-#include "XNAP_XnAP-PDU.h"
 
-ssize_t XNAP_generate_initiating_message(uint8_t **buffer,
-                                         uint32_t *length,
-                                         XNAP_ProcedureCode_t procedureCode,
-                                         XNAP_Criticality_t criticality,
-                                         asn_TYPE_descriptor_t *td,
-                                         void *sptr)
+int xnap_gNB_encode_pdu(XNAP_XnAP_PDU_t *pdu, uint8_t **buffer, uint32_t *len)
 {
-  XNAP_XnAP_PDU_t pdu;
   ssize_t encoded;
-  memset(&pdu, 0, sizeof(XNAP_XnAP_PDU_t));
-  pdu.present = XNAP_XnAP_PDU_PR_initiatingMessage;
-  pdu.choice.initiatingMessage->procedureCode = procedureCode;
-  pdu.choice.initiatingMessage->criticality = criticality;
-  ANY_fromType_aper((ANY_t *)&pdu.choice.initiatingMessage->value, td, sptr);
 
-  if ((encoded = aper_encode_to_new_buffer(&asn_DEF_XNAP_XnAP_PDU, 0, &pdu, (void **)buffer)) < 0) {
+  DevAssert(pdu != NULL);
+  DevAssert(buffer != NULL);
+  DevAssert(len != NULL);
+
+  xer_fprint(stdout, &asn_DEF_XNAP_XnAP_PDU, (void *)pdu);
+
+  encoded = aper_encode_to_new_buffer(&asn_DEF_XNAP_XnAP_PDU, 0, pdu, (void **)buffer);
+
+  if (encoded < 0) {
     return -1;
   }
 
-  *length = encoded;
+  *len = encoded;
+
+  ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_XNAP_XnAP_PDU, pdu);
   return encoded;
 }
 
+int xnap_gNB_decode_pdu(XNAP_XnAP_PDU_t *pdu, const uint8_t *const buffer, uint32_t length)
+{
+  asn_dec_rval_t dec_ret;
+
+  DevAssert(buffer != NULL);
+
+  dec_ret = aper_decode(NULL, &asn_DEF_XNAP_XnAP_PDU, (void **)&pdu, buffer, length, 0, 0);
+  xer_fprint(stdout, &asn_DEF_XNAP_XnAP_PDU, pdu);
+  if (dec_ret.code != RC_OK) {
+    LOG_E(XNAP, "Failed to decode PDU\n");
+    return -1;
+  }
+  return 0;
+}

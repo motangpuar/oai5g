@@ -1,5 +1,4 @@
-/*
- * Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
+/* Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The OpenAirInterface Software Alliance licenses this file to You under
@@ -19,21 +18,24 @@
  *      contact@openairinterface.org
  */
 
-/*
-                                gnb_app.h
-                             -------------------
-  AUTHOR  : Laurent Winckel, Sebastien ROUX, Lionel GAUTHIER, Navid Nikaein, WEI-TAI CHEN
-  COMPANY : EURECOM, NTUST
-  EMAIL   : Lionel.Gauthier@eurecom.fr, kroempa@gmail.com
-*/
-
-#ifndef GNB_APP_H_
-#define GNB_APP_H_
-
+#include <stdio.h>
 #include <stdint.h>
 
-void *gNB_app_task(void *args_p);
-uint32_t gNB_app_register(uint32_t gnb_id_start, uint32_t gnb_id_end);
-uint32_t gNB_app_register_x2(uint32_t gnb_id_start, uint32_t gnb_id_end);
-void gNB_app_register_xn(uint32_t gnb_id_num);
-#endif /* GNB_APP_H_ */
+#ifndef XNAP_H_
+#define XNAP_H_
+
+#define XNAP_SCTP_PPID (61) ///< XNAP SCTP Payload Protocol Identifier (PPID)
+#include "xnap_gNB_defs.h"
+
+int xnap_gNB_init_sctp(instance_t instance_p, xnap_net_config_t *nc);
+
+void *xnap_task(void *arg);
+
+int is_xnap_enabled(void);
+void xnap_trigger(void);
+
+#endif /* XNAP_H_ */
+
+/**
+ * @}
+ */

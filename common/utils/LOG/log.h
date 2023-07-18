@@ -213,6 +213,7 @@ typedef enum {
   LOCALIZE,
   F1U,
   X2AP,
+  XNAP,
   M2AP,
   M3AP,
   NGAP,

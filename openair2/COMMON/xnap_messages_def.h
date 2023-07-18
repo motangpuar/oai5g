@@ -19,21 +19,17 @@
  *      contact@openairinterface.org
  */
 
-/*
-                                gnb_app.h
-                             -------------------
-  AUTHOR  : Laurent Winckel, Sebastien ROUX, Lionel GAUTHIER, Navid Nikaein, WEI-TAI CHEN
-  COMPANY : EURECOM, NTUST
-  EMAIL   : Lionel.Gauthier@eurecom.fr, kroempa@gmail.com
-*/
+/*! \file xnap_messages_def.h
+ * \author Sreeshma Shiv <sreeshmau@iisc.ac.in>
+ * \date August 2023
+ * \version 1.0
+ */
 
-#ifndef GNB_APP_H_
-#define GNB_APP_H_
+/* gNB application layer -> XNAP messages */
+MESSAGE_DEF(XNAP_REGISTER_GNB_REQ, MESSAGE_PRIORITY_MED, xnap_register_gnb_req_t, xnap_register_gnb_req)
+/* XNAP -> gNB application layer messages */
 
-#include <stdint.h>
-
-void *gNB_app_task(void *args_p);
-uint32_t gNB_app_register(uint32_t gnb_id_start, uint32_t gnb_id_end);
-uint32_t gNB_app_register_x2(uint32_t gnb_id_start, uint32_t gnb_id_end);
-void gNB_app_register_xn(uint32_t gnb_id_num);
-#endif /* GNB_APP_H_ */
+/* handover messages XNAP <-> RRC */
+MESSAGE_DEF(XNAP_SETUP_REQ, MESSAGE_PRIORITY_MED, xnap_setup_req_t, xnap_setup_req)
+MESSAGE_DEF(XNAP_SETUP_RESP, MESSAGE_PRIORITY_MED, xnap_setup_resp_t, xnap_setup_resp)
+MESSAGE_DEF(XNAP_SETUP_FAILURE, MESSAGE_PRIORITY_MED, xnap_setup_failure_t, xnap_setup_failure)

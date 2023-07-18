@@ -227,6 +227,7 @@ typedef struct IttiMsgText_s {
 #endif
 #include <openair2/COMMON/s1ap_messages_types.h>
 #include <openair2/COMMON/x2ap_messages_types.h>
+#include <openair2/COMMON/xnap_messages_types.h>
 #include <openair2/COMMON/m2ap_messages_types.h>
 #include <openair2/COMMON/m3ap_messages_types.h>
 #include <openair2/COMMON/sctp_messages_types.h>
@@ -298,6 +299,7 @@ typedef struct {
   TASK_DEF(TASK_S1AP, 200)            \
   TASK_DEF(TASK_NGAP, 200)            \
   TASK_DEF(TASK_X2AP, 200)            \
+  TASK_DEF(TASK_XNAP, 200)            \
   TASK_DEF(TASK_M2AP_ENB, 200)        \
   TASK_DEF(TASK_M2AP_MCE, 200)        \
   TASK_DEF(TASK_M3AP, 200)            \

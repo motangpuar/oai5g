@@ -1458,7 +1458,7 @@ add_library(e1_if
 
 target_link_libraries(e1_if PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs asn1_f1ap SECURITY ${OPENSSL_LIBRARIES} e1ap GTPV1U)
 
-target_link_libraries(L2_NR PRIVATE f1ap x2ap s1ap ngap nr_rrc e1ap nr_rlc)
+target_link_libraries(L2_NR PRIVATE f1ap x2ap s1ap ngap nr_rrc e1ap nr_rlc xnap)
 if(E2_AGENT)
   target_link_libraries(L2_NR PUBLIC e2_agent e2_ran_func)
   target_compile_definitions(L2_NR PRIVATE ${E2AP_VERSION} ${KPM_VERSION})

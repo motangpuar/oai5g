@@ -131,6 +131,7 @@ typedef enum {
 #define GNB_CONFIG_STRING_GNB_DU_ID "gNB_DU_ID"
 #define GNB_CONFIG_STRING_GNB_CU_UP_ID "gNB_CU_UP_ID"
 
+#define GNB_CONFIG_STRING_XN                            "enable_xn"
 #define GNB_CONFIG_HLP_STRING_ENABLE_SDAP               "enable the SDAP layer\n"
 #define GNB_CONFIG_HLP_FORCE256QAMOFF                   "suppress activation of 256 QAM despite UE support"
 #define GNB_CONFIG_HLP_STRING_DRBS                      "Number of total DRBs to establish, including the mandatory for PDU SEssion (default=1)\n"
@@ -345,6 +346,8 @@ typedef enum {
 #define GNB_PORT_FOR_NGU_IDX                       4
 #define GNB_IPV4_ADDR_FOR_X2C_IDX      			   5
 #define GNB_PORT_FOR_X2C_IDX         			   6
+#define GNB_IPV4_ADDR_FOR_XNC_IDX      			   7
+#define GNB_PORT_FOR_XNC_IDX         			   8
 
 /* S1 interface configuration parameters names   */
 #define GNB_CONFIG_STRING_GNB_INTERFACE_NAME_FOR_S1_MME "GNB_INTERFACE_NAME_FOR_S1_MME"
@@ -363,6 +366,10 @@ typedef enum {
 #define GNB_CONFIG_STRING_ENB_IPV4_ADDR_FOR_X2C	        "GNB_IPV4_ADDRESS_FOR_X2C"
 #define GNB_CONFIG_STRING_ENB_PORT_FOR_X2C				"GNB_PORT_FOR_X2C"
 
+/* Xn interface configuration parameters names */
+#define GNB_CONFIG_STRING_GNB_IPV4_ADDR_FOR_XNC	        "GNB_IPV4_ADDRESS_FOR_XNC"
+#define GNB_CONFIG_STRING_GNB_PORT_FOR_XNC				"GNB_PORT_FOR_XNC"
+
 /*--------------------------------------------------------------------------------------------------------------------------------------------------*/
 /*                                            S1 interface configuration parameters                                                                 */
 /*   optname                                            helpstr   paramflags    XXXptr              defXXXval             type           numelt     */
@@ -375,12 +382,37 @@ typedef enum {
       {GNB_CONFIG_STRING_GNB_PORT_FOR_NGU,                   NULL,      0,        .uptr=&gnb_port_for_NGU,           .defintval=2152L,      TYPE_UINT,     0},	\
       {GNB_CONFIG_STRING_ENB_IPV4_ADDR_FOR_X2C,              NULL,      0,        .strptr=NULL,                      .defstrval=NULL,       TYPE_STRING,   0},	\
       {GNB_CONFIG_STRING_ENB_PORT_FOR_X2C,                   NULL,      0,        .uptr=NULL,                        .defintval=0L,         TYPE_UINT,     0}, \
+      {GNB_CONFIG_STRING_GNB_IPV4_ADDR_FOR_XNC,              NULL,      0,        .strptr=NULL,                      .defstrval=NULL,       TYPE_STRING,   0},	\
+      {GNB_CONFIG_STRING_GNB_PORT_FOR_XNC,                   NULL,      0,        .uptr=NULL,                        .defintval=0L,         TYPE_UINT,     0}, \
       {GNB_CONFIG_STRING_GNB_INTERFACE_NAME_FOR_S1U,         NULL,      0,        .strptr=NULL,                      .defstrval=NULL,       TYPE_STRING,   0},	\
       {GNB_CONFIG_STRING_GNB_IPV4_ADDRESS_FOR_S1U,           NULL,      0,        .strptr=&gnb_ipv4_address_for_S1U, .defstrval="127.0.0.1",TYPE_STRING,   0}, \
       {GNB_CONFIG_STRING_GNB_PORT_FOR_S1U,                   NULL,      0,        .uptr=&gnb_port_for_S1U,           .defintval=2152L,       TYPE_UINT,     0}	\
   }
 /*-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+/* Xn configuration parameters section name */
+#define GNB_CONFIG_STRING_TARGET_GNB_Xn_IP_ADDRESS                "target_gnb_xn_ip_address"
+
+/* Xn configuration parameters names   */
+#define GNB_CONFIG_STRING_TARGET_GNB_Xn_IPV4_ADDRESS              "ipv4"
+#define GNB_CONFIG_STRING_TARGET_GNB_Xn_IPV6_ADDRESS              "ipv6"
+#define GNB_CONFIG_STRING_TARGET_GNB_Xn_IP_ADDRESS_PREFERENCE     "preference"
+
+/*-------------------------------------------------------------------------------------------------------------------------------------*/
+/*                                            Xn configuration parameters                                                              */
+/*   optname                                          helpstr   paramflags    XXXptr       defXXXval         type           numelt     */
+/*-------------------------------------------------------------------------------------------------------------------------------------*/
+#define XnPARAMS_DESC {  \
+  {GNB_CONFIG_STRING_TARGET_GNB_Xn_IPV4_ADDRESS,             NULL,      0,         .uptr=NULL,   .defstrval=NULL,   TYPE_STRING,   0},   \
+  {GNB_CONFIG_STRING_TARGET_GNB_Xn_IPV6_ADDRESS,             NULL,      0,         .uptr=NULL,   .defstrval=NULL,   TYPE_STRING,   0},   \
+  {GNB_CONFIG_STRING_TARGET_GNB_Xn_IP_ADDRESS_PREFERENCE,    NULL,      0,         .uptr=NULL,   .defstrval=NULL,   TYPE_STRING,   0},   \
+}
+
+#define GNB_Xn_IPV4_ADDRESS_IDX          0
+#define GNB_Xn_IPV6_ADDRESS_IDX          1
+#define GNB_Xn_IP_ADDRESS_PREFERENCE_IDX 2
+/*---------------------------------------------------------------------------------------------------------------------------------------*/
 
 /* E1 configuration section */
 #define GNB_CONFIG_STRING_E1_PARAMETERS                   "E1_INTERFACE"

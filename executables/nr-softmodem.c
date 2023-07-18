@@ -74,6 +74,7 @@ unsigned short config_frames[4] = {2,9,11,13};
 #include "executables/thread-common.h"
 #include "NB_IoT_interface.h"
 #include "x2ap_eNB.h"
+#include "openair2/XNAP/xnap_gNB_task.h"
 #include "ngap_gNB.h"
 #include "gnb_paramdef.h"
 #include <openair3/ocp-gtpu/gtp_itf.h>
@@ -355,6 +356,14 @@ static int create_gNB_tasks(ngran_node_t node_type, configmodule_interface_t *cf
       }
     } else {
       LOG_I(X2AP, "X2AP is disabled.\n");
+    }
+
+    if (is_xnap_enabled()) {
+      if (itti_create_task(TASK_XNAP, xnap_task, NULL) < 0) {
+        LOG_E(XNAP, "Create task for XNAP failed\n");
+      }
+    } else {
+      LOG_I(XNAP, "XNAP is disabled.\n");
     }
   }
 

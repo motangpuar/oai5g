@@ -98,7 +98,6 @@
 #include "openair2/F1AP/f1ap_ids.h"
 #include "openair2/SDAP/nr_sdap/nr_sdap_entity.h"
 #include "cucp_cuup_if.h"
-
 #include "BIT_STRING.h"
 #include "assertions.h"
 
@@ -2182,6 +2181,38 @@ void rrc_gNB_process_e1_bearer_context_release_cplt(const e1ap_bearer_release_cp
   LOG_I(RRC, "UE %d: received bearer release complete\n", cplt->gNB_cu_cp_ue_id);
 }
 
+void rrc_gNB_process_xn_setup_request(sctp_assoc_t assoc_id, xnap_setup_req_t *m)
+{
+  if (RC.nrrrc[0]->num_nr_neigh_cells > MAX_NUM_NR_NEIGH_CELLs) {
+    LOG_E(NR_RRC, "Error: number of neighbouring cells is exceeded \n");
+    MessageDef *msg = itti_alloc_new_message(TASK_RRC_GNB, 0, XNAP_SETUP_FAILURE);
+    msg->ittiMsgHeader.originInstance = assoc_id;
+    xnap_setup_failure_t *xnap_msg = &XNAP_SETUP_FAILURE(msg);
+    xnap_msg->cause_type = XNAP_CAUSE_PROTOCOL;
+    xnap_msg->cause_value = 6; //XNAP_CauseProtocol_unspecified;
+    itti_send_msg_to_task(TASK_XNAP, 0, msg);
+  }
+
+  RC.nrrrc[0]->num_nr_neigh_cells++;
+  RC.nrrrc[0]->nr_neigh_cells_id[RC.nrrrc[0]->num_nr_neigh_cells - 1] = m->info.nr_pci;
+  MessageDef *msg = itti_alloc_new_message(TASK_RRC_GNB, 0, XNAP_SETUP_RESP);
+  msg->ittiMsgHeader.originInstance = assoc_id;
+  xnap_setup_resp_t *xnap_msg = &XNAP_SETUP_RESP(msg);
+  xnap_msg->gNB_id = m->gNB_id;
+  xnap_msg->info = m->info;//add all required
+  itti_send_msg_to_task(TASK_XNAP, 0, msg);
+}
+
+void rrc_gNB_process_xn_setup_response(sctp_assoc_t assoc_id, xnap_setup_resp_t *m)
+{
+  if (RC.nrrrc[0]->num_nr_neigh_cells > MAX_NUM_NR_NEIGH_CELLs) {
+    LOG_E(RRC, "Error: number of neighbouring cells is exceeded \n");
+    return;
+  }
+  RC.nrrrc[0]->num_nr_neigh_cells++;
+  RC.nrrrc[0]->nr_neigh_cells_id[RC.nrrrc[0]->num_nr_neigh_cells - 1] = m->info.nr_pci;
+}
+
 static void print_rrc_meas(FILE *f, const NR_MeasResults_t *measresults)
 {
   DevAssert(measresults->measResultServingMOList.list.count >= 1);
@@ -2301,7 +2332,7 @@ void *rrc_gnb_task(void *args_p) {
     /* timer to write stats to file */
     timer_setup(1, 0, TASK_RRC_GNB, 0, TIMER_PERIODIC, NULL, &stats_timer_id);
   }
-  
+
   itti_mark_task_ready(TASK_RRC_GNB);
   LOG_I(NR_RRC,"Entering main loop of NR_RRC message task\n");
 
@@ -2403,6 +2434,15 @@ void *rrc_gnb_task(void *args_p) {
 
       case F1AP_LOST_CONNECTION:
         rrc_CU_process_f1_lost_connection(RC.nrrrc[0], &F1AP_LOST_CONNECTION(msg_p), msg_p->ittiMsgHeader.originInstance);
+        break;
+
+      /*Messages from XNAP*/
+      case XNAP_SETUP_RESP:
+        rrc_gNB_process_xn_setup_response(ITTI_MSG_ORIGIN_INSTANCE(msg_p), &XNAP_SETUP_RESP(msg_p));
+        break;
+
+      case XNAP_SETUP_REQ:
+        rrc_gNB_process_xn_setup_request(ITTI_MSG_ORIGIN_INSTANCE(msg_p), &XNAP_SETUP_REQ(msg_p));
         break;
 
       /* Messages from X2AP */

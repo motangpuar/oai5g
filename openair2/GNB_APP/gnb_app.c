@@ -39,6 +39,7 @@
 
 #include "common/utils/LOG/log.h"
 
+#include "openair2/XNAP/xnap_gNB_task.h"
 #include "x2ap_eNB.h"
 #include "intertask_interface.h"
 #include "ngap_gNB.h"
@@ -59,6 +60,7 @@ extern unsigned char NB_gNB_INST;
 extern RAN_CONTEXT_t RC;
 
 #define GNB_REGISTER_RETRY_DELAY 10
+#define XNAP_GNB_REGISTER_RETRY_DELAY   10
 
 /*------------------------------------------------------------------------------*/
 
@@ -116,6 +118,25 @@ uint32_t gNB_app_register_x2(uint32_t gnb_id_start, uint32_t gnb_id_end) {
 }
 
 /*------------------------------------------------------------------------------*/
+void gNB_app_register_xn(uint32_t gnb_id_num)
+{
+  MessageDef *msg;
+
+  for (uint32_t gnb_id = 0; (gnb_id < gnb_id_num); gnb_id++) {
+    msg = itti_alloc_new_message(TASK_GNB_APP, 0, XNAP_REGISTER_GNB_REQ);
+    LOG_I(XNAP, "GNB_ID: %d \n", gnb_id);
+    uint64_t id;
+    char *name = NULL;
+    xnap_served_cell_info_t info;
+    read_xn_cell_info (&id, &name, &info);
+    //read_xn_cell_info (&id, &name, &XNAP_REGISTER_GNB_REQ(msg).setup_req);
+    //XNAP_REGISTER_GNB_REQ(msg).setup_req = Read_setup_req_Xn (&id, &name, &info, &XNAP_REGISTER_GNB_REQ(msg).setup_req);
+    Read_setup_req_Xn (&id, &name, &info, &XNAP_REGISTER_GNB_REQ(msg).setup_req);
+    XNAP_REGISTER_GNB_REQ(msg).net_config = Read_IPconfig_Xn ();
+    //F1AP_DU_REGISTER_REQ(msg).net_config = read_DU_IP_config(&RC.nrmac[0]->eth_params_n);
+    itti_send_msg_to_task(TASK_XNAP, GNB_MODULE_ID_TO_INSTANCE(gnb_id), msg);
+  }
+}
 
 void *gNB_app_task(void *args_p)
 {
@@ -128,6 +149,11 @@ void *gNB_app_task(void *args_p)
   (void)instance;
 
   int cell_to_activate = 0;
+
+  if (is_xnap_enabled()) {
+    gNB_app_register_xn (RC.nb_nr_inst);
+  }
+
   itti_mark_task_ready (TASK_GNB_APP);
   ngran_node_t node_type = get_node_type();
 
