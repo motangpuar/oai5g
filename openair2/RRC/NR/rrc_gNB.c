@@ -110,6 +110,19 @@ static inline uint64_t bitStr_to_uint64(BIT_STRING_t *asn);
 
 mui_t rrc_gNB_mui = 0;
 
+typedef struct deliver_ue_ctxt_release_data_t {
+  gNB_RRC_INST *rrc;
+  f1ap_ue_context_release_cmd_t *release_cmd;
+} deliver_ue_ctxt_release_data_t;
+static void rrc_deliver_ue_ctxt_release_cmd(void *deliver_pdu_data, ue_id_t ue_id, int srb_id, char *buf, int size, int sdu_id)
+{
+  DevAssert(deliver_pdu_data != NULL);
+  deliver_ue_ctxt_release_data_t *data = deliver_pdu_data;
+  data->release_cmd->rrc_container = (uint8_t*) buf;
+  data->release_cmd->rrc_container_length = size;
+  data->rrc->mac_rrc.ue_context_release_command(data->release_cmd);
+}
+
 ///---------------------------------------------------------------------------------------------------------------///
 ///---------------------------------------------------------------------------------------------------------------///
 
@@ -2002,7 +2015,18 @@ static void rrc_CU_process_ue_context_release_request(MessageDef *msg_p)
   gNB_RRC_INST *rrc = RC.nrrrc[instance];
   rrc_gNB_ue_context_t *ue_context_p = rrc_gNB_get_ue_context(rrc, req->gNB_CU_ue_id);
   if (!ue_context_p) {
-    LOG_E(RRC, "could not find UE context for CU UE ID %u, aborting transaction\n", req->gNB_CU_ue_id);
+    LOG_W(RRC, "could not find UE context for CU UE ID %u: auto-generate release command\n", req->gNB_CU_ue_id);
+    uint8_t buffer[RRC_BUF_SIZE] = {0};
+    int size = do_NR_RRCRelease(buffer, RRC_BUF_SIZE, rrc_gNB_get_next_transaction_identifier(0));
+    f1ap_ue_context_release_cmd_t ue_context_release_cmd = {
+        .gNB_CU_ue_id = req->gNB_CU_ue_id,
+        .gNB_DU_ue_id = req->gNB_DU_ue_id,
+        .cause = F1AP_CAUSE_RADIO_NETWORK,
+        .cause_value = 10, // 10 = F1AP_CauseRadioNetwork_normal_release
+        .srb_id = DCCH,
+    };
+    deliver_ue_ctxt_release_data_t data = {.rrc = rrc, .release_cmd = &ue_context_release_cmd};
+    nr_pdcp_data_req_srb(req->gNB_CU_ue_id, DCCH, rrc_gNB_mui++, size, buffer, rrc_deliver_ue_ctxt_release_cmd, &data);
     return;
   }
 
@@ -2809,19 +2833,6 @@ rrc_gNB_generate_UECapabilityEnquiry(
 
   const gNB_RRC_UE_t *ue = &ue_context_pP->ue_context;
   nr_rrc_transfer_protected_rrc_message(rrc, ue, DCCH, buffer, size);
-}
-
-typedef struct deliver_ue_ctxt_release_data_t {
-  gNB_RRC_INST *rrc;
-  f1ap_ue_context_release_cmd_t *release_cmd;
-} deliver_ue_ctxt_release_data_t;
-static void rrc_deliver_ue_ctxt_release_cmd(void *deliver_pdu_data, ue_id_t ue_id, int srb_id, char *buf, int size, int sdu_id)
-{
-  DevAssert(deliver_pdu_data != NULL);
-  deliver_ue_ctxt_release_data_t *data = deliver_pdu_data;
-  data->release_cmd->rrc_container = (uint8_t*) buf;
-  data->release_cmd->rrc_container_length = size;
-  data->rrc->mac_rrc.ue_context_release_command(data->release_cmd);
 }
 
 //-----------------------------------------------------------------------------

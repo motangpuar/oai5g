@@ -170,6 +170,16 @@ rrc_gNB_ue_context_t *rrc_gNB_create_ue_context(rnti_t rnti,
   gNB_RRC_UE_t *ue = &ue_context_p->ue_context;
   ue->rnti = rnti;
   ue->random_ue_identity = ue_identityP;
+  // restart: we remove/restart the RRC (current limitation, might be overcome
+  // after merging !2304). Therefore, check if a particular UE we try to add
+  // exists in F1, and remove it if it is the case. This also affects PDCP and
+  // NGAP, and yes, this is a GIANT hack
+  if (cu_exists_f1_ue_data(ue->rrc_ue_id)) {
+    LOG_W(RRC, "hack: force-remove UE in PDCP and UE ID state\n");
+    cu_remove_f1_ue_data(ue->rrc_ue_id);
+    nr_pdcp_remove_UE(ue->rrc_ue_id);
+    rrc_gNB_send_NGAP_UE_CONTEXT_RELEASE_COMPLETE(0, ue->rrc_ue_id);
+  }
   f1_ue_data_t ue_data = {.secondary_ue = du_ue_id};
   AssertFatal(!cu_exists_f1_ue_data(ue->rrc_ue_id),
               "UE F1 Context for ID %d already exists, logic bug\n",
