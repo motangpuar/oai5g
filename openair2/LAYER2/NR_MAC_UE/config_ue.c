@@ -1353,17 +1353,28 @@ static void configure_common_BWP_ul(NR_UE_MAC_INST_t *mac, int bwp_id, NR_BWP_Up
 }
 
 void nr_rrc_mac_config_req_reset(module_id_t module_id,
-                                 NR_UE_MAC_reset_cause_t reset_cause)
+                                 NR_UE_MAC_reset_cause_t cause)
 {
   NR_UE_MAC_INST_t *mac = get_mac_inst(module_id);
+  if (cause == GO_TO_IDLE) {
+    reset_ra(&mac->ra);
+    nr_ue_init_mac(mac);
+  }
+
+  if (cause == RE_ESTABLISHMENT) {
+    // reset synchornization status
+    mac->first_sync_frame = -1;
+    mac->state = UE_NOT_SYNC;
+    mac->ra.ra_state = RA_UE_IDLE;
+  }
+
   reset_mac_inst(mac);
-  reset_ra(&mac->ra);
-  release_mac_configuration(mac);
-  nr_ue_init_mac(mac);
+  nr_ue_mac_default_configs(mac);
+  release_mac_configuration(mac, cause);
 
   // Sending to PHY a request to resync
   // with no target cell ID
-  if (reset_cause != DETACH) {
+  if (cause != DETACH) {
     mac->synch_request.Mod_id = module_id;
     mac->synch_request.CC_id = 0;
     mac->synch_request.synch_req.target_Nid_cell = -1;

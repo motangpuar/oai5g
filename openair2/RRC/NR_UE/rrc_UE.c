@@ -1221,7 +1221,7 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
     for (int cnt = 0; cnt < radioBearerConfig->drb_ToAddModList->list.count; cnt++) {
       struct NR_DRB_ToAddMod *drb = radioBearerConfig->drb_ToAddModList->list.array[cnt];
       int DRB_id = drb->drb_Identity;
-      if (rrcNB->status_DRBs[DRB_id] == RB_ESTABLISHED) {
+      if (rrcNB->status_DRBs[DRB_id - 1] == RB_ESTABLISHED) {
         AssertFatal(drb->reestablishPDCP == NULL, "reestablishPDCP not yet implemented\n");
         AssertFatal(drb->recoverPDCP == NULL, "recoverPDCP not yet implemented\n");
         NR_SDAP_Config_t *sdap_Config = drb->cnAssociation ? drb->cnAssociation->choice.sdap_Config : NULL;
@@ -1230,7 +1230,7 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
         if (drb->cnAssociation)
           AssertFatal(drb->cnAssociation->choice.sdap_Config == NULL, "SDAP reconfiguration not yet implemented\n");
       } else {
-        rrcNB->status_DRBs[DRB_id] = RB_ESTABLISHED;
+        rrcNB->status_DRBs[DRB_id - 1] = RB_ESTABLISHED;
         add_drb(false,
                 ue_rrc->ue_id,
                 radioBearerConfig->drb_ToAddModList->list.array[cnt],
@@ -1593,11 +1593,49 @@ static void nr_rrc_ue_process_ueCapabilityEnquiry(NR_UE_RRC_INST_t *rrc, NR_UECa
   }
 }
 
-static void nr_rrc_ue_generate_rrcReestablishmentComplete(NR_RRCReestablishment_t *rrcReestablishment)
-//-----------------------------------------------------------------------------
+void nr_rrc_initiate_rrcReestablishment(NR_UE_RRC_INST_t *rrc,
+                                        const int gnb_id)
 {
-    uint8_t buffer[RRC_BUFFER_SIZE] = {0};
-    int size = do_RRCReestablishmentComplete(buffer, RRC_BUFFER_SIZE,
+  NR_UE_Timers_Constants_t *timers = &rrc->timers_and_constants;
+  rrcPerNB_t *rrcNB = rrc->perNB + gnb_id;
+
+  // reset timers to SIB1 as part of release of spCellConfig
+  // it needs to be done before handling timers
+  set_rlf_sib1_timers_and_constants(timers, rrcNB->SInfo.sib1);
+
+  // stop timer T310, if running
+  nr_timer_stop(&timers->T310);
+  // stop timer T304, if running
+  nr_timer_stop(&timers->T304);
+  // start timer T311
+  nr_timer_start(&timers->T311);
+  // suspend all RBs, except SRB0
+  for (int i = 1; i < 4; i++) {
+    if (rrcNB->Srb[i] == RB_ESTABLISHED) {
+      rrcNB->Srb[i] = RB_SUSPENDED;
+      nr_pdcp_suspend_srb(rrc->ue_id, i);
+    }
+  }
+  for (int i = 0; i < MAX_DRBS_PER_UE; i++) {
+    if (rrcNB->status_DRBs[i] == RB_ESTABLISHED) {
+      rrcNB->status_DRBs[i] = RB_SUSPENDED;
+      nr_pdcp_suspend_drb(rrc->ue_id, i + 1);
+    }
+  }
+  // release the MCG SCell(s), if configured
+  // no SCell configured in our implementation
+  rrc->nrRrcState = RRC_STATE_REESTABLISHMENT;
+
+  // reset MAC
+  // release spCellConfig, if configured
+  // perform cell selection in accordance with the cell selection process
+  nr_rrc_mac_config_req_reset(rrc->ue_id, RE_ESTABLISHMENT);
+}
+
+static void nr_rrc_ue_generate_rrcReestablishmentComplete(NR_RRCReestablishment_t *rrcReestablishment)
+{
+  uint8_t buffer[RRC_BUFFER_SIZE] = {0};
+  int size = do_RRCReestablishmentComplete(buffer, RRC_BUFFER_SIZE,
                                            rrcReestablishment->rrc_TransactionIdentifier);
     LOG_I(NR_RRC, "[RAPROC] Logical Channel UL-DCCH (SRB1), Generating RRCReestablishmentComplete (bytes %d)\n", size);
 }
@@ -1865,7 +1903,7 @@ void nr_rrc_going_to_IDLE(NR_UE_RRC_INST_t *rrc,
     for (int i = 0; i < MAX_DRBS_PER_UE; i++) {
       if (nb->status_DRBs[i] != RB_NOT_PRESENT) {
         nb->status_DRBs[i] = RB_NOT_PRESENT;
-        nr_pdcp_release_drb(rrc->ue_id, i);
+        nr_pdcp_release_drb(rrc->ue_id, i + 1);
       }
     }
     for (int i = 1; i < NR_NUM_SRB; i++) {
