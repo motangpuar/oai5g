@@ -612,9 +612,11 @@ int start_L1L2(module_id_t gnb_id)
   AssertFatal(rc == 0, "could not create RRC task\n");
   /* pass a reconfiguration request which will configure everything down to
    * RC.eNB[i][j]->frame_parms, too */
+  /*
   msg_p = itti_alloc_new_message(TASK_GNB_APP, 0, NRRRC_CONFIGURATION_REQ);
   NRRRC_CONFIGURATION_REQ(msg_p) = RC.nrrrc[gnb_id]->configuration;
   itti_send_msg_to_task(TASK_RRC_GNB, 0, msg_p);
+  */
 
   //wait_gNBs();
   init_NR_RU(NULL);
