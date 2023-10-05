@@ -242,6 +242,7 @@ static int set_config(char *buf, int debug, telnet_printfunc_t prnt)
   int locationAndBandwidth = PRBalloc_to_locationandbandwidth0(numrbs, startrb, MAX_BWP_SIZE);
   prnt("inferred locationAndBandwidth:       %d\n", locationAndBandwidth);
 
+  /*
   gNB_RRC_INST *rrc = RC.nrrrc[0];
   NR_ServingCellConfigCommon_t *scc = rrc->carrier.servingcellconfigcommon;
   NR_FrequencyInfoDL_t *frequencyInfoDL = scc->downlinkConfigCommon->frequencyInfoDL;
@@ -252,23 +253,24 @@ static int set_config(char *buf, int debug, telnet_printfunc_t prnt)
   //--gNBs.[0].servingCellConfigCommon.[0].absoluteFrequencySSB 620736            -> SSBFREQ
   *scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencySSB = ssbfreq;
 
-  //* --gNBs.[0].servingCellConfigCommon.[0].dl_absoluteFrequencyPointA 620020      -> ARFCNDL
+  // --gNBs.[0].servingCellConfigCommon.[0].dl_absoluteFrequencyPointA 620020      -> ARFCNDL
   frequencyInfoDL->absoluteFrequencyPointA = arfcn;
   AssertFatal(frequencyInfoUL->absoluteFrequencyPointA == NULL, "only handle TDD\n");
 
-  //* --gNBs.[0].servingCellConfigCommon.[0].dl_carrierBandwidth 51                 -> BWDL
+  // --gNBs.[0].servingCellConfigCommon.[0].dl_carrierBandwidth 51                 -> BWDL
   frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth = bwdl;
 
-  //* --gNBs.[0].servingCellConfigCommon.[0].initialDLBWPlocationAndBandwidth 13750 -> NUMRBS + STARTRB
+  // --gNBs.[0].servingCellConfigCommon.[0].initialDLBWPlocationAndBandwidth 13750 -> NUMRBS + STARTRB
   initialDL->locationAndBandwidth = locationAndBandwidth;
 
-  //* --gNBs.[0].servingCellConfigCommon.[0].ul_carrierBandwidth 51                 -> BWUL?
+  // --gNBs.[0].servingCellConfigCommon.[0].ul_carrierBandwidth 51                 -> BWUL?
   // we assume the same BW as DL
   frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth = bwdl;
 
-  //* --gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth 13750 -> ?
+  // --gNBs.[0].servingCellConfigCommon.[0].initialULBWPlocationAndBandwidth 13750 -> ?
   // we assume same locationAndBandwidth as DL
   initialUL->locationAndBandwidth = locationAndBandwidth;
+  */
 
   prnt("OK\n");
   return 0;
@@ -289,8 +291,8 @@ static int set_bwconfig(char *buf, int debug, telnet_printfunc_t prnt)
   if (NULL != (end = strchr(buf, '\r')))
     *end = 0;
 
-  gNB_RRC_INST *rrc = RC.nrrrc[0];
-  NR_ServingCellConfigCommon_t *scc = rrc->carrier.servingcellconfigcommon;
+  gNB_MAC_INST *mac = RC.nrmac[0];
+  NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
   NR_FrequencyInfoDL_t *frequencyInfoDL = scc->downlinkConfigCommon->frequencyInfoDL;
   NR_BWP_t *initialDL = &scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters;
   NR_FrequencyInfoUL_t *frequencyInfoUL = scc->uplinkConfigCommon->frequencyInfoUL;
@@ -322,27 +324,26 @@ static int set_bwconfig(char *buf, int debug, telnet_printfunc_t prnt)
   free(RC.nrmac[0]->sched_ctrlCommon);
   RC.nrmac[0]->sched_ctrlCommon = NULL;
 
-  rrc->carrier.mib = get_new_MIB_NR(rrc->carrier.servingcellconfigcommon);
-  nr_mac_config_mib(RC.nrmac[rrc->module_id], rrc->carrier.mib);
+
+  free_MIB_NR(mac->common_channels[0].mib);
+  mac->common_channels[0].mib = get_new_MIB_NR(scc);
 
   // due to outrightly CRAZY memory handling in get_SIB1_NR(), we need to set
   // some structures to zero to prevent that we shoot ourselves into the foot
   //struct NR_SIB1 *xyz = rrc->carrier.siblock1->message.choice.c1->choice.systemInformationBlockType1;
   //xyz->servingCellConfigCommon = NULL;
   //free_SIB1_NR(rrc->carrier.siblock1);
-  NR_BCCH_DL_SCH_Message_t *sib1 = get_SIB1_NR(&rrc->configuration);
+  const f1ap_served_cell_info_t *info = &mac->f1_config.setup_req->cell[0].info;
+  /*
+  NR_BCCH_DL_SCH_Message_t *sib1 = get_SIB1_NR(scc, &info->plmn, into->nr_cellid, *info.tac);
   rrc->carrier.SIB1 = calloc(NR_MAX_SIB_LENGTH / 8, sizeof(*rrc->carrier.SIB1));
   AssertFatal(rrc->carrier.SIB1 != NULL, "out of memory\n");
   rrc->carrier.sizeof_SIB1 = encode_SIB1_NR(sib1, rrc->carrier.SIB1, NR_MAX_SIB_LENGTH / 8);
   rrc->carrier.siblock1 = sib1;
-  nr_mac_config_sib1(RC.nrmac[rrc->module_id], sib1);
+  */
+  nr_mac_configure_sib1(mac, &info->plmn, info->nr_cellid, *info->tac);
 
-  nr_mac_config_scc(RC.nrmac[rrc->module_id],
-                    rrc->configuration.pdsch_AntennaPorts,
-                    rrc->configuration.pusch_AntennaPorts,
-                    rrc->configuration.sib1_tda,
-                    rrc->configuration.minRXTXTIME,
-                    rrc->carrier.servingcellconfigcommon);
+  nr_mac_config_scc(mac, scc, &mac->radio_config);
 
   prnt("OK\n");
   return 0;
