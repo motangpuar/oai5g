@@ -999,11 +999,6 @@ void nr_phy_config_request(NR_PHY_Config_t *phy_config)
   nr_init_frame_parms(gNB_config, fp);
   
 
-  if (RC.gNB[Mod_id]->configured == 1) {
-    LOG_E(PHY,"Already gNB already configured, do nothing\n");
-    return;
-  }
-
   fd_occasion = 0;
   nfapi_nr_prach_config_t *prach_config = &gNB_config->prach_config;
   short_sequence = prach_config->prach_sequence_length.value;

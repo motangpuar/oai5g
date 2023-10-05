@@ -37,8 +37,8 @@ static pthread_mutex_t cu2du_mutex = PTHREAD_MUTEX_INITIALIZER;
 void cu_init_f1_ue_data(void)
 {
   pthread_mutex_lock(&cu2du_mutex);
-  DevAssert(cu2du_ue_mapping == NULL);
-  cu2du_ue_mapping = hashtable_create(1319, NULL, free); // 1319 is prime, default hash func (unit), free()
+  if (cu2du_ue_mapping == NULL) // hack: there is nothing to free this properly
+    cu2du_ue_mapping = hashtable_create(1319, NULL, free); // 1319 is prime, default hash func (unit), free()
   DevAssert(cu2du_ue_mapping != NULL);
   pthread_mutex_unlock(&cu2du_mutex);
 }

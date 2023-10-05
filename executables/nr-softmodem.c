@@ -545,6 +545,92 @@ void terminate_task(task_id_t task_id, module_id_t mod_id) {
 //extern void  free_transport(PHY_VARS_gNB *);
 extern void  nr_phy_free_RU(RU_t *);
 
+int stop_L1L2(module_id_t gnb_id)
+{
+  LOG_W(GNB_APP, "stopping nr-softmodem\n");
+  oai_exit = 1;
+
+  if (!RC.ru) {
+    LOG_F(GNB_APP, "no RU configured\n");
+    return -1;
+  }
+
+  /* stop trx devices, multiple carrier currently not supported by RU */
+  if (RC.ru[gnb_id]) {
+    AssertFatal(RC.ru[gnb_id]->rfdevice.trx_stop_func != NULL, "cannot call rfdevice.trx_stop_func(), is NULL\n");
+    RC.ru[gnb_id]->rfdevice.trx_stop_func(&RC.ru[gnb_id]->rfdevice);
+    LOG_I(GNB_APP, "turned off RU rfdevice\n");
+
+    /*
+    AssertFatal(RC.ru[gnb_id]->ifdevice.trx_stop_func != NULL, "cannot call ifdevice.trx_stop_func(), is NULL\n");
+    RC.ru[gnb_id]->ifdevice.trx_stop_func(&RC.ru[gnb_id]->ifdevice);
+    LOG_I(GNB_APP, "turned off RU ifdevice\n");
+    */
+  }
+
+  /* these tasks need to pick up new configuration */
+  terminate_task(TASK_RRC_GNB, gnb_id);
+
+  if (RC.nb_nr_L1_inst > 0)
+    stop_gNB(RC.nb_nr_L1_inst);
+
+  if (RC.nb_RU > 0)
+    stop_RU(RC.nb_RU);
+
+  /* release memory used by the RU/gNB threads (incomplete), after all
+   * threads have been stopped (they partially use the same memory) */
+  for (int inst = 0; inst < RC.nb_RU; inst++) {
+    nr_phy_free_RU(RC.ru[inst]);
+  }
+
+  for (int inst = 0; inst < RC.nb_nr_L1_inst; inst++) {
+    phy_free_nr_gNB(RC.gNB[inst]);
+  }
+  oai_exit = 0;
+  return 0;
+}
+
+/*
+ * Restart the nr-softmodem after it has been soft-stopped with stop_L1L2()
+ */
+int start_L1L2(module_id_t gnb_id)
+{
+  //RU_t *ru = RC.ru[gnb_id];
+  MessageDef *msg_p = NULL;
+  LOG_W(GNB_APP, "restarting nr-softmodem\n");
+  /* block threads */
+  sync_var = -1;
+  RC.gNB[gnb_id]->configured = 0;
+  /*
+  RC.ru_mask |= (1 << ru->idx);
+  set_function_spec_param(RC.ru[gnb_id]);
+  LOG_I(GNB_APP, "attempting to create ITTI tasks\n");
+  */
+  // No more rrc thread, as many race conditions are hidden behind
+
+  int rc = itti_create_task (TASK_RRC_GNB, rrc_gnb_task, NULL);
+  AssertFatal(rc == 0, "could not create RRC task\n");
+  /* pass a reconfiguration request which will configure everything down to
+   * RC.eNB[i][j]->frame_parms, too */
+  msg_p = itti_alloc_new_message(TASK_GNB_APP, 0, NRRRC_CONFIGURATION_REQ);
+  NRRRC_CONFIGURATION_REQ(msg_p) = RC.nrrrc[gnb_id]->configuration;
+  itti_send_msg_to_task(TASK_RRC_GNB, 0, msg_p);
+
+  //wait_gNBs();
+  init_NR_RU(NULL);
+  //ru->rf_map.carD = 0;
+  //ru->rf_map.chain = 0; /* CC_id + chain_offset;*/
+  wait_RUs();
+  // TODO eNB->RU_list[ru_id]->common.rxdataF
+  init_eNB_afterRU();
+  printf("Sending sync to all threads\n");
+  pthread_mutex_lock(&sync_mutex);
+  sync_var=0;
+  pthread_cond_broadcast(&sync_cond);
+  pthread_mutex_unlock(&sync_mutex);
+  return 0;
+}
+
 static  void wait_nfapi_init(char *thread_name) {
   printf( "waiting for NFAPI PNF connection and population of global structure (%s)\n",thread_name);
   pthread_mutex_lock( &nfapi_sync_mutex );
