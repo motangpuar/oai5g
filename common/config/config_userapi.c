@@ -77,6 +77,7 @@ void *config_allocate_new(int sz, bool autoFree) {
   // add the memory piece in the managed memory pieces list
   pthread_mutex_lock(&cfg->memBlocks_mutex);
   int newBlockIdx=cfg->numptrs++;
+  AssertFatal(newBlockIdx <= sizeof(cfg->oneBlock) / sizeof(cfg->oneBlock[0]), "reached maximum number of dynamically allocatable blocks\n");
   oneBlock_t* tmp=&cfg->oneBlock[newBlockIdx];
   tmp->ptrs = (char *)ptr;
   tmp->ptrsAllocated = true;
