@@ -64,8 +64,14 @@ add_library(telnetsrv_bearer MODULE telnetsrv_bearer.c)
 target_link_libraries(telnetsrv_bearer PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs)
 add_dependencies(telnetsrv telnetsrv_bearer)
 
+message(STATUS "Add CI specific telnet functions in libtelnetsrv_o1.so")
+add_library(telnetsrv_o1 MODULE telnetsrv_o1.c)
+target_link_libraries(telnetsrv_o1 PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs)
+add_dependencies(telnetsrv telnetsrv_o1)
+
 # all libraries should be written to root build dir
 set_target_properties(telnetsrv telnetsrv_enb telnetsrv_5Gue telnetsrv_ci telnetsrv_bearer
+                      telnetsrv_o1
                       PROPERTIES LIBRARY_OUTPUT_DIRECTORY ../../..
 )
 
