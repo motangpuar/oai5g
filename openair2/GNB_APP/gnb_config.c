@@ -1055,7 +1055,7 @@ static int read_du_cell_info(uint64_t *id, char **name, f1ap_served_cell_info_t 
   return 1;
 }
 
-static f1ap_setup_req_t *RC_read_F1Setup(uint64_t id,
+f1ap_setup_req_t *RC_read_F1Setup(uint64_t id,
                                          const char *name,
                                          const f1ap_served_cell_info_t *info,
                                          const NR_ServingCellConfigCommon_t *scc,

@@ -545,6 +545,8 @@ void terminate_task(task_id_t task_id, module_id_t mod_id) {
 //extern void  free_transport(PHY_VARS_gNB *);
 extern void  nr_phy_free_RU(RU_t *);
 
+#include "openair2/LAYER2/NR_MAC_gNB/mac_proto.h"
+#include "openair2/LAYER2/NR_MAC_gNB/nr_mac_gNB.h"
 int stop_L1L2(module_id_t gnb_id)
 {
   LOG_W(GNB_APP, "stopping nr-softmodem\n");
@@ -569,7 +571,13 @@ int stop_L1L2(module_id_t gnb_id)
   }
 
   /* these tasks need to pick up new configuration */
+  /*
   terminate_task(TASK_RRC_GNB, gnb_id);
+  */
+  gNB_MAC_INST *mac = RC.nrmac[0];
+  mac->f1_config.setup_resp = NULL;
+  MessageDef *msg = itti_alloc_new_message (TASK_GNB_APP, 0, F1AP_LOST_CONNECTION);
+  itti_send_msg_to_task (TASK_RRC_GNB, 0, msg);
 
   if (RC.nb_nr_L1_inst > 0)
     stop_gNB(RC.nb_nr_L1_inst);
@@ -593,11 +601,10 @@ int stop_L1L2(module_id_t gnb_id)
 /*
  * Restart the nr-softmodem after it has been soft-stopped with stop_L1L2()
  */
-#include "openair2/LAYER2/NR_MAC_gNB/nr_mac_gNB.h"
 int start_L1L2(module_id_t gnb_id)
 {
   //RU_t *ru = RC.ru[gnb_id];
-  MessageDef *msg_p = NULL;
+  //MessageDef *msg_p = NULL;
   LOG_W(GNB_APP, "restarting nr-softmodem\n");
   /* block threads */
   sync_var = -1;
@@ -622,8 +629,19 @@ int start_L1L2(module_id_t gnb_id)
   NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
   nr_mac_config_scc(mac, scc, &mac->radio_config);
 
+  /* send new F1 Setup Request to RRC */
+  NR_BCCH_BCH_Message_t *mib = mac->common_channels[0].mib;
+  NR_BCCH_DL_SCH_Message_t *sib1 = mac->common_channels[0].sib1;
+  f1ap_setup_req_t *old = mac->f1_config.setup_req;
+  const f1ap_served_cell_info_t *info = &old->cell[0].info;
+  f1ap_setup_req_t *req = RC_read_F1Setup(old->gNB_DU_id, old->gNB_DU_name, info, scc, mib, sib1);
+  AssertFatal(req != NULL, "could not read F1 Setup information\n");
+  RC.nrmac[0]->f1_config.setup_req = req;
+  nr_mac_send_f1_setup_req();
+
   //wait_gNBs();
   init_NR_RU(NULL);
+  wait_f1_setup_response();
   start_NR_RU();
   //ru->rf_map.carD = 0;
   //ru->rf_map.chain = 0; /* CC_id + chain_offset;*/
