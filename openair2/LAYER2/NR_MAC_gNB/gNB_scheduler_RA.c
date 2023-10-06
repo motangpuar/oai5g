@@ -1640,7 +1640,8 @@ static void nr_generate_Msg4(module_id_t module_idP,
 
     NR_UE_info_t *UE = find_nr_UE(&nr_mac->UE_info, ra->rnti);
     if (!UE) {
-      LOG_E(NR_MAC, "want to generate Msg4, but rnti %04x not in the table\n", ra->rnti);
+      LOG_E(NR_MAC, "want to generate Msg4, but rnti %04x not found. Abort RA\n", ra->rnti);
+      nr_clear_ra_proc(0, 0, frameP, ra);
       return;
     }
 
