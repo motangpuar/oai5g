@@ -593,6 +593,7 @@ int stop_L1L2(module_id_t gnb_id)
 /*
  * Restart the nr-softmodem after it has been soft-stopped with stop_L1L2()
  */
+#include "openair2/LAYER2/NR_MAC_gNB/nr_mac_gNB.h"
 int start_L1L2(module_id_t gnb_id)
 {
   //RU_t *ru = RC.ru[gnb_id];
@@ -608,8 +609,8 @@ int start_L1L2(module_id_t gnb_id)
   */
   // No more rrc thread, as many race conditions are hidden behind
 
-  int rc = itti_create_task (TASK_RRC_GNB, rrc_gnb_task, NULL);
-  AssertFatal(rc == 0, "could not create RRC task\n");
+  //int rc = itti_create_task (TASK_RRC_GNB, rrc_gnb_task, NULL);
+  //AssertFatal(rc == 0, "could not create RRC task\n");
   /* pass a reconfiguration request which will configure everything down to
    * RC.eNB[i][j]->frame_parms, too */
   /*
@@ -617,9 +618,13 @@ int start_L1L2(module_id_t gnb_id)
   NRRRC_CONFIGURATION_REQ(msg_p) = RC.nrrrc[gnb_id]->configuration;
   itti_send_msg_to_task(TASK_RRC_GNB, 0, msg_p);
   */
+  gNB_MAC_INST *mac = RC.nrmac[0];
+  NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
+  nr_mac_config_scc(mac, scc, &mac->radio_config);
 
   //wait_gNBs();
   init_NR_RU(NULL);
+  start_NR_RU();
   //ru->rf_map.carD = 0;
   //ru->rf_map.chain = 0; /* CC_id + chain_offset;*/
   wait_RUs();

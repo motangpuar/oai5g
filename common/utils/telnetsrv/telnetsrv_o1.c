@@ -343,7 +343,7 @@ static int set_bwconfig(char *buf, int debug, telnet_printfunc_t prnt)
   */
   nr_mac_configure_sib1(mac, &info->plmn, info->nr_cellid, *info->tac);
 
-  nr_mac_config_scc(mac, scc, &mac->radio_config);
+  //nr_mac_config_scc(mac, scc, &mac->radio_config);
 
   prnt("OK\n");
   return 0;
