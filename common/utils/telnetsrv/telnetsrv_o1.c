@@ -308,8 +308,8 @@ static int set_bwconfig(char *buf, int debug, telnet_printfunc_t prnt)
     threequarter_fs = 1;
     openair0_cfg[0].threequarter_fs = 1;
   } else if (strcmp(buf, "20") == 0) {
-    *scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencySSB = 620736;
-    frequencyInfoDL->absoluteFrequencyPointA = 620036;
+    *scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencySSB = 641280;
+    frequencyInfoDL->absoluteFrequencyPointA = 640596;
     AssertFatal(frequencyInfoUL->absoluteFrequencyPointA == NULL, "only handle TDD\n");
     frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth = 51;
     initialDL->locationAndBandwidth = 13750;
