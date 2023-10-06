@@ -2535,8 +2535,6 @@ static void write_rrc_stats(const gNB_RRC_INST *rrc)
     f1_ue_data_t ue_data = cu_get_f1_ue_data(ue_ctxt->rrc_ue_id);
     /* currently, we support only one DU. If we support multiple, need to
      * search for the DU corresponding to this UE here */
-    const nr_rrc_du_container_t *du = rrc->du;
-    DevAssert(du != NULL);
 
     fprintf(f,
             "UE %d CU UE ID %d DU UE ID %d RNTI %04x random identity %016lx",
@@ -2556,18 +2554,6 @@ static void write_rrc_stats(const gNB_RRC_INST *rrc)
     for (int nb_pdu = 0; nb_pdu < ue_ctxt->nb_of_pdusessions; ++nb_pdu) {
       const rrc_pdu_session_param_t *pdu = &ue_ctxt->pduSession[nb_pdu];
       fprintf(f, "    PDU session %d ID %d status %s\n", nb_pdu, pdu->param.pdusession_id, get_pdusession_status_text(pdu->status));
-    }
-
-    if (ue_ctxt->UE_Capability_nr) {
-      AssertFatal(du->setup_req->num_cells_available == 1, "only one cell supported at the moment\n");
-      const f1ap_served_cell_info_t *cell_info = &du->setup_req->cell[0].info;
-      fprintf(f,
-              "    UE cap: BW DL %x. BW UL %x, DL MIMO Layers %d UL MIMO Layers (CB) %d UL MIMO Layers (nonCB) %d\n",
-              get_dl_bw_mask(cell_info, ue_ctxt->UE_Capability_nr),
-              get_ul_bw_mask(cell_info, ue_ctxt->UE_Capability_nr),
-              get_dl_mimo_layers(cell_info, ue_ctxt->UE_Capability_nr),
-              get_ul_mimo_layersCB(cell_info, ue_ctxt->UE_Capability_nr),
-              get_ul_mimo_layers(cell_info, ue_ctxt->UE_Capability_nr));
     }
 
     if (ue_ctxt->measResults)
