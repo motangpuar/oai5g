@@ -571,6 +571,7 @@ rb_found:
 #endif
 }
 
+extern void nr_mac_trigger_ul_failure(int rnti);
 static void max_retx_reached(void *_ue, nr_rlc_entity_t *entity)
 {
   nr_rlc_ue_t *ue = _ue;
@@ -617,15 +618,7 @@ rb_found:
   if (!is_enb)
     return;
 
-#if 0
-  msg = itti_alloc_new_message(TASK_RLC_ENB, RLC_SDU_INDICATION);
-  RLC_SDU_INDICATION(msg).rnti          = ue->rnti;
-  RLC_SDU_INDICATION(msg).is_successful = 0;
-  RLC_SDU_INDICATION(msg).srb_id        = rb_id;
-  RLC_SDU_INDICATION(msg).message_id    = -1;
-  /* TODO: accept more than 1 instance? here we send to instance id 0 */
-  itti_send_msg_to_task(TASK_RRC_ENB, 0, msg);
-#endif
+  nr_mac_trigger_ul_failure(ue->rnti);
 }
 
 void nr_rlc_reestablish_entity(int rnti, int lc_id)

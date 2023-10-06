@@ -2964,14 +2964,21 @@ bool nr_mac_check_release(NR_UE_sched_ctrl_t *sched_ctrl, int rnti)
   return sched_ctrl->release_timer == 0;
 }
 
-void nr_mac_trigger_ul_failure(NR_UE_sched_ctrl_t *sched_ctrl, NR_SubcarrierSpacing_t subcarrier_spacing)
+void nr_mac_trigger_ul_failure(int rnti)
 {
+  NR_UE_info_t *UE = find_nr_UE(&RC.nrmac[0]->UE_info, rnti);
+  if (UE == NULL) {
+    LOG_E(NR_MAC, "could not find UE RNTI %04x\n", rnti);
+    return;
+  }
+  NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   if (sched_ctrl->ul_failure) {
     /* already running */
     return;
   }
   sched_ctrl->ul_failure = true;
   // 30 seconds till triggering release request
+  NR_SubcarrierSpacing_t subcarrier_spacing = UE->current_DL_BWP.scs;
   sched_ctrl->ul_failure_timer = 30000 << subcarrier_spacing;
 }
 
