@@ -120,7 +120,7 @@ void nr_rlc_release_entity(int rnti, logical_chan_id_t channel_id)
 void mac_rlc_data_ind(const module_id_t  module_idP,
                       const rnti_t rntiP,
                       const eNB_index_t eNB_index,
-                      const frame_t  rameP,
+                      const frame_t frameP,
                       const eNB_flag_t enb_flagP,
                       const MBMS_flag_t MBMS_flagP,
                       const logical_chan_id_t channel_idP,
@@ -631,9 +631,10 @@ void nr_rlc_reestablish_entity(int rnti, int lc_id)
   nr_rlc_manager_lock(nr_rlc_ue_manager);
   nr_rlc_ue_t *ue = nr_rlc_manager_get_ue(nr_rlc_ue_manager, rnti);
 
-  if (ue == NULL)
+  if (ue == NULL) {
     LOG_E(RLC, "RLC instance for the given UE was not found \n");
-
+    return;
+  }
   nr_rlc_entity_t *rb = get_rlc_entity_from_lcid(ue, lc_id);
 
   if (rb != NULL) {
@@ -641,6 +642,34 @@ void nr_rlc_reestablish_entity(int rnti, int lc_id)
     rb->reestablishment(rb);
   } else {
     LOG_E(RLC, "no RLC entity found (channel ID %d) for reestablishment\n", lc_id);
+  }
+  nr_rlc_manager_unlock(nr_rlc_ue_manager);
+}
+
+void nr_rlc_reestablish_default_srb(int rnti, int srb_id)
+{
+  nr_rlc_manager_lock(nr_rlc_ue_manager);
+  nr_rlc_ue_t *ue = nr_rlc_manager_get_ue(nr_rlc_ue_manager, rnti);
+
+  if (ue == NULL) {
+    LOG_E(RLC, "RLC instance for the given UE was not found \n");
+    return;
+  }
+  nr_rlc_entity_t *srb = ue->srb[srb_id - 1];
+  if (srb != NULL) {
+    srb->reestablishment(srb);
+    // default values as in 9.2.1 of 38.331
+    int sn_field_length = 12;
+    nr_rlc_entity_am_reconfigure(srb,
+                                 45, //t_poll_retransmit
+                                 35, //t_reassembly
+                                 0, //t_status_prohibit
+                                 -1, //poll_pdu
+                                 -1, //poll_byte
+                                 8, //max_retx_threshold
+                                 &sn_field_length);
+  } else {
+    LOG_E(RLC, "no RLC entity found corresponding to SRB%d for reestablishment\n", srb_id);
   }
   nr_rlc_manager_unlock(nr_rlc_ue_manager);
 }
