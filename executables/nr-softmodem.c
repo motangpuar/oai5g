@@ -609,6 +609,8 @@ int start_L1L2(module_id_t gnb_id)
   /* block threads */
   sync_var = -1;
   RC.gNB[gnb_id]->configured = 0;
+  extern void init_sched_response(void);
+  init_sched_response();
   /*
   RC.ru_mask |= (1 << ru->idx);
   set_function_spec_param(RC.ru[gnb_id]);

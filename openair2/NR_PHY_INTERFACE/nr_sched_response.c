@@ -55,17 +55,7 @@ static bool resp_freelist_inited = false;
 
 void init_sched_response(void)
 {
-  /* init only once */
-  if (pthread_mutex_lock(&resp_mutex))
-    AssertFatal(0, "pthread_mutex_lock failed\n");
-  if (resp_freelist_inited) {
-    if (pthread_mutex_unlock(&resp_mutex))
-      AssertFatal(0, "pthread_mutex_unlock failed\n");
-    return;
-  }
   resp_freelist_inited = true;
-  if (pthread_mutex_unlock(&resp_mutex))
-    AssertFatal(0, "pthread_mutex_unlock failed\n");
 
   int i;
   for (i = 0; i < N_RESP - 1; i++)

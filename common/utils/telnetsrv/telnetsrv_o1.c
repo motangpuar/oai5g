@@ -354,6 +354,17 @@ static int stop_modem(char *buf, int debug, telnet_printfunc_t prnt)
 {
   if (!running)
     ERROR_MSG_RET("cannot stop, nr-softmodem not running\n");
+
+  /* make UEs out of sync and wait 20ms to ensure no PUCCH is scheduled. After
+   * a restart, the frame/slot numbers will be different, which "confuses" the
+   * scheduler, which has many PUCCH structures filled with expected frame/slot
+   * combinations that won't happen. */
+  const gNB_MAC_INST *mac = RC.nrmac[0];
+  UE_iterator((NR_UE_info_t **)mac->UE_info.list, it) {
+    it->UE_sched_ctrl.rrc_processing_timer = 1000;
+  }
+  usleep(50000);
+
   stop_L1L2(0);
   running = false;
   prnt("OK\n");
