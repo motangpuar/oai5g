@@ -2005,6 +2005,29 @@ static void rrc_CU_process_ue_context_setup_response(MessageDef *msg_p, instance
   if (LOG_DEBUGFLAG(DEBUG_ASN1))
     xer_fprint(stdout, &asn_DEF_NR_CellGroupConfig, UE->masterCellGroup);
 
+  if (resp->drbs_to_be_setup_length > 0) {
+    AssertFatal(resp->srbs_to_be_setup_length > 1, "logic bug: we set up DRBs, so need to have both SRB1&SRB2\n");
+    e1ap_bearer_setup_req_t req = {0};
+    req.numPDUSessionsMod = UE->nb_of_pdusessions;
+    req.gNB_cu_cp_ue_id = UE->rrc_ue_id;
+    req.gNB_cu_up_ue_id = UE->rrc_ue_id;
+    for (int i = 0; i < req.numPDUSessionsMod; i++) {
+      req.pduSessionMod[i].numDRB2Modify = resp->drbs_to_be_setup_length;
+      for (int j = 0; j < resp->drbs_to_be_setup_length; j++) {
+        f1ap_drb_to_be_setup_t *drb_f1 = resp->drbs_to_be_setup + j;
+        DRB_nGRAN_to_setup_t *drb_e1 = req.pduSessionMod[i].DRBnGRanModList + j;
+
+        drb_e1->id = drb_f1->drb_id;
+        drb_e1->numDlUpParam = drb_f1->up_dl_tnl_length;
+        drb_e1->DlUpParamList[0].tlAddress = drb_f1->up_dl_tnl[0].tl_address;
+        drb_e1->DlUpParamList[0].teId = drb_f1->up_dl_tnl[0].teid;
+      }
+    }
+
+    // send the F1 response message up to update F1-U tunnel info
+    rrc->cucp_cuup.bearer_context_mod(&req, instance);
+  }
+
   /* at this point, we don't have to do anything: the UE context setup request
    * includes the Security Command, whose response will trigger the following
    * messages (UE capability, to be specific) */
@@ -2388,13 +2411,14 @@ void prepare_and_send_ue_context_modification_f1(rrc_gNB_ue_context_t *ue_contex
   if (!UE->as_security_active) {
     /* no AS security active, need to send UE context setup req with security
      * command (and the bearers) */
-    AssertFatal(false, "not implemented yet\n");
+    protocol_ctxt_t ctxt = {.rntiMaybeUEid = UE->rrc_ue_id};
+    rrc_gNB_generate_SecurityModeCommand(&ctxt, ue_context_p, nb_drb, drbs);
     return;
   }
 
   /* Instruction towards the DU for SRB2 configuration */
   int nb_srb = 0;
-  f1ap_srb_to_be_setup_t srbs[1];
+  f1ap_srb_to_be_setup_t srbs[1] = {0};
   if (UE->Srb[2].Active == 0) {
     UE->Srb[2].Active = 1;
     nb_srb = 1;
@@ -2757,7 +2781,9 @@ static void rrc_deliver_ue_ctxt_setup_req(void *deliver_pdu_data, ue_id_t ue_id,
 void
 rrc_gNB_generate_SecurityModeCommand(
   const protocol_ctxt_t *const ctxt_pP,
-  rrc_gNB_ue_context_t  *const ue_context_pP
+  rrc_gNB_ue_context_t  *const ue_context_pP,
+  int n_drbs,
+  const f1ap_drb_to_be_setup_t *drbs
 )
 //-----------------------------------------------------------------------------
 {
@@ -2783,6 +2809,17 @@ rrc_gNB_generate_SecurityModeCommand(
     cu2du.uE_CapabilityRAT_ContainerList_length = ue_p->ue_cap_buffer.len;
   }
 
+  int nb_srb = 0;
+  f1ap_srb_to_be_setup_t srbs[1] = {0};
+  if (n_drbs > 0) {
+    AssertFatal(drbs != NULL, "logic bug: n_drbs %d drbs %p\n", n_drbs, drbs);
+    AssertFatal(ue_p->Srb[2].Active == 0, "logic bug: security command, but SRB2 already active\n");
+    ue_p->Srb[2].Active = 1;
+    nb_srb = 1;
+    srbs[0].srb_id = 2;
+    srbs[0].lcid = 2;
+  }
+
   const nr_rrc_du_container_t *du = rrc->du;
   DevAssert(du != NULL);
 
@@ -2796,8 +2833,10 @@ rrc_gNB_generate_SecurityModeCommand(
       .plmn.mnc_digit_length = rrc->configuration.mnc_digit_length[0],
       .nr_cellid = rrc->nr_cellid,
       .servCellId = 0, /* TODO: correct value? */
-      .srbs_to_be_setup = 0, /* no new SRBs */
-      .drbs_to_be_setup = 0, /* no new DRBs */
+      .srbs_to_be_setup_length = nb_srb,
+      .srbs_to_be_setup = srbs,
+      .drbs_to_be_setup_length = n_drbs,
+      .drbs_to_be_setup = drbs,
       .cu_to_du_rrc_information = cu2du_p,
   };
   deliver_ue_ctxt_setup_data_t data = {.rrc = rrc, .setup_req = &ue_context_setup_req};
