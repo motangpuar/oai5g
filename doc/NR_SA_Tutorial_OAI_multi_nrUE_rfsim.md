@@ -102,37 +102,8 @@ sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band
 
 # 5. OAI UE
 
-## 5.1  SIM Card
-Edit openair3/UICC/usim_interface.c
-```bash
-#define UICC_PARAMS_DESC {\
-    {"imsi",             "USIM IMSI\n",          0,         strptr:&(uicc->imsiStr),              defstrval:"001010000000001",           TYPE_STRING,    0 },\
-    {"nmc_size"          "number of digits in NMC", 0,      iptr:&(uicc->nmc_size),               defintval:2,         TYPE_INT,       0 },\
-    {"key",              "USIM Ki\n",            0,         strptr:&(uicc->keyStr),               defstrval:"fec86ba6eb707ed08905757b1bb44b8f", TYPE_STRING,    0 },\
-    {"opc",              "USIM OPc\n",           0,         strptr:&(uicc->opcStr),               defstrval:"c42449363bbad02b66d16bc975d77cc1", TYPE_STRING,    0 },\
-    {"amf",              "USIM amf\n",           0,         strptr:&(uicc->amfStr),               defstrval:"8000",    TYPE_STRING,    0 },\
-    {"sqn",              "USIM sqn\n",           0,         strptr:&(uicc->sqnStr),               defstrval:"000000",  TYPE_STRING,    0 },\
-    {"dnn",              "UE dnn (apn)\n",       0,         strptr:&(uicc->dnnStr),               defstrval:"oai",     TYPE_STRING,    0 },\
-    {"nssai_sst",        "UE nssai\n",           0,         iptr:&(uicc->nssai_sst),              defintval:1,    TYPE_INT,    0 }, \
-    {"nssai_sd",         "UE nssai\n",           0,         iptr:&(uicc->nssai_sd),               defintval:0xffffff,    TYPE_INT,    0 }, \
-};
-```
 
-## 5.2 Testing OAI nrUE with USRP B210
-
-Important notes:
-- This should be run in a second Ubuntu 22.04 host, other than gNB
-- It only applies when running OAI gNB with USRP B210
-
-Run OAI nrUE
-```bash
-cd ~/openairinterface5g
-source oaienv
-cd cmake_targets/ran_build/build
-sudo ./nr-uesoftmodem -r 106 --numerology 1 --band 78 -C 3619200000 --ue-fo-compensation --sa -E --uicc0.imsi 001010000000001
-```
-
-## 5.2 Testing OAI nrUE with RFsimulator
+## 5.1 Testing OAI nrUE with RFsimulator
 Important notes:
 - This should be run on the same host as the OAI gNB
 - It only applies when running OAI gNB with RFsimulator
@@ -142,10 +113,10 @@ Run OAI nrUE with RFsimulator
 cd ~/openairinterface5g
 source oaienv
 cd cmake_targets/ran_build/build
-sudo ./nr-uesoftmodem -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --rfsimulator.serveraddr 127.0.0.1
+sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
 ```
 
-### 5.2.1 Ping test
+### 5.1.1 Ping test
 - UE host
 ```bash
 ping 192.168.70.135 -I oaitun_ue1
