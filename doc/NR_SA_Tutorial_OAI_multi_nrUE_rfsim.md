@@ -166,5 +166,5 @@ telnet 127.0.0.1 9099
 - UE host
 ```bash
 telnet 10.201.1.1 9095 ### For accessing to the first UE
-telnet 10.202.1.2 9096 ### For accessing to the first UE
+telnet 10.202.1.2 9096 ### For accessing to the second UE
 ```
