@@ -1180,21 +1180,16 @@ static int nr_rrc_gNB_decode_ccch(module_id_t module_id, const f1ap_initial_ul_r
             //         rrcSetupRequest->ue_Identity.choice.ng_5G_S_TMSI_Part1.size);
 
             if ((ue_context_p = rrc_gNB_ue_context_5g_s_tmsi_exist(gnb_rrc_inst, s_tmsi_part1))) {
-              gNB_RRC_UE_t *UE = &ue_context_p->ue_context;
-              LOG_I(NR_RRC, " 5G-S-TMSI-Part1 exists, old rnti %04x => %04x\n", UE->rnti, rnti);
-              AssertFatal(false, "not implemented\n");
-
-              /* replace rnti in the context */
-              UE->rnti = rnti;
+              LOG_W(NR_RRC, " 5G-S-TMSI-Part1 exists, old rnti %04x => %04x, creating new anyway\n", ue_context_p->ue_context.rnti, rnti);
             } else {
               LOG_I(NR_RRC, "UE %04x 5G-S-TMSI-Part1 doesn't exist, setting ng_5G_S_TMSI_Part1 => %ld\n", rnti, s_tmsi_part1);
-
-              ue_context_p = rrc_gNB_create_ue_context(rnti, gnb_rrc_inst, s_tmsi_part1, msg->gNB_DU_ue_id);
-              AssertFatal(ue_context_p != NULL, "out of memory\n");
-              gNB_RRC_UE_t *UE = &ue_context_p->ue_context;
-              UE->Initialue_identity_5g_s_TMSI.presence = true;
-              UE->ng_5G_S_TMSI_Part1 = s_tmsi_part1;
             }
+
+            ue_context_p = rrc_gNB_create_ue_context(rnti, gnb_rrc_inst, s_tmsi_part1, msg->gNB_DU_ue_id);
+            AssertFatal(ue_context_p != NULL, "out of memory\n");
+            gNB_RRC_UE_t *UE = &ue_context_p->ue_context;
+            UE->Initialue_identity_5g_s_TMSI.presence = true;
+            UE->ng_5G_S_TMSI_Part1 = s_tmsi_part1;
           } else {
             /* TODO */
             uint64_t random_value = 0;
