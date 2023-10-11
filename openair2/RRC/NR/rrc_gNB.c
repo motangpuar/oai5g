@@ -531,7 +531,7 @@ static void rrc_gNB_process_RRCSetupComplete(const protocol_ctxt_t *const ctxt_p
   if (get_softmodem_params()->sa) {
     rrc_gNB_send_NGAP_NAS_FIRST_REQ(ctxt_pP, ue_context_pP, rrcSetupComplete);
   } else {
-    rrc_gNB_generate_SecurityModeCommand(ctxt_pP, ue_context_pP);
+    AssertFatal(false, "makes no sense\n");
   }
 }
 
