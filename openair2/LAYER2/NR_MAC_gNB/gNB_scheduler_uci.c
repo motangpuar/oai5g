@@ -186,6 +186,7 @@ void nr_schedule_pucch(gNB_MAC_INST *nrmac,
       continue;
     if (frameP != curr_pucch->frame || slotP != curr_pucch->ul_slot) {
       LOG_E(NR_MAC, "PUCCH frame/slot mismatch, not scheduling PUCCH\n");
+      memset(curr_pucch, 0, sizeof(*curr_pucch));;
       continue;
     }
 
