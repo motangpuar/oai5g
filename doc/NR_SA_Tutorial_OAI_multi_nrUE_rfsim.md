@@ -17,7 +17,7 @@
 [[_TOC_]]
 
 #  1. Scenario
-In this tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and OAI nrUE.
+In this tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and multiple OAI nrUE in RFSIM.
 
 Minimum hardware requirements:
 - Laptop/Desktop/Server for OAI CN5G and OAI gNB
