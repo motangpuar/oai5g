@@ -20,16 +20,12 @@
 In this tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and multiple OAI nrUE in RFSIM.
 
 Minimum hardware requirements:
-- Laptop/Desktop/Server for OAI CN5G and OAI gNB
+- Laptop/Desktop/Server for OAI CN5G and OAI gNB and UE
     - Operating System: [Ubuntu 22.04 LTS](https://releases.ubuntu.com/22.04/ubuntu-22.04.3-desktop-amd64.iso)
     - CPU: 8 cores x86_64 @ 3.5 GHz
     - RAM: 32 GB
-- Laptop for UE
-    - Operating System: [Ubuntu 22.04 LTS](https://releases.ubuntu.com/22.04/ubuntu-22.04.3-desktop-amd64.iso)
-    - CPU: 8 cores x86_64 @ 3.5 GHz
-    - RAM: 8 GB
-- [USRP B210](https://www.ettus.com/all-products/ub210-kit/), [USRP N300](https://www.ettus.com/all-products/USRP-N300/) or [USRP X300](https://www.ettus.com/all-products/x300-kit/)
-    - Please identify the network interface(s) on which the USRP is connected and update the gNB configuration file
+
+
 
 
 # 2. OAI CN5G
@@ -95,35 +91,13 @@ docker compose up -d
 
 ## 4.2 Run OAI gNB
 
-### USRP B210
-```bash
-cd ~/openairinterface5g
-source oaienv
-cd cmake_targets/ran_build/build
-sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --gNBs.[0].min_rxtxtime 6 --sa -E --continuous-tx
-```
-### USRP N300
-```bash
-cd ~/openairinterface5g
-source oaienv
-cd cmake_targets/ran_build/build
-sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band77.fr1.273PRB.2x2.usrpn300.conf --gNBs.[0].min_rxtxtime 6 --sa --usrp-tx-thread-config 1
-```
-
-### USRP X300
-```bash
-cd ~/openairinterface5g
-source oaienv
-cd cmake_targets/ran_build/build
-sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band77.fr1.273PRB.2x2.usrpn300.conf --gNBs.[0].min_rxtxtime 6 --sa --usrp-tx-thread-config 1 -E --continuous-tx
-```
 
 ### RFsimulator
 ```bash
 cd ~/openairinterface5g
 source oaienv
 cd cmake_targets/ran_build/build
-sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --gNBs.[0].min_rxtxtime 6 --rfsim --sa
+sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --rfsim --sa --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr server --telnetsrv --telnetsrv.listenport 9099
 ```
 
 # 5. OAI UE
