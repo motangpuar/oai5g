@@ -427,6 +427,10 @@ static NR_DRB_ToAddModList_t *createDRBlist(gNB_RRC_UE_t *ue, bool reestablish)
       asn1cSeqAdd(&DRB_configList->list, DRB_config);
     }
   }
+  if (DRB_configList->list.count == 0) {
+    free(DRB_configList);
+    return NULL;
+  }
   return DRB_configList;
 }
 
@@ -537,7 +541,6 @@ static void rrc_gNB_generate_defaultRRCReconfiguration(const protocol_ctxt_t *co
 {
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
-  AssertFatal(ue_p->nb_of_pdusessions == 0, "logic bug: PDU sessions present before RRC Connection established\n");
   uint8_t xid = rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id);
   ue_p->xids[xid] = RRC_DEFAULT_RECONF;
 
@@ -574,14 +577,16 @@ static void rrc_gNB_generate_defaultRRCReconfiguration(const protocol_ctxt_t *co
   int band = get_dl_band(cell_info);
   uint32_t ssb_arfcn = get_ssb_arfcn(cell_info, du->mib, du->sib1);
   NR_MeasConfig_t *measconfig = get_defaultMeasConfig(ssb_arfcn, band, scs);
+  NR_SRB_ToAddModList_t *SRBs = createSRBlist(ue_p, false);
+  NR_DRB_ToAddModList_t *DRBs = createDRBlist(ue_p, false);
 
   uint8_t buffer[RRC_BUF_SIZE] = {0};
   int size = do_RRCReconfiguration(ue_p,
                                    buffer,
                                    RRC_BUF_SIZE,
                                    xid,
-                                   NULL, //*SRB_configList2,
-                                   NULL, //*DRB_configList,
+                                   SRBs,
+                                   DRBs,
                                    NULL,
                                    NULL,
                                    measconfig,
@@ -590,6 +595,8 @@ static void rrc_gNB_generate_defaultRRCReconfiguration(const protocol_ctxt_t *co
   AssertFatal(size > 0, "cannot encode RRCReconfiguration in %s()\n", __func__);
   LOG_W(NR_RRC, "do_RRCReconfiguration(): size %d\n", size);
   free_defaultMeasConfig(measconfig);
+  freeSRBlist(SRBs);
+  freeDRBlist(DRBs);
 
   if (LOG_DEBUGFLAG(DEBUG_ASN1)) {
     xer_fprint(stdout, &asn_DEF_NR_CellGroupConfig, ue_p->masterCellGroup);
@@ -1472,11 +1479,6 @@ static int handle_ueCapabilityInformation(const protocol_ctxt_t *const ctxt_pP,
     rrc_gNB_send_NGAP_UE_CAPABILITIES_IND(ctxt_pP, ue_context_p, ue_cap_info);
   }
 
-  // we send the UE capabilities request before RRC connection is complete,
-  // so we cannot have a PDU session yet
-  AssertFatal(UE->nb_of_pdusessions == 0, "logic bug: received capabilities while PDU session established\n");
-  // TODO: send UE context modification response with UE capabilities to
-  // allow DU configure CellGroupConfig
   rrc_gNB_generate_defaultRRCReconfiguration(ctxt_pP, ue_context_p);
 
   return 0;
@@ -1938,7 +1940,7 @@ static void rrc_CU_process_ue_context_setup_response(MessageDef *msg_p, instance
     xer_fprint(stdout, &asn_DEF_NR_CellGroupConfig, UE->masterCellGroup);
 
   if (resp->drbs_to_be_setup_length > 0) {
-    AssertFatal(resp->srbs_to_be_setup_length > 1, "logic bug: we set up DRBs, so need to have both SRB1&SRB2\n");
+    AssertFatal(resp->srbs_to_be_setup_length > 0 && resp->srbs_to_be_setup[0].srb_id == 2, "logic bug: we set up DRBs, so need to have both SRB1&SRB2\n");
     e1ap_bearer_setup_req_t req = {0};
     req.numPDUSessionsMod = UE->nb_of_pdusessions;
     req.gNB_cu_cp_ue_id = UE->rrc_ue_id;
@@ -2793,7 +2795,7 @@ rrc_gNB_generate_SecurityModeCommand(
   if (n_drbs > 0) {
     AssertFatal(drbs != NULL, "logic bug: n_drbs %d drbs %p\n", n_drbs, drbs);
     AssertFatal(ue_p->Srb[2].Active == 0, "logic bug: security command, but SRB2 already active\n");
-    activate_srb(UE, 2);
+    activate_srb(ue_p, 2);
     ue_p->Srb[2].Active = 1;
     nb_srb = 1;
     srbs[0].srb_id = 2;

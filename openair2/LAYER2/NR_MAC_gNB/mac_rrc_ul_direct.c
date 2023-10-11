@@ -67,7 +67,6 @@ static void f1_setup_request_direct(const f1ap_setup_req_t *req)
 static void ue_context_setup_response_direct(const f1ap_ue_context_setup_t *req, const f1ap_ue_context_setup_t *resp)
 {
   DevAssert(req->drbs_to_be_setup_length == resp->drbs_to_be_setup_length);
-  AssertFatal(req->drbs_to_be_setup_length == 0, "not implemented\n");
 
   (void) req; /* we don't need the request -- it is to set up GTP in F1 case */
   MessageDef *msg = itti_alloc_new_message (TASK_MAC_GNB, 0, F1AP_UE_CONTEXT_SETUP_RESP);
