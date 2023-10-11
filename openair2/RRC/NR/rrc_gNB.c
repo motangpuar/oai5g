@@ -1333,6 +1333,7 @@ static int nr_rrc_gNB_decode_ccch(module_id_t module_id, const f1ap_initial_ul_r
           rrc_gNB_generate_RRCSetup(module_id, rnti, ue_context_p, msg->du2cu_rrc_container, msg->du2cu_rrc_container_length);
           break;
         }
+        AssertFatal(ue_context_p->ue_context.as_security_active, "UE requested Reestablishment without activated AS security\n");
 
         // 3GPP TS 38.321 version 15.13.0 Section 7.1 Table 7.1-1: RNTI values
         if (rrcReestablishmentRequest.ue_Identity.c_RNTI < 0x1 || rrcReestablishmentRequest.ue_Identity.c_RNTI > 0xffef) {
@@ -1767,6 +1768,7 @@ int rrc_gNB_decode_dcch(const protocol_ctxt_t *const ctxt_pP,
 
         /* configure ciphering */
         nr_rrc_pdcp_config_security(ctxt_pP, ue_context_p, 1);
+        ue_context_p->ue_context.as_security_active = true;
 
         rrc_gNB_generate_UECapabilityEnquiry(ctxt_pP, ue_context_p);
         break;
@@ -2383,6 +2385,13 @@ void prepare_and_send_ue_context_modification_f1(rrc_gNB_ue_context_t *ue_contex
     drbs[i].up_ul_tnl_length = 1;
   }
 
+  if (!UE->as_security_active) {
+    /* no AS security active, need to send UE context setup req with security
+     * command (and the bearers) */
+    AssertFatal(false, "not implemented yet\n");
+    return;
+  }
+
   /* Instruction towards the DU for SRB2 configuration */
   int nb_srb = 0;
   f1ap_srb_to_be_setup_t srbs[1];
@@ -2755,6 +2764,7 @@ rrc_gNB_generate_SecurityModeCommand(
   uint8_t                             buffer[100];
   uint8_t                             size;
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
+  AssertFatal(!ue_p->as_security_active, "logic error: security already active\n");
 
   T(T_ENB_RRC_SECURITY_MODE_COMMAND, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->frame), T_INT(ctxt_pP->subframe), T_INT(ctxt_pP->rntiMaybeUEid));
   NR_IntegrityProtAlgorithm_t integrity_algorithm = (NR_IntegrityProtAlgorithm_t)ue_p->integrity_algorithm;
