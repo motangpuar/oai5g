@@ -447,6 +447,8 @@ e2_agent = {
 
 
 ```
+After editing your configuration files, now you can deploy your gNB in RFSIm as
+
 ```bash
 cd ~/openairinterface5g
 source oaienv
@@ -536,4 +538,101 @@ telnet 127.0.0.1 9099
 ```bash
 telnet 10.201.1.1 9095 ### For accessing to the first UE
 telnet 10.202.1.2 9096 ### For accessing to the second UE
+```
+After entering to the bash environment you can type help and see the possible options to change the channelmodels and other available options in RFSIM. 
+gNB side
+```bash
+5g@5gtestbed ~ $ telnet 127.0.0.1 9099
+Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+
+softmodem_gnb> help
+   module 0 = telnet:
+      telnet [get set] debug <value>
+      telnet [get set] prio <value>
+      telnet [get set] loopc <value>
+      telnet [get set] loopd <value>
+      telnet [get set] phypb <value>
+      telnet [get set] hsize <value>
+      telnet [get set] hfile <value>
+      telnet [get set] logfile <value>
+      telnet redirlog [here,file,off]
+      telnet param [prio]
+      telnet history [list,reset]
+   module 1 = softmodem:
+      softmodem show loglvl|thread|config
+      softmodem log (enter help for details)
+      softmodem thread (enter help for details)
+      softmodem exit 
+      softmodem restart 
+   module 2 = loader:
+      loader [get set] mainversion <value>
+      loader [get set] defpath <value>
+      loader [get set] maxshlibs <value>
+      loader [get set] numshlibs <value>
+      loader show [params,modules]
+   module 3 = measur:
+      measur show groups | <group name> | inq
+      measur cpustats [enable | disable]
+      measur async [enable | disable]
+   module 4 = channelmod:
+      channelmod help 
+      channelmod show <predef,current>
+      channelmod modify <channelid> <param> <value>
+      channelmod show params <channelid> <param> <value>
+   module 5 = rfsimu:
+      rfsimu setmodel <model name> <model type>
+      rfsimu setdistance <model name> <distance>
+      rfsimu getdistance <model name>
+      rfsimu vtime 
+softmodem_gnb> 
+```
+UE side 
+```bash
+5g@5gtestbed ~ $ telnet 127.0.0.1 9095
+Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+
+softmodem_5Gue> help
+   module 0 = telnet:
+      telnet [get set] debug <value>
+      telnet [get set] prio <value>
+      telnet [get set] loopc <value>
+      telnet [get set] loopd <value>
+      telnet [get set] phypb <value>
+      telnet [get set] hsize <value>
+      telnet [get set] hfile <value>
+      telnet [get set] logfile <value>
+      telnet redirlog [here,file,off]
+      telnet param [prio]
+      telnet history [list,reset]
+   module 1 = softmodem:
+      softmodem show loglvl|thread|config
+      softmodem log (enter help for details)
+      softmodem thread (enter help for details)
+      softmodem exit 
+      softmodem restart 
+   module 2 = loader:
+      loader [get set] mainversion <value>
+      loader [get set] defpath <value>
+      loader [get set] maxshlibs <value>
+      loader [get set] numshlibs <value>
+      loader show [params,modules]
+   module 3 = measur:
+      measur show groups | <group name> | inq
+      measur cpustats [enable | disable]
+      measur async [enable | disable]
+   module 4 = channelmod:
+      channelmod help 
+      channelmod show <predef,current>
+      channelmod modify <channelid> <param> <value>
+      channelmod show params <channelid> <param> <value>
+   module 5 = rfsimu:
+      rfsimu setmodel <model name> <model type>
+      rfsimu setdistance <model name> <distance>
+      rfsimu getdistance <model name>
+      rfsimu vtime 
+softmodem_5Gue> 
 ```
