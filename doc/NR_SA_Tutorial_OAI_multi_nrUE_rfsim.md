@@ -134,7 +134,7 @@ After entering the #bash environment:
 ```bash
 sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 10.201.1.100 --telnetsrv --telnetsrv.listenport 9095
 ```
-- For the second UE, follow the same procedure as the first ue and run the following command in the bash environment 
+- For the second UE, follow the same procedure as the first ue and run the following command in the bash environment for the second UE
 ```bash
 sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 10.202.1.100 --telnetsrv --telnetsrv.listenport 9096
 ```
@@ -145,3 +145,26 @@ sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -
 ping 192.168.70.135 -I oaitun_ue1
 ```
 
+### 5.4 Telnet server
+
+-Testing OAI nrUE with single UE in RFsimulator
+
+- gNB host
+```bash
+telnet 127.0.0.1 9099
+```
+- UE host
+```bash
+telnet 127.0.0.1 9095
+```
+-Testing OAI nrUE with multiple UEs in RFsimulator
+
+- gNB host
+```bash
+telnet 127.0.0.1 9099
+```
+- UE host
+```bash
+telnet 10.201.1.1 9095 ### For accessing to the first UE
+telnet 10.202.1.2 9096 ### For accessing to the first UE
+```
