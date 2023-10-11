@@ -681,7 +681,6 @@ void run_telnetsrv(void) {
       }
 
       if(!readc) {
-        printf ("[TELNETSRV] Telnet Client disconnected.\n");
         break;
       }
 
@@ -727,7 +726,7 @@ void run_telnetsrv(void) {
     write_history(telnetparams.histfile);
     clear_history();
     close(telnetparams.new_socket);
-    printf ("[TELNETSRV] Telnet server waitting for connection...\n");
+    //printf ("[TELNETSRV] Telnet server waitting for connection...\n");
   }
 
   close(sock);
