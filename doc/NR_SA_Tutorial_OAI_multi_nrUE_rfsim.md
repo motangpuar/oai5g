@@ -93,7 +93,76 @@ docker compose up -d
 
 
 ### RFsimulator
-- Copy the gnb.sa.band78.fr1.106PRB.usrpb210.conf to your path:
+- Add the channel models configuration file to where your other configuration files are. 
+
+```bash
+#/* configuration for channel modelisation */
+#/* To be included in main config file when */
+#/* channel modelisation is used (rfsimulator with chanmod options enabled) */
+channelmod = { 
+  max_chan=10;
+  modellist="modellist_rfsimu_1";
+  modellist_rfsimu_1 = (
+    {
+        model_name                       = "rfsimu_channel_enB0"
+      	type                             = "AWGN";			  
+      	ploss_dB                         = 0;
+        noise_power_dB                   = -10; 
+        forgetfact                       = 0;  
+        offset                           = 0;      
+        ds_tdl                           = 0;      
+    },
+    {
+        model_name                       = "rfsimu_channel_ue0"
+      	type                             = "AWGN";			  
+      	ploss_dB                         = 0;
+        noise_power_dB                   = -20; 
+        forgetfact                       = 0;  
+        offset                           = 0;      
+        ds_tdl                           = 0;      
+    }    
+  );
+  modellist_rfsimu_2 = (
+    {
+        model_name                       = "rfsimu_channel_ue0"
+      	type                             = "AWGN";			  
+      	ploss_dB                         = 0;
+        noise_power_dB                   = 0; 
+        forgetfact                       = 0;  
+        offset                           = 0;      
+        ds_tdl                           = 0;      
+    },
+    {
+        model_name                       = "rfsimu_channel_ue1"
+      	type                             = "AWGN";			  
+      	ploss_dB                         = 0;
+        noise_power_dB                   = 0; 
+        forgetfact                       = 0;  
+        offset                           = 0;      
+        ds_tdl                           = 0;      
+    },
+    {
+        model_name                       = "rfsimu_channel_ue2"
+      	type                             = "AWGN";			  
+      	ploss_dB                         = 0;
+        noise_power_dB                   = 0; 
+        forgetfact                       = 0;  
+        offset                           = 0;      
+        ds_tdl                           = 0;      
+    }    
+  );  
+};
+
+```
+
+- Edit your gnb.sa.band78.fr1.106PRB.usrpb210.conf as the following by adding
+```bash
+min_rxtxtime                                              = 6;
+```and
+```bash
+@include "channelmod_rfsimu.conf"
+```
+The editted configuration file should look like:
 ```bash
 Active_gNBs = ( "gNB-OAI");
 # Asn1_verbosity, choice in: none, info, annoying
