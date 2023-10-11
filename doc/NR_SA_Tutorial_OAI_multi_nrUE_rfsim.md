@@ -158,7 +158,9 @@ channelmod = {
 - Edit your gnb.sa.band78.fr1.106PRB.usrpb210.conf as the following by adding
 ```bash
 min_rxtxtime                                              = 6;
-```and
+```
+and
+
 ```bash
 @include "channelmod_rfsimu.conf"
 ```
