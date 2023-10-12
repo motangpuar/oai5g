@@ -17,7 +17,7 @@
 [[_TOC_]]
 
 #  1. Scenario
-In this tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and multiple OAI nrUE in RFSIM.
+In this tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB with single/multiple OAI nrUE(s) in the RFsimulator.
 
 Minimum hardware requirements:
 - Laptop/Desktop/Server for OAI CN5G and OAI gNB and UE
@@ -89,11 +89,12 @@ cd ~/oai-cn5g
 docker compose up -d
 ```
 
-## 4.2 Run OAI gNB with single/multiple UE(s) in RFSIM
+## 4.2 Run OAI gNB 
 
 
 ### RFsimulator
-- Add the channel models configuration file to where your other configuration files are. 
+- Add the channel models configuration file to where your other configuration files are (as an example openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF/channelmod_rfsimu.conf).
+- Below is the tested configuration for channelmod_rfsimu.conf with RFsimulator.
 
 ```bash
 #/* configuration for channel modelisation */
@@ -155,7 +156,7 @@ channelmod = {
 
 ```
 
-- Edit your gnb.sa.band78.fr1.106PRB.usrpb210.conf as the following by adding
+- Edit your gnb.sa.band78.fr1.106PRB.usrpb210.conf (as an example openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf) by adding
 ```bash
 min_rxtxtime                                              = 6;
 ```
@@ -164,7 +165,9 @@ and
 ```bash
 @include "channelmod_rfsimu.conf"
 ```
-The editted configuration file should look like:
+to your configuration file.
+
+- Below is the tested configuration for gnb.sa.band78.fr1.106PRB.usrpb210.conf with RFsimulator.
 ```bash
 Active_gNBs = ( "gNB-OAI");
 # Asn1_verbosity, choice in: none, info, annoying
@@ -447,7 +450,7 @@ e2_agent = {
 
 
 ```
-After editing your configuration files, now you can deploy your gNB in RFSIm as
+- After editing your configuration files, now you can deploy your gNB in RFsimulator as 
 
 ```bash
 cd ~/openairinterface5g
@@ -456,6 +459,7 @@ cd cmake_targets/ran_build/build
 sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --rfsim --sa --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr server --telnetsrv --telnetsrv.listenport 9099
 ```
 
+
 # 5. OAI  UE 
 
 
@@ -463,7 +467,12 @@ sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band
 Important notes:
 - This should be run on the same host as the OAI gNB
 - It only applies when running OAI gNB with RFsimulator
-- Edit the ue.conf file as:
+- Edit the ue.conf file by adding: 
+```bash
+@include "channelmod_rfsimu.conf"
+```
+- Below is the tested configuration for ue.conf with RFsimulator.
+
 ```bash
 uicc0 = {
 imsi = "001010000000001";
@@ -477,9 +486,7 @@ nssai_sst=1;
 
 ```
 
-
-
-Run OAI nrUE with RFsimulator
+- After editing your configuration files, now you can deploy your UE in RFsimulator as
 ```bash
 cd ~/openairinterface5g
 source oaienv
@@ -495,28 +502,33 @@ Important notes:
 - It only applies when running OAI gNB with RFsimulator
 - Follow the link https://www.eurecom.fr/~schmidtr/blog/2023/09/15/multiple-ues-in-rfsimulator/ and use the script (multi-ue.sh) in order to make namespaces for multiple UEs.  
 
-Run OAI first nrUE with RFsimulator
 - For the first UE, create the namespace ue1 (-c1) and then execute bash inside (-e):
 ```bash
 sudo ./multi-ue.sh -c1 -e
 sudo ./multi-ue.sh -o1
 ```
-After entering the #bash environment:
+- After entering the bash environment, run the following command to deploy your first UE
 ```bash
+cd ~/openairinterface5g
+source oaienv
+cd cmake_targets/ran_build/build
 sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 10.201.1.100 --telnetsrv --telnetsrv.listenport 9095
 ```
-- For the second UE, follow the same procedure as the first ue and run the following command in the bash environment for the second UE
+- For the second UE, create the namespace ue2 (-c2) and then execute bash inside (-e):
 ```bash
+sudo ./multi-ue.sh -c2 -e
+sudo ./multi-ue.sh -o2
+```
+- After entering the bash environment, run the following command to deploy your second UE
+```bash
+cd ~/openairinterface5g
+source oaienv
+cd cmake_targets/ran_build/build
 sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 10.202.1.100 --telnetsrv --telnetsrv.listenport 9096
 ```
 
-### 5.3 Ping test
-- UE host
-```bash
-ping 192.168.70.135 -I oaitun_ue1
-```
 
-### 5.4 Telnet server
+### 5.3 Telnet server
 
 -Testing OAI nrUE with single UE in RFsimulator
 
