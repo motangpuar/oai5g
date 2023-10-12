@@ -530,7 +530,7 @@ sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -
 
 ### 5.3 Telnet server
 
--Testing OAI nrUE with single UE in RFsimulator
+-single UE in RFsimulator
 
 - gNB host
 ```bash
@@ -540,7 +540,7 @@ telnet 127.0.0.1 9099
 ```bash
 telnet 127.0.0.1 9095
 ```
--Testing OAI nrUE with multiple UEs in RFsimulator
+-Multiple UEs in RFsimulator
 
 - gNB host
 ```bash
