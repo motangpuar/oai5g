@@ -430,7 +430,7 @@ typedef struct ssb_info {
 // List of all the possible SSBs and their details
 typedef struct ssb_list_info {
   ssb_info_t tx_ssb[MAX_NB_SSB];
-  uint8_t   nb_tx_ssb;
+  uint8_t nb_tx_ssb;
 } ssb_list_info_t;
 
 typedef struct nr_lcordered_info_s {
@@ -452,6 +452,19 @@ typedef struct {
   A_SEQUENCE_OF(NR_ControlResourceSet_t) list_Coreset;
   A_SEQUENCE_OF(NR_SearchSpace_t) list_SS;
 } NR_BWP_PDCCH_t;
+
+typedef struct csi_payload {
+  uint32_t part1_payload;
+  uint32_t part2_payload;
+  int p1_bits;
+  int p2_bits;
+} csi_payload_t;
+
+typedef enum {
+  WIDEBAND_ON_PUCCH,
+  SUBBAND_ON_PUCCH,
+  ON_PUSCH
+} CSI_mapping_t;
 
 /*!\brief Top level UE MAC structure */
 typedef struct NR_UE_MAC_INST_s {
