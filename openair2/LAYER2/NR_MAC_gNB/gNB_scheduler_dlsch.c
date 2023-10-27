@@ -605,7 +605,7 @@ static void nr_pf_dl_unset(void **data)
   *data = NULL;
 }
 
-static void nr_pf_dl(module_id_t module_id,
+static int nr_pf_dl(module_id_t module_id,
                      frame_t frame,
                      sub_frame_t slot,
                      NR_UE_info_t **UE_list,
@@ -843,6 +843,7 @@ static void nr_pf_dl(module_id_t module_id,
     remainUEs--;
     iterator++;
   }
+  return n_rb_sched;
 }
 nr_dl_sched_algo_t nr_proportional_fair_wbcqi_dl = {
   .name  = "nr_proportional_fair_wbcqi_dl",

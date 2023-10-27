@@ -740,7 +740,7 @@ typedef struct {
   char *name;
   void *(*setup)(void);
   void (*unset)(void **);
-  void (*run)(
+  int (*run)(
       module_id_t, frame_t, sub_frame_t, NR_UE_info_t **, int, int, uint16_t *, void *);
   void *data;
 } nr_dl_sched_algo_t;

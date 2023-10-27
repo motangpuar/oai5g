@@ -68,6 +68,6 @@ typedef struct {
     struct { float pct_reserved; };
   };
 } nvs_nr_slice_param_t;
-nr_pp_impl_param_dl_t nvs_nr_dl_init(module_id_t mod_id, int CC_id);
+nr_pp_impl_param_dl_t nvs_nr_dl_init(module_id_t mod_id);
 
 #endif /* NR_SLICING_H__ */

@@ -33,6 +33,7 @@
 
 #include "assertions.h"
 #include "common/utils/LOG/log.h"
+#include "common/utils/nr/nr_common.h"
 
 #include "NR_MAC_COMMON/nr_mac_extern.h"
 #include "NR_MAC_COMMON/nr_mac.h"
@@ -275,53 +276,6 @@ int addmod_nvs_nr_slice_dl(nr_slice_info_t *si,
   return index < 0 ? si->num - 1 : index;
 }
 
-//int addmod_nvs_slice_ul(nr_slice_info_t *si,
-//                        int id,
-//                        char *label,
-//                        void *slice_params_ul) {
-//  nvs_nr_slice_param_t *sp = slice_params_ul;
-//  int index = _nr_exists_slice(si->num, si->s, id);
-//  if (index < 0 && si->num >= MAX_NVS_SLICES)
-//    RET_FAIL(-2, "%s(): cannot handle more than %d slices\n", __func__, MAX_NVS_SLICES);
-//
-//  int rc = _nvs_admission_control(si->num, si->s, sp, index);
-//  if (rc < 0)
-//    return rc;
-//
-//  nr_slice_t *ns = NULL;
-//  if (index < 0) {
-//    ns = _add_slice(&si->num, si->s);
-//    if (!ns)
-//      RET_FAIL(-4, "%s(): cannot allocate memory for slice\n", __func__);
-//    ns->id = id;
-//    ns->int_data = malloc(sizeof(_nvs_int_t));
-//    if (!ns->int_data)
-//      RET_FAIL(-5, "%s(): cannot allocate memory for slice internal data\n",
-//               __func__);
-//  } else {
-//    ns = si->s[index];
-//    free(ns->algo_data);
-//  }
-//  if (label) {
-//    if (ns->label)
-//      free(ns->label);
-//    ns->label = label;
-//  }
-//  ns->algo_data = sp;
-//  _nvs_int_t *nvs_p = ns->int_data;
-//  nvs_p->rb = 0;
-//  nvs_p->active = 0;
-//  if (sp->type == NVS_RATE) {
-//    nvs_p->exp = sp->Mbps_reserved;
-//    nvs_p->eff = sp->Mbps_reference;
-//  } else {
-//    nvs_p->exp = sp->pct_reserved;
-//    nvs_p->eff = 0; // not used
-//  }
-//
-//  return si->num - 1;
-//}
-
 int remove_nvs_nr_slice_dl(nr_slice_info_t *si, uint8_t slice_idx)
 {
   if (slice_idx == 0 && si->num <= 1)
@@ -348,18 +302,6 @@ int remove_nvs_nr_slice_dl(nr_slice_info_t *si, uint8_t slice_idx)
   free(sr);
   return 1;
 }
-
-//int remove_nvs_slice_ul(nr_slice_info_t *si, uint8_t slice_idx) {
-//  if (slice_idx == 0)
-//    return 0;
-//  nr_slice_t *sr = _remove_slice(&si->num, si->s, si->UE_assoc_slice, slice_idx);
-//  if (!sr)
-//    return 0;
-//  free(sr->algo_data);
-//  free(sr->int_data);
-//  free(sr);
-//  return 1;
-//}
 
 extern void nr_store_dlsch_buffer(module_id_t, frame_t, sub_frame_t);
 
@@ -388,8 +330,8 @@ void nvs_nr_dl(module_id_t mod_id,
   const int startSymbolAndLength = tdaList->list.array[tda]->startSymbolAndLength;
   SLIV2SL(startSymbolAndLength, &startSymbolIndex, &nrOfSymbols);
 
-  const uint16_t bwpSize = coresetid == 0 ? RC.nrmac[mod_id]->cset0_bwp_size : current_BWP->BWPSize;
-  const uint16_t BWPStart = coresetid == 0 ? RC.nrmac[mod_id]->cset0_bwp_start : current_BWP->BWPStart;
+  const uint16_t bwpSize = current_BWP->BWPSize;
+  const uint16_t BWPStart = current_BWP->BWPStart;
 
   const uint16_t slbitmap = SL_to_bitmap(startSymbolIndex, nrOfSymbols);
   uint16_t *vrb_map = RC.nrmac[mod_id]->common_channels[CC_id].vrb_map;
@@ -409,6 +351,10 @@ void nvs_nr_dl(module_id_t mod_id,
 
   /* Retrieve amount of data to send */
   nr_store_dlsch_buffer(mod_id, frame, slot);
+
+  int bw = scc->downlinkConfigCommon->frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth;
+  int average_agg_level = 4; // TODO find a better estimation
+  int max_sched_ues = bw / (average_agg_level * NR_NB_REG_PER_CCE);
 
   nr_slice_info_t *si = RC.nrmac[mod_id]->pre_processor_dl.slices;
   int bytes_last_round = 0;
@@ -471,36 +417,20 @@ void nvs_nr_dl(module_id_t mod_id,
 
   ((_nvs_int_t *)si->s[maxidx]->int_data)->rb = n_rb_sched;
 
-  //int rbg_rem = n_rb_sched;
-  if (si->s[maxidx]->UE_list[0] != NULL) {
-    /*rbg_rem = */
-    LOG_D(NR_MAC, "%4d.%2d scheduling slice idx %d ID %d (first UE rnti 0x%04x)\n", frame, slot, maxidx, si->s[maxidx]->id, si->s[maxidx]->UE_list[0]->rnti);
-    si->s[maxidx]->dl_algo.run(mod_id,
-                               frame,
-                               slot,
-                               si->s[maxidx]->UE_list,
-                               2, // max_num_ue
-                               n_rb_sched,
-                               rballoc_mask,
-                               si->s[maxidx]->dl_algo.data);
-  } else {
-    LOG_D(NR_MAC, "%4d.%2d not scheduling slice idx %d ID %d (no UEs)\n", frame, slot, maxidx, si->s[maxidx]->id);
-  }
-  // TODO
-  //if (rbg_rem == n_rbg_sched) // if no RBGs have been used mark as inactive
-  //  ((_nvs_int_t *)si->s[maxidx]->int_data)->active = 0;
-}
+  /* proportional fair scheduling algorithm */
+  int rb_rem = si->s[maxidx]->dl_algo.run(mod_id,
+                                          frame,
+                                          slot,
+                                          si->s[maxidx]->UE_list,
+                                          max_sched_ues,
+                                          n_rb_sched,
+                                          rballoc_mask,
+                                          si->s[maxidx]->dl_algo.data);
+  LOG_D(NR_MAC, "%4d.%2d schedule %d RBs at slice idx %d ID %d \n", frame, slot, n_rb_sched - rb_rem, maxidx, si->s[maxidx]->id);
 
-/*
-void nvs_ul(module_id_t mod_id,
-               int CC_id,
-               frame_t frame,
-               sub_frame_t subframe,
-               frame_t sched_frame,
-               sub_frame_t sched_subframe) {
-  ulsch_scheduler_pre_processor(mod_id, CC_id, frame, subframe, sched_frame, sched_subframe);
+  if (rb_rem == n_rb_sched) // if no RBs have been used mark as inactive
+    ((_nvs_int_t *)si->s[maxidx]->int_data)->active = 0;
 }
-*/
 
 void nvs_nr_destroy(nr_slice_info_t **si) {
   const int n_dl = (*si)->num;
@@ -516,7 +446,7 @@ void nvs_nr_destroy(nr_slice_info_t **si) {
   free((*si)->s);
 }
 
-nr_pp_impl_param_dl_t nvs_nr_dl_init(module_id_t mod_id, int CC_id)
+nr_pp_impl_param_dl_t nvs_nr_dl_init(module_id_t mod_id)
 {
   nr_slice_info_t *si = calloc(1, sizeof(nr_slice_info_t));
   DevAssert(si);
