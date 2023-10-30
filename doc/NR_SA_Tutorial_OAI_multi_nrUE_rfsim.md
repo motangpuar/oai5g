@@ -433,9 +433,7 @@ e2_agent = {
 - After editing your configuration files, now you can deploy your gNB in RFsimulator as 
 
 ```bash
-cd ~/openairinterface5g
-source oaienv
-cd cmake_targets/ran_build/build
+cd ~/openairinterface5g/cmake_targets/ran_build/build
 sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --rfsim --sa --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr server --telnetsrv --telnetsrv.listenport 9099
 ```
 
