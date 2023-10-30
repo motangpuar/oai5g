@@ -468,9 +468,7 @@ nssai_sst=1;
 
 - After editing your configuration files, now you can deploy your UE in RFsimulator as
 ```bash
-cd ~/openairinterface5g
-source oaienv
-cd cmake_targets/ran_build/build
+cd ~/openairinterface5g/cmake_targets/ran_build/build
 sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
 ```
 # 5.2 OAI multiple UE 
