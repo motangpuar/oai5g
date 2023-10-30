@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -35,6 +36,7 @@
 #include "openair2/LAYER2/NR_MAC_gNB/nr_mac_gNB.h"
 #include "openair2/RRC/NR/nr_rrc_config.h"
 #include "openair2/LAYER2/NR_MAC_gNB/mac_proto.h"
+#include "openair2/LAYER2/nr_rlc/nr_rlc_oai_api.c"
 #include "common/utils/nr/nr_common.h"
 
 #define ERROR_MSG_RET(mSG, aRGS...) do { prnt("FAILURE: " mSG, ##aRGS); return 1; } while (0)
@@ -56,6 +58,11 @@
 #define MNC     "nrcelldu3gpp:mnc"
 #define SD      "nrcelldu3gpp:sd"
 #define SST     "nrcelldu3gpp:sst"
+
+typedef struct b {
+  long int dl;
+  long int ul;
+} b_t;
 
 static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
 {
@@ -96,6 +103,29 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
   int load = diff_total > 0 ? 100 * diff_used / diff_total : 0;
   last = *stat;
 
+  static struct timespec tp_last = {0};
+  struct timespec tp_now;
+  clock_gettime(CLOCK_MONOTONIC, &tp_now);
+  size_t diff_msec = (tp_now.tv_sec - tp_last.tv_sec) * 1000 + (tp_now.tv_nsec - tp_last.tv_nsec) / 1000000;
+  tp_last = tp_now;
+
+  const int srb_flag = 0;
+  const int rb_id = 1;
+  static b_t last_total[MAX_MOBILES_PER_GNB] = {0};
+  b_t thr[MAX_MOBILES_PER_GNB] = {0};
+  int i = 0;
+  {
+    UE_iterator((NR_UE_info_t **)mac->UE_info.list, it) {
+      nr_rlc_statistics_t rlc = {0};
+      nr_rlc_get_statistics(it->rnti, srb_flag, rb_id, &rlc);
+      thr[i].dl = (rlc.txpdu_bytes - last_total[i].dl) * 8 / diff_msec;
+      thr[i].ul = (rlc.rxpdu_bytes - last_total[i].ul) * 8 / diff_msec;
+      last_total[i].dl = rlc.txpdu_bytes;
+      last_total[i].ul = rlc.rxpdu_bytes;
+      i++;
+    }
+  }
+
   prnt("{\n");
     prnt("  \"o1-config\": {\n");
 
@@ -105,14 +135,14 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
     //prnt("      \"" CYCLPREF "\": %ld,\n", *initialDL->cyclicPrefix);
     prnt("        \"" NUMRBS "\": %ld,\n", NRRIV2BW(initialDL->locationAndBandwidth, MAX_BWP_SIZE));
     prnt("        \"" STARTRB "\": %ld,\n", NRRIV2PRBOFFSET(initialDL->locationAndBandwidth, MAX_BWP_SIZE));
-    prnt("        \"" BWPSCS "\": %ld\n", scs);
+    prnt("        \"" BWPSCS "\": %ld\n", 15 * (1U << scs));
     prnt("      }],\n");
     prnt("      \"ul\": [{\n");
     prnt("        \"" ISINITBWP "\": true,\n");
     //prnt("      \"" CYCLPREF "\": %ld,\n", *initialUL->cyclicPrefix);
     prnt("        \"" NUMRBS "\": %ld,\n", NRRIV2BW(initialUL->locationAndBandwidth, MAX_BWP_SIZE));
     prnt("        \"" STARTRB "\": %ld,\n", NRRIV2PRBOFFSET(initialUL->locationAndBandwidth, MAX_BWP_SIZE));
-    prnt("        \"" BWPSCS "\": %ld\n", scs);
+    prnt("        \"" BWPSCS "\": %ld\n", 15 * (1U << scs));
     prnt("      }]\n");
     prnt("    },\n");
 
@@ -150,7 +180,19 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
       }
     }
     prnt("    ],\n");
-    prnt("    \"load\": %d\n", load);
+    prnt("    \"load\": %d,\n", load);
+    prnt("    \"ues-thp\": [\n");
+    {
+      bool first = true;
+      int i = 0;
+      UE_iterator((NR_UE_info_t **)mac->UE_info.list, it) {
+        if (!first) { prnt(", "); }
+        prnt("      {\"rnti\": %d, \"dl\": %d, \"ul\": %d}\n", it->rnti, thr[i].dl, thr[i].ul);
+        i++;
+        first = false;
+      }
+    }
+    prnt("    ]\n");
     prnt("  }\n");
   prnt("}\n");
   prnt("OK\n");
