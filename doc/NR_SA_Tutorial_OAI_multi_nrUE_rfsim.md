@@ -476,7 +476,8 @@ sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -
 Important notes:
 - This should be run on the same host as the OAI gNB
 - It only applies when running OAI gNB with RFsimulator
-- Follow the link https://www.eurecom.fr/~schmidtr/blog/2023/09/15/multiple-ues-in-rfsimulator/ and use the script (multi-ue.sh) in order to make namespaces for multiple UEs.  
+- Use the script (multi-ue.sh)in openairinterface/radio/rfsimulator to make namespaces for 
+multiple UEs.  
 
 - For the first UE, create the namespace ue1 (-c1) and then execute bash inside (-e):
 ```bash
