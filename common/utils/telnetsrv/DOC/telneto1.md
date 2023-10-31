@@ -60,7 +60,7 @@ Use the `o1 stats` command. The output is in JSON format:
           "bwp3gpp:isInitialBwp": true,
           "bwp3gpp:numberOfRBs": 106,
           "bwp3gpp:startRB": 0,
-          "bwp3gpp:subCarrierSpacing": 1
+          "bwp3gpp:subCarrierSpacing": 30
         }
       ],
       "ul": [
@@ -68,7 +68,7 @@ Use the `o1 stats` command. The output is in JSON format:
           "bwp3gpp:isInitialBwp": true,
           "bwp3gpp:numberOfRBs": 106,
           "bwp3gpp:startRB": 0,
-          "bwp3gpp:subCarrierSpacing": 1
+          "bwp3gpp:subCarrierSpacing": 30
         }
       ]
     },
@@ -86,7 +86,7 @@ Use the `o1 stats` command. The output is in JSON format:
       "nrcelldu3gpp:sst": 1
     },
     "device": {
-      "gnbId": 3584,
+      "gnbId": 1,
       "gnbName": "gNB-Eurecom-5GNRBox",
       "vendor": "OpenAirInterface"
     }
@@ -94,12 +94,18 @@ Use the `o1 stats` command. The output is in JSON format:
   "O1-Operational": {
     "frame-type": "tdd",
     "band-number": 78,
-    "num-ues": 2,
+    "num-ues": 1,
     "ues": [
-      1717,
-      28734
+      6876
     ],
-    "load": 12
+    "load": 9,
+    "ues-thp": [
+      {
+        "rnti": 6876,
+        "dl": 3279,
+        "ul": 2725
+      }
+    ]
   }
 }
 ```
