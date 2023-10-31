@@ -168,6 +168,9 @@ nr_bler_struct nr_bler_data[NR_NUM_MCS];
 
 static void init_bler_table(char*);
 
+// to be removed
+void nr_mac_trigger_ul_failure(int rnti) { abort(); }
+
 /*---------------------BMC: timespec helpers -----------------------------*/
 
 struct timespec min_diff_time = { .tv_sec = 0, .tv_nsec = 0 };
