@@ -836,6 +836,24 @@ void freq2time(uint16_t ofdm_symbol_size,
     case 8192:
       idft(IDFT_8192, freq_signal, time_signal, 1);
       break;
+    case 12288:
+      idft(IDFT_12288, freq_signal, time_signal, 1);
+      break;
+    case 16384:
+      idft(IDFT_16384, freq_signal, time_signal, 1);
+      break;
+    case 24576:
+      idft(IDFT_24576, freq_signal, time_signal, 1);
+      break;
+    case 32768:
+      idft(IDFT_32768, freq_signal, time_signal, 1);
+      break;
+    case 49152:
+      idft(IDFT_49152, freq_signal, time_signal, 1);
+      break;
+    //case 65536:
+      //idft(IDFT_65536, freq_signal, time_signal, 1);
+      //break;
     default:
       AssertFatal (1 == 0, "Invalid ofdm_symbol_size %i\n", ofdm_symbol_size);
       break;

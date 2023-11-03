@@ -30,6 +30,7 @@
 #include "PHY/NR_TRANSPORT/nr_transport_proto.h"
 #include "PHY/NR_UE_TRANSPORT/srs_modulation_nr.h"
 #include "PHY/NR_UE_ESTIMATION/filt16a_32.h"
+#include "PHY/NR_UE_ESTIMATION/nr_estimation.h"
 
 #include "PHY/NR_REFSIG/ul_ref_seq_nr.h"
 #include "executables/softmodem-common.h"
@@ -40,7 +41,36 @@
 //#define SRS_DEBUG
 
 #define NO_INTERP 1
+#define  NR_SRS_IDFT_OVERSAMP_FACTOR 16
 #define dBc(x,y) (dB_fixed(((int32_t)(x))*(x) + ((int32_t)(y))*(y)))
+
+/* Generic function to find the peak of channel estimation buffer */
+void peak_estimator(int32_t *buffer, int32_t buf_len, int32_t *peak_idx, int32_t *peak_val, int32_t mean_val)
+{
+  int32_t max_val = 0, max_idx = 0, abs_val = 0;
+  for(int k = 0; k < buf_len; k++)
+  {
+    abs_val = squaredMod(((c16_t*)buffer)[k]);
+    if(abs_val > max_val)
+    {
+      max_val = abs_val;
+      max_idx = k;
+    }
+  }
+
+  *peak_val = max_val;
+  *peak_idx = max_idx;
+
+  // Check for detection threshold
+  LOG_D(PHY, "SRS ToA estimator: max_val %d, mean_val %d, max_idx %d\n", max_val, mean_val, max_idx);
+  /*if ((mean_val != 0) && (max_val / mean_val > 10)) {
+    *peak_val = max_val;
+    *peak_idx = max_idx;
+  } else {
+    *peak_val = 0;
+    *peak_idx = 0;
+  }*/
+}
 
 __attribute__((always_inline)) inline c16_t c32x16cumulVectVectWithSteps(c16_t *in1,
                                                                          int *offset1,
@@ -641,6 +671,14 @@ int nr_srs_channel_estimation(const PHY_VARS_gNB *gNB,
   int16_t noise_real[frame_parms->nb_antennas_rx*N_ap*M_sc_b_SRS];
   int16_t noise_imag[frame_parms->nb_antennas_rx*N_ap*M_sc_b_SRS];
   int16_t ls_estimated[2];
+  
+  int32_t ch_pwr = 0, mean_val = 0, srs_toa = 0;
+  int32_t chF_interpol[frame_parms->nb_antennas_rx][N_ap][NR_SRS_IDFT_OVERSAMP_FACTOR*gNB->frame_parms.ofdm_symbol_size] __attribute__((aligned(32)));
+  int32_t chT_interpol[frame_parms->nb_antennas_rx][N_ap][NR_SRS_IDFT_OVERSAMP_FACTOR*gNB->frame_parms.ofdm_symbol_size] __attribute__((aligned(32)));
+  memset(chF_interpol,0,sizeof(chF_interpol));
+  memset(chT_interpol,0,sizeof(chT_interpol));
+  int16_t start_offset = (NR_SRS_IDFT_OVERSAMP_FACTOR*gNB->frame_parms.ofdm_symbol_size)-(gNB->frame_parms.ofdm_symbol_size>>1);
+
 
   uint8_t mem_offset = ((16 - ((long)&srs_estimated_channel_freq[0][0][subcarrier_offset + nr_srs_info->k_0_p[0][0]])) & 0xF) >> 2; // >> 2 <=> /sizeof(int32_t)
 
@@ -833,6 +871,41 @@ int nr_srs_channel_estimation(const PHY_VARS_gNB *gNB,
       memcpy(&srs_estimated_channel_time_shifted[ant][p_index][gNB->frame_parms.ofdm_symbol_size>>1],
              &srs_estimated_channel_time[ant][p_index][0],
              (gNB->frame_parms.ofdm_symbol_size>>1)*sizeof(int32_t));
+      
+      // Place SRS channel estimates in FFT shifted format for oversampling
+      memcpy((int16_t *)&chF_interpol[ant][p_index][0], &srs_estimated_channel_freq[ant][p_index][0], (gNB->frame_parms.ofdm_symbol_size>>1) * sizeof(int32_t));
+      memcpy((int16_t *)&chF_interpol[ant][p_index][start_offset], &srs_estimated_channel_freq[ant][p_index][gNB->frame_parms.ofdm_symbol_size>>1], (gNB->frame_parms.ofdm_symbol_size>>1) * sizeof(int32_t));
+      // Convert to time domain oversampled
+      freq2time(gNB->frame_parms.ofdm_symbol_size*NR_SRS_IDFT_OVERSAMP_FACTOR,
+                (int16_t*) chF_interpol[ant][p_index],
+                (int16_t*) chT_interpol[ant][p_index]);
+      // Add T tracer to log these chF and chT
+      
+      T(T_GNB_PHY_UL_FREQ_CHANNEL_ESTIMATE_OVER_SAMPLING,
+          T_INT(0),
+          T_INT(srs_pdu->rnti),
+          T_INT(frame),
+          T_INT(0),
+          T_INT(0),
+          T_BUFFER(chF_interpol[0][0], NR_SRS_IDFT_OVERSAMP_FACTOR*frame_parms->ofdm_symbol_size * sizeof(int32_t)));
+
+      T(T_GNB_PHY_UL_TIME_CHANNEL_ESTIMATE_OVER_SAMPLING,
+          T_INT(0),
+          T_INT(srs_pdu->rnti),
+          T_INT(frame),
+          T_INT(0),
+          T_INT(0),
+          T_BUFFER(chT_interpol[0][0], NR_SRS_IDFT_OVERSAMP_FACTOR*frame_parms->ofdm_symbol_size * sizeof(int32_t)));
+
+      // peak estimator
+      peak_estimator(&chT_interpol[ant][p_index][0], NR_SRS_IDFT_OVERSAMP_FACTOR * gNB->frame_parms.ofdm_symbol_size, &srs_toa, &ch_pwr, mean_val);
+
+      float ul_toa = srs_toa/(float)NR_SRS_IDFT_OVERSAMP_FACTOR;
+
+      if(ul_toa > frame_parms->ofdm_symbol_size >>1)
+	      ul_toa = ul_toa - frame_parms->ofdm_symbol_size;
+
+      LOG_I(NR_PHY,"SRS peak detector interpolated by higher fft %.1f srs_toa %d, ch_pwr %d\n",ul_toa,srs_toa, ch_pwr);
 
     } // for (int p_index = 0; p_index < N_ap; p_index++)
   } // for (int ant = 0; ant < frame_parms->nb_antennas_rx; ant++)

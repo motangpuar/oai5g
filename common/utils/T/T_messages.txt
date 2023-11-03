@@ -109,6 +109,14 @@ ID = GNB_PHY_DL_OUTPUT_SIGNAL
     DESC = gNodeB output data in the freq domain for slots
     GROUP = ALL:PHY:GRAPHIC:HEAVY:GNB
     FORMAT = int,gNB_ID : int,frame : int,slot : int,antenna : buffer,txdata
+ID = GNB_PHY_UL_FREQ_CHANNEL_ESTIMATE_OVER_SAMPLING
+    DESC = gNodeB channel estimation in the frequency domain
+    GROUP = ALL:PHY:GRAPHIC:HEAVY:GNB
+    FORMAT = int,gNB_ID : int,rnti : int,frame : int,subframe : int,antenna : buffer,chest_f
+ID = GNB_PHY_UL_TIME_CHANNEL_ESTIMATE_OVER_SAMPLING
+    DESC = gNodeB channel estimation in the time domain
+    GROUP = ALL:PHY:GRAPHIC:HEAVY:GNB
+    FORMAT = int,gNB_ID : int,rnti : int,frame : int,subframe : int,antenna : buffer,chest_t
 
 #MAC logs
 ID = ENB_MAC_UE_DL_SDU
