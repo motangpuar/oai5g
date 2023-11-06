@@ -1211,7 +1211,10 @@ int main(int argc, char *argv[])
         } /*End input_fd */
 
         if (pusch_pdu->pdu_bit_map & PUSCH_PDU_BITMAP_PUSCH_PTRS) {
-          set_ptrs_symb_idx(&ptrsSymPos, pusch_pdu->nr_of_symbols, pusch_pdu->start_symbol_index, 1 << ptrs_time_density, pusch_pdu->ul_dmrs_symb_pos);
+          ptrsSymPos = get_ptrs_symb_idx(pusch_pdu->nr_of_symbols,
+                                         pusch_pdu->start_symbol_index,
+                                         1 << ptrs_time_density,
+                                         pusch_pdu->ul_dmrs_symb_pos);
           ptrsSymbPerSlot = get_ptrs_symbols_in_slot(ptrsSymPos, pusch_pdu->start_symbol_index, pusch_pdu->nr_of_symbols);
           ptrsRePerSymb = ((pusch_pdu->rb_size + ptrs_freq_density - 1) / ptrs_freq_density);
           LOG_D(PHY, "[ULSIM] PTRS Symbols in a slot: %2u, RE per Symbol: %3u, RE in a slot %4d\n", ptrsSymbPerSlot, ptrsRePerSymb, ptrsSymbPerSlot * ptrsRePerSymb);
@@ -1242,7 +1245,8 @@ int main(int argc, char *argv[])
                                gNB->frame_parms.N_RB_UL,
                                offset,
                                0,
-                               gNB->frame_parms.Ncp == EXTENDED ? 12 : 14);
+                               gNB->frame_parms.Ncp == EXTENDED ? 12 : 14,
+                               false);
         }
 
         ul_proc_error = phy_procedures_gNB_uespec_RX(gNB, frame, slot);

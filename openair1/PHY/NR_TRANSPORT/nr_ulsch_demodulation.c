@@ -1522,18 +1522,22 @@ int nr_rx_pusch_tp(PHY_VARS_gNB *gNB,
 
   nvar /= (rel15_ul->nr_of_symbols * rel15_ul->nrOfLayers * frame_parms->nb_antennas_rx);
 
-  // averaging time domain channel estimates
-  if (gNB->chest_time == 1) 
-  {
-    nr_chest_time_domain_avg(frame_parms,
-                             pusch_vars->ul_ch_estimates,
-                             rel15_ul->nr_of_symbols,
-                             rel15_ul->start_symbol_index,
-                             rel15_ul->ul_dmrs_symb_pos,
-                             rel15_ul->rb_size);
-    pusch_vars->dmrs_symbol = get_next_dmrs_symbol_in_slot(rel15_ul->ul_dmrs_symb_pos, 
-                                                           rel15_ul->start_symbol_index, 
-                                                           rel15_ul->nr_of_symbols);
+  if (gNB->chest_time == 1) { // averaging time domain channel estimates
+    for (int aarx = 0; aarx < frame_parms->nb_antennas_rx; aarx++) {
+      nr_chest_time_domain_avg(frame_parms,
+                               rel15_ul->nr_of_symbols,
+                               rel15_ul->start_symbol_index,
+                               rel15_ul->ul_dmrs_symb_pos,
+                               rel15_ul->rb_size,
+                               0,
+                               0,
+                               0,
+                               false,
+                               (c16_t *)pusch_vars->ul_ch_estimates[aarx]);
+    }
+
+    pusch_vars->dmrs_symbol =
+        get_next_dmrs_symbol_in_slot(rel15_ul->ul_dmrs_symb_pos, rel15_ul->start_symbol_index, rel15_ul->nr_of_symbols);
   }
 
   stop_meas(&gNB->ulsch_channel_estimation_stats);

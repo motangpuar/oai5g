@@ -72,12 +72,13 @@ void nr_gold_pdcch(PHY_VARS_NR_UE* ue,
   }
 }
 
-void nr_gold_pdsch(PHY_VARS_NR_UE* ue,
-                   int nscid,
-                   uint32_t nid) {
-  unsigned int x1 = 0, x2 = 0, x2tmp0 = 0;
+void nr_gold_pdsch(const int nscid, const unsigned int nid, PHY_VARS_NR_UE* ue)
+{
+  unsigned int x1 = 0;
+  const int pdsch_dmrs_init_length = ((ue->frame_parms.N_RB_DL * 12) >> 5) + 1;
+  unsigned int x2 = 0;
+  int x2tmp0 = 0;
   uint8_t reset;
-  int pdsch_dmrs_init_length =  ((ue->frame_parms.N_RB_DL*12)>>5)+1;
 
   for (int ns=0; ns<ue->frame_parms.slots_per_frame; ns++) {
 

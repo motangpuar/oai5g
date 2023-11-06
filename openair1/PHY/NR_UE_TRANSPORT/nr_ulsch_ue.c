@@ -253,13 +253,7 @@ void nr_ue_ulsch_procedures(PHY_VARS_NR_UE *UE,
 
     beta_ptrs = 1; // temp value until power control is implemented
 
-    ulsch_ue->ptrs_symbols = 0;
-
-    set_ptrs_symb_idx(&ulsch_ue->ptrs_symbols,
-                      number_of_symbols,
-                      start_symbol,
-                      L_ptrs,
-                      ul_dmrs_symb_pos);
+    ulsch_ue->ptrs_symbols = get_ptrs_symb_idx(number_of_symbols, start_symbol, L_ptrs, ul_dmrs_symb_pos);
   }
 
   ///////////

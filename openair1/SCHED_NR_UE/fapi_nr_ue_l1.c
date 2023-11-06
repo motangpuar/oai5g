@@ -386,8 +386,8 @@ int8_t nr_ue_scheduled_response(nr_scheduled_response_t *scheduled_response){
     int slot = scheduled_response->slot;
 
     // Note: we have to handle the thread IDs for this. To be revisited completely.
-    NR_UE_CSI_IM *csiim_vars = PHY_vars_UE_g[module_id][cc_id]->csiim_vars[0];
-    NR_UE_CSI_RS *csirs_vars = PHY_vars_UE_g[module_id][cc_id]->csirs_vars[0];
+    NR_UE_CSI_IM *csiim_vars = &((nr_phy_data_t *)scheduled_response->phy_data)->csiim_vars;
+    NR_UE_CSI_RS *csirs_vars = &((nr_phy_data_t *)scheduled_response->phy_data)->csirs_vars;
     NR_UE_PDCCH_CONFIG *phy_pdcch_config = NULL;
 
     if(scheduled_response->dl_config != NULL){
