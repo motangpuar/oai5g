@@ -751,7 +751,7 @@ void check_and_process_dci(nfapi_nr_dl_tti_request_t *dl_tti_request,
             .frame_rx = frame,
             .slot_rx = slot,
             .slot_tx = (slot + slot_ahead) % slots_per_frame,
-            .frame_tx = (ul_info.slot_rx + slot_ahead >= slots_per_frame) ? ul_info.frame_rx + 1 : ul_info.frame_rx};
+            .frame_tx = (slot + slot_ahead >= slots_per_frame) ? frame + 1 : frame};
       nr_ue_ul_scheduler(&ul_info);
     }
 }

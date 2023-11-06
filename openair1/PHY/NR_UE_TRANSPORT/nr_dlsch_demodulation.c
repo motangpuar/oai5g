@@ -271,7 +271,7 @@ int nr_rx_pdsch(PHY_VARS_NR_UE *ue,
   int nr_slot_rx = proc->nr_slot_rx;
   int gNB_id = proc->gNB_id;
 
-  int avg[16];
+  int avg[16] = {0};
 //  int avg_0[2];
 //  int avg_1[2];
 
@@ -467,7 +467,7 @@ int nr_rx_pdsch(PHY_VARS_NR_UE *ue,
     for (aatx=0;aatx<nl;aatx++)
       for (aarx=0;aarx<n_rx;aarx++) {
         //LOG_I(PHY, "nb_rb %d len %d avg_%d_%d Power per SC is %d\n",nb_rb, len,aarx, aatx,avg[aatx*n_rx+aarx]);
-        avgs = cmax(avgs,avg[(aatx*n_rx)+aarx]);
+        avgs = cmax(avgs, avg[(aatx * n_rx) + aarx]);
         //LOG_I(PHY, "avgs Power per SC is %d\n", avgs);
         median[(aatx*n_rx)+aarx] = avg[(aatx*n_rx)+aarx];
       }
@@ -752,7 +752,7 @@ void nr_dlsch_deinterleaving(uint8_t symbol,
   N_bundle = nb_rb_pdsch/L;
   C=N_bundle/R;
 
-  uint32_t *bundle_deint = malloc(N_bundle*sizeof(uint32_t));
+  uint32_t *bundle_deint = calloc(N_bundle, sizeof(uint32_t));
 
   printf("N_bundle %u L %d nb_rb_pdsch %d\n",N_bundle, L,nb_rb_pdsch);
 

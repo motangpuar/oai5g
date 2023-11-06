@@ -257,8 +257,8 @@ void nr_polar_info_bit_pattern(uint8_t *ibp,
                                uint8_t n_PC,
                                uint8_t n_pc_wm)
 {
-  int16_t *Q_Ftmp_N = malloc(sizeof(int16_t) * (N + 1)); // Last element shows the final
-  int16_t *Q_Itmp_N = malloc(sizeof(int16_t) * (N + 1)); // array index assigned a value.
+  int16_t Q_Ftmp_N[N+1]; // Last element shows the final
+  int16_t Q_Itmp_N[N+1]; // array index assigned a value.
 
   for (int i = 0; i <= N; i++) {
     Q_Ftmp_N[i] = -1; // Empty array.
@@ -304,6 +304,7 @@ void nr_polar_info_bit_pattern(uint8_t *ibp,
   for (int n = 0; n <= N - 1; n++) {
     flag = 1;
     for (int m = 0; m <= Q_Ftmp_N[N]; m++) {
+      AssertFatal(m < N+1, "Buffer boundary overflow");
       if (Q_0_Nminus1[n] == Q_Ftmp_N[m]) {
         flag = 0;
         break;
@@ -364,8 +365,6 @@ void nr_polar_info_bit_pattern(uint8_t *ibp,
 
   }
 
-  free(Q_Ftmp_N);
-  free(Q_Itmp_N);
 }
 
 

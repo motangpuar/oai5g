@@ -929,7 +929,9 @@ void nr_generate_pucch3_4(const PHY_VARS_NR_UE *ue,
    * n_id = {0,1,...,1023}  equals the higher-layer parameter Data-scrambling-Identity if configured
    * n_id = N_ID_cell       if higher layer parameter not configured
    */
-  uint8_t *btilde = malloc(sizeof(int8_t)*M_bit);
+  uint8_t btilde[M_bit];
+  memset(btilde, 0, M_bit * sizeof(int8_t));
+  
   // rnti is given by the C-RNTI
   uint16_t rnti=pucch_pdu->rnti, n_id=0;
 #ifdef DEBUG_NR_PUCCH_TX
@@ -946,8 +948,8 @@ void nr_generate_pucch3_4(const PHY_VARS_NR_UE *ue,
    * Subclause 5.1.3 QPSK
    */
   // complex-valued symbol d(0)
-  int16_t *d_re = malloc(sizeof(int16_t)*M_bit);
-  int16_t *d_im = malloc(sizeof(int16_t)*M_bit);
+  int16_t *d_re = calloc(M_bit, sizeof(int16_t));
+  int16_t *d_im = calloc(M_bit, sizeof(int16_t));
   uint16_t m_symbol = (M_bit%2==0) ? M_bit/2 : floor(M_bit/2)+1;
 
   if (is_pi_over_2_bpsk_enabled == 0) {
@@ -1020,8 +1022,8 @@ void nr_generate_pucch3_4(const PHY_VARS_NR_UE *ue,
   // number of symbols, provided by higher layers parameters PUCCH-F0-F2-number-of-symbols or PUCCH-F1-F3-F4-number-of-symbols
   // uint8_t nrofSymbols;
   // complex-valued symbol d(0)
-  int16_t *y_n_re = malloc(sizeof(int16_t)*4*M_bit); // 4 is the maximum number n_SF_PUCCH_s, so is the maximunm size of y_n
-  int16_t *y_n_im = malloc(sizeof(int16_t)*4*M_bit);
+  int16_t *y_n_re = calloc(4*M_bit, sizeof(int16_t)); // 4 is the maximum number n_SF_PUCCH_s, so is the maximunm size of y_n
+  int16_t *y_n_im = calloc(4*M_bit, sizeof(int16_t));
   // Re part orthogonal sequences w_n(k) for PUCCH format 4 when N_SF_PUCCH4 = 2 (Table 6.3.2.6.3-1)
   // k={0,..11} n={0,1,2,3}
   // parameter PUCCH-F4-preDFT-OCC-index set of {0,1,2,3} -> n
@@ -1102,8 +1104,12 @@ void nr_generate_pucch3_4(const PHY_VARS_NR_UE *ue,
   /*
    * Implementing Transform pre-coding subclause 6.3.2.6.4
    */
-  int16_t *z_re = malloc(sizeof(int16_t)*4*M_bit); // 4 is the maximum number n_SF_PUCCH_s
-  int16_t *z_im = malloc(sizeof(int16_t)*4*M_bit);
+
+  int16_t z_re[4*M_bit]; // 4 is the maximum number n_SF_PUCCH_s
+  memset(z_re, 0, 4*M_bit*sizeof(int16_t));
+  int16_t z_im[4*M_bit]; 
+  memset(z_im, 0, 4*M_bit*sizeof(int16_t));
+
 #define M_PI 3.14159265358979323846 // pi
 
   //int16_t inv_sqrt_nrofPRBs = (int16_t)round(32767/sqrt(12*nrofPRB));
@@ -1334,7 +1340,4 @@ void nr_generate_pucch3_4(const PHY_VARS_NR_UE *ue,
       if (table_6_4_1_3_3_2_1_dmrs_positions[nrofSymbols-4][l] == 1) j+=12;
     }
   }
-  free(z_re);
-  free(z_im);
-  free(btilde);
 }
