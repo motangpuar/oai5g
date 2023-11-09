@@ -118,6 +118,12 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
     UE_iterator((NR_UE_info_t **)mac->UE_info.list, it) {
       nr_rlc_statistics_t rlc = {0};
       nr_rlc_get_statistics(it->rnti, srb_flag, rb_id, &rlc);
+      // static var last_total: we might have old data, larger than what
+      // reports RLC, leading to a huge number -> cut off to zero
+      if (last_total[i].dl > rlc.txpdu_bytes)
+        last_total[i].dl = rlc.txpdu_bytes;
+      if (last_total[i].ul > rlc.rxpdu_bytes)
+        last_total[i].ul = rlc.rxpdu_bytes;
       thr[i].dl = (rlc.txpdu_bytes - last_total[i].dl) * 8 / diff_msec;
       thr[i].ul = (rlc.rxpdu_bytes - last_total[i].ul) * 8 / diff_msec;
       last_total[i].dl = rlc.txpdu_bytes;
@@ -187,7 +193,7 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
       int i = 0;
       UE_iterator((NR_UE_info_t **)mac->UE_info.list, it) {
         if (!first) { prnt(", "); }
-        prnt("      {\"rnti\": %d, \"dl\": %d, \"ul\": %d}\n", it->rnti, thr[i].dl, thr[i].ul);
+        prnt("      {\"rnti\": %d, \"dl\": %ld, \"ul\": %ld}\n", it->rnti, thr[i].dl, thr[i].ul);
         i++;
         first = false;
       }
