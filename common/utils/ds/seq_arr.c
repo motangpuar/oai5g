@@ -106,7 +106,7 @@ void seq_arr_erase(seq_arr_t* arr, void* start_it)
   return seq_arr_erase_deep(arr, start_it, NULL);
 }
 
-void seq_arr_erase_deep(seq_arr_t* arr, void* start_it, seq_free_func free_func)
+void seq_arr_erase_deep(seq_arr_t* arr, void* start_it, void (*free_func)(void* it))
 {
   // start_it must be in the range of arr->data
   assert(arr != NULL);
@@ -114,7 +114,7 @@ void seq_arr_erase_deep(seq_arr_t* arr, void* start_it, seq_free_func free_func)
   return seq_arr_erase_it(arr, start_it, seq_arr_next(arr, start_it), free_func); 
 }
 
-void seq_arr_erase_it(seq_arr_t* arr, void* start_it, void* end_it, seq_free_func free_func)
+void seq_arr_erase_it(seq_arr_t* arr, void* start_it, void* end_it, void (*free_func)(void* it))
 {
   // start_it && end_it must be in the range of arr->data
   assert(arr != NULL);
@@ -147,33 +147,33 @@ void seq_arr_erase_it(seq_arr_t* arr, void* start_it, void* end_it, seq_free_fun
   maybe_shrink(arr);
 }
 
-size_t seq_arr_size(seq_arr_t* arr)
+size_t seq_arr_size(seq_arr_t const* arr)
 {
   assert(arr != NULL);
   return arr->size;
 }
 
-void* seq_arr_front(seq_arr_t* arr)
+void* seq_arr_front(seq_arr_t const* arr)
 {
   assert(arr != NULL);
   return arr->data;
 }
 
-void* seq_arr_next(seq_arr_t* arr, void* it)
+void* seq_arr_next(seq_arr_t const* arr, void const* it)
 {
   assert(arr != NULL);
   assert(it != NULL);
   return (uint8_t*)it + arr->elt_size;
 }
 
-void* seq_arr_end(seq_arr_t* arr)
+void* seq_arr_end(seq_arr_t const* arr)
 {
   assert(arr != NULL);
   assert(arr->data != NULL);
   return &arr->data[arr->size*arr->elt_size];
 }
 
-void* seq_arr_at(seq_arr_t* arr, uint32_t pos)
+void* seq_arr_at(seq_arr_t const* arr, uint32_t pos)
 {
   assert(arr != NULL);
   assert(arr->data != NULL);
@@ -181,7 +181,7 @@ void* seq_arr_at(seq_arr_t* arr, uint32_t pos)
   return arr->data + pos*arr->elt_size;
 }
 
-ptrdiff_t seq_arr_dist(seq_arr_t* arr, void* first, void* last)
+ptrdiff_t seq_arr_dist(seq_arr_t const* arr, void const* first, void const* last)
 {
   assert(arr != NULL);
   assert(first != NULL);

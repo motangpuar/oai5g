@@ -22,29 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "find.h"
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef FOR_EACH_ALGORITHM
+#define FOR_EACH_ALGORITHM 
 
-elm_arr_t find_if_arr_it(seq_arr_t* arr, void* start_it, void* end_it, void* value , bool(*f)(const void*, const void*))
-{
-  assert(arr != NULL);
+#include "../ds/seq_arr.h"
 
-  while(start_it != end_it){
-    if(f(value,start_it)) 
-      return (elm_arr_t){.found = true, .it = start_it};  
-    start_it = seq_arr_next(arr,start_it);
-  }
-  // If I trusted the average developer I should return it=start_it, but I don't.
-  return (elm_arr_t){.found = false, .it = NULL}; 
-}
+/**
+  * @brief Apply function to each element in the sequence container 
+  * @param arr The sequence container 
+  * @param value Pointer to the value that will be used by the function applied 
+  * @param fn_apply Function called by every element in the sequence container 
+*/
+void for_each(seq_arr_t* arr, void* value, void (*fn_apply)(void* value, void* it));
 
-elm_arr_t find_if_arr(seq_arr_t* arr, void* value , bool(*f)(const void*, const void*))
-{
-  assert(arr != NULL);
-  void* start_it = seq_arr_front(arr);
-  void* end_it = seq_arr_end(arr); 
-  return find_if_arr_it(arr, start_it, end_it, value, f);
-}
-
+#endif

@@ -4,3 +4,8 @@ add_library(ds OBJECT
 )
 
 target_include_directories(ds PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(ENABLE_TESTS)
+  add_subdirectory(tests)
+endif()
+
