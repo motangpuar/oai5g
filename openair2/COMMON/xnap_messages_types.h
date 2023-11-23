@@ -27,12 +27,17 @@
 #ifndef XNAP_MESSAGES_TYPES_H_
 #define XNAP_MESSAGES_TYPES_H_
 
+#include "s1ap_messages_types.h"
+#include "ngap_messages_types.h"
+#include "NR_PhysCellId.h"
+#include "asn_codecs_prim.h"
 // Defines to access message fields.
 
 #define XNAP_REGISTER_GNB_REQ(mSGpTR) (mSGpTR)->ittiMsg.xnap_register_gnb_req
 #define XNAP_SETUP_REQ(mSGpTR) (mSGpTR)->ittiMsg.xnap_setup_req
 #define XNAP_SETUP_RESP(mSGpTR) (mSGpTR)->ittiMsg.xnap_setup_resp
 #define XNAP_SETUP_FAILURE(mSGpTR) (mSGpTR)->ittiMsg.xnap_setup_failure
+#define XNAP_HANDOVER_REQ(mSGpTR) (mSGpTR)->ittiMsg.xnap_handover_req
 
 #define XNAP_MAX_NB_GNB_IP_ADDRESS 4
 
@@ -45,7 +50,47 @@ typedef struct xnap_net_ip_address_s {
   char ipv6_address[46];
 } xnap_net_ip_address_t;
 
+<<<<<<< HEAD
 typedef struct xnap_sctp_s {
+=======
+typedef struct xnap_register_gnb_req_s {
+  uint32_t gNB_id;
+  char *gNB_name;
+  /* Tracking area code */
+  uint16_t tac;
+
+  /* Mobile Country Code
+   * Mobile Network Code
+   */
+  uint16_t mcc;
+  uint16_t mnc;
+  uint8_t mnc_digit_length;
+  int16_t eutra_band;
+  int32_t nr_band;
+  int32_t nrARFCN;
+  uint32_t downlink_frequency;
+  int32_t uplink_frequency_offset;
+  uint32_t Nid_cell;
+  int16_t N_RB_DL;
+  frame_type_t frame_type;
+  uint32_t fdd_earfcn_DL;
+  uint32_t fdd_earfcn_UL;
+  uint32_t subframeAssignment;
+  uint32_t specialSubframe;
+  uint16_t tdd_nRARFCN;
+  uint16_t tdd_Transmission_Bandwidth;
+
+  /* The local gNB IP address to bind */
+  gnb_ip_address_t gnb_xn_ip_address;
+
+  /* Nb of GNB to connect to */
+  uint8_t nb_xn;
+
+  /* List of target gNB to connect to for Xn*/
+  gnb_ip_address_t target_gnb_xn_ip_address[XNAP_MAX_NB_GNB_IP_ADDRESS];
+
+  /* Number of SCTP streams used for associations */
+>>>>>>> b05e275c38 (xnap-targetgnb)
   uint16_t sctp_in_streams;
   uint16_t sctp_out_streams;
 } xnap_sctp_t;
@@ -71,6 +116,7 @@ typedef struct xnap_amf_regioninfo_s {
   uint8_t amf_region_id;
 } xnap_amf_regioninfo_t;
 
+<<<<<<< HEAD
 typedef enum xnap_mode_t { XNAP_MODE_TDD = 0, XNAP_MODE_FDD = 1 } xnap_mode_t;
 
 typedef struct xnap_nr_frequency_info_t {
@@ -166,4 +212,78 @@ typedef struct xnap_setup_failure_s {
   uint16_t time_to_wait;
   uint16_t criticality_diagnostics;
 } xnap_setup_failure_t;
+=======
+typedef struct xnap_lastvisitedcell_info_s {
+  uint16_t mcc;
+  uint16_t mnc;
+  uint8_t mnc_len;
+  NR_PhysCellId_t target_physCellId;
+  cell_type_t cell_type;
+  uint64_t time_UE_StayedInCell;
+} xnap_lastvisitedcell_info_t;
+
+typedef struct xnap_allocation_retention_priority_s {
+  ngap_priority_level_t priorityLevel;
+  ngap_pre_emp_capability_t pre_emp_capability;
+  ngap_pre_emp_vulnerability_t pre_emp_vulnerability;
+} xnap_allocation_retention_priority_t;
+
+typedef struct xnap_pdusession_level_qos_parameter_s {
+  uint8_t qfi;
+  long non_dynamic_fiveQI;
+  long dynamic_priorityLevelQoS;
+  long dynamic_packetDelayBudget;
+  long dynamic_packetErrorRate_scalar;
+  long dynamic_packetErrorRate_exponent;
+  ngap_allocation_retention_priority_t allocation_retention_priority;
+} xnap_pdusession_level_qos_parameter_t;
+
+typedef struct xnap_pdusession_s {
+  /* Unique pdusession_id for the UE. */
+  uint8_t pdusession_id;
+  transport_layer_addr_t gNB_addr;
+  /* UPF Tunnel endpoint identifier */
+  uint32_t gtp_teid;
+  /* Quality of service for this pdusession */
+  xnap_pdusession_level_qos_parameter_t qos[QOSFLOW_MAX_VALUE];
+} xnap_pdusession_t;
+
+typedef struct xnap_handover_req_s {
+  /* RRC->XNAP in source eNB */
+  int rnti;
+
+  /* XNAP->RRC in target eNB */
+  int xn_id;
+
+  NR_PhysCellId_t target_physCellId;
+
+  xnap_guami_t ue_guami;
+
+  /*UE-ContextInformation */
+
+  /* ? amf UE id  */
+  ASN__PRIMITIVE_TYPE_t ue_ngap_id;
+  security_capabilities_t security_capabilities;
+  uint8_t kenb[32]; // keNB or keNB*
+
+  /*next_hop_chaining_coun */
+  long int kenb_ncc;
+
+  /* UE aggregate maximum bitrate */
+  ambr_t ue_ambr;
+
+  uint8_t nb_pdu_resources_tobe_setup;
+
+  /* list of pdu session to be setup by RRC layers */
+  xnap_pdusession_t pdu_param[NGAP_MAX_PDUSESSION];
+
+  xnap_lastvisitedcell_info_t lastvisitedcell_info;
+
+  uint8_t rrc_buffer[8192 /* arbitrary, big enough */];
+  int rrc_buffer_size;
+
+  int target_assoc_id;
+} xnap_handover_req_t;
+
+>>>>>>> b05e275c38 (xnap-targetgnb)
 #endif /* XNAP_MESSAGES_TYPES_H_ */

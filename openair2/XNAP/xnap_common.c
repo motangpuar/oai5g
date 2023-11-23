@@ -20,7 +20,8 @@
  */
 
 /*! \file xnap_common.c
- * \brief xnap encoder,decoder dunctions for gNB
+<<<<<<< HEAD
+ * \brief xnap common functions for gNB
  * \author Sreeshma Shiv <sreeshmau@iisc.ac.in>
  * \date Dec 2023
  * \version 1.0
@@ -71,3 +72,27 @@ int xnap_gNB_decode_pdu(XNAP_XnAP_PDU_t *pdu, const uint8_t *const buffer, uint3
   }
   return 0;
 }
+
+int xnap_allocate_new_id(xnap_id_manager *m)
+{
+  int i;
+  for (i = 0; i < XNAP_MAX_IDS; i++)
+    if (m->ids[i].rnti == -1) {
+      m->ids[i].rnti = 0;
+      m->ids[i].id_source = -1;
+      m->ids[i].id_target = -1;
+      return i;
+    }
+  return -1;
+}
+void xnap_set_ids(xnap_id_manager *m, int ue_id, int rnti, int id_source, int id_target)
+{
+  m->ids[ue_id].rnti      = rnti;
+  m->ids[ue_id].id_source = id_source;
+  m->ids[ue_id].id_target = id_target;
+}
+void xnap_id_set_state(xnap_id_manager *m, int ue_id, xnid_state_t state)
+{
+  m->ids[ue_id].state = state;
+}
+

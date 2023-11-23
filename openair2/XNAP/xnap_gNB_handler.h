@@ -35,5 +35,4 @@ int xnap_gNB_handle_message(instance_t instance,
                             int32_t stream,
                             const uint8_t *const data,
                             const uint32_t data_length);
-
 #endif /* XNAP_GNB_HANDLERS_H_ */

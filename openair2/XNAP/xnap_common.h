@@ -35,8 +35,11 @@
 #include "oai_asn1.h"
 
 #ifndef XNAP_PORT
-#define XNAP_PORT 38423
+#define XNAP_PORT 38422
 #endif
+
+/* maximum number of simultaneous handovers */
+#define XNAP_MAX_IDS 16
 
 extern int asn1_xer_print;
 
@@ -58,4 +61,35 @@ extern int asn1_xer_print;
 typedef int (*xnap_message_decoded_callback)(instance_t instance, sctp_assoc_t assocId, uint32_t stream, XNAP_XnAP_PDU_t *pdu);
 int xnap_gNB_decode_pdu(XNAP_XnAP_PDU_t *pdu, const uint8_t *const buffer, uint32_t length) __attribute__((warn_unused_result));
 int xnap_gNB_encode_pdu(XNAP_XnAP_PDU_t *pdu, uint8_t **buffer, uint32_t *len) __attribute__((warn_unused_result));
+typedef enum {
+  XNID_STATE_SOURCE_PREPARE,
+  XNID_STATE_SOURCE_OVERALL,
+  XNID_STATE_TARGET,
+} xnid_state_t;
+
+typedef struct {
+  int rnti; /* -1 when free */
+  int id_source;
+  int id_target;
+
+  void *target;
+
+  /* state: needed to check timers */
+  xnid_state_t state;
+
+  /* timers */
+  uint64_t t_reloc_prep_start;
+  uint64_t txn_reloc_overall_start;
+  uint64_t t_dc_prep_start;
+  uint64_t t_dc_overall_start;
+} xnap_id;
+
+typedef struct {
+  xnap_id ids[XNAP_MAX_IDS];
+} xnap_id_manager;
+
+int xnap_allocate_new_id(xnap_id_manager *m);
+void xnap_set_ids(xnap_id_manager *m, int ue_id, int rnti, int id_source, int id_target);
+void xnap_id_set_state(xnap_id_manager *m, int ue_id, xnid_state_t state);
+
 #endif /* XNAP_COMMON_H_ */

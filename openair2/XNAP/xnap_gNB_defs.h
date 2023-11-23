@@ -23,6 +23,7 @@
 #include "tree.h"
 #include "sctp_eNB_defs.h"
 #include "xnap_messages_types.h"
+#include "xnap_common.h"
 
 #ifndef XNAP_GNB_DEFS_H_
 #define XNAP_GNB_DEFS_H_

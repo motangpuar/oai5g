@@ -33,3 +33,4 @@ MESSAGE_DEF(XNAP_REGISTER_GNB_REQ, MESSAGE_PRIORITY_MED, xnap_register_gnb_req_t
 MESSAGE_DEF(XNAP_SETUP_REQ, MESSAGE_PRIORITY_MED, xnap_setup_req_t, xnap_setup_req)
 MESSAGE_DEF(XNAP_SETUP_RESP, MESSAGE_PRIORITY_MED, xnap_setup_resp_t, xnap_setup_resp)
 MESSAGE_DEF(XNAP_SETUP_FAILURE, MESSAGE_PRIORITY_MED, xnap_setup_failure_t, xnap_setup_failure)
+MESSAGE_DEF(XNAP_HANDOVER_REQ, MESSAGE_PRIORITY_MED, xnap_handover_req_t, xnap_handover_req)
