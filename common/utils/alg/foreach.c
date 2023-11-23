@@ -33,10 +33,8 @@ void for_each(seq_arr_t* arr, void* value, void (*f)(void* value, void* it))
 
   void* it = seq_arr_front(arr);
   void* end = seq_arr_end(arr);
-  while(it != end){
+  while (it != end) {
     f(value, it);
-    it = seq_arr_next(arr,it);
+    it = seq_arr_next(arr, it);
   }
-
 }
-
