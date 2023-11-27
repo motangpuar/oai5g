@@ -378,6 +378,9 @@ int rrc_gNB_process_NGAP_INITIAL_CONTEXT_SETUP_REQ(MessageDef *msg_p, instance_t
   uint8_t nb_pdusessions_tosetup = req->nb_of_pdusessions;
   if (nb_pdusessions_tosetup) {
     AssertFatal(false, "PDU sessions in Initial context setup request not handled by E1 yet\n");
+    /* this code should pass by E1: commenting here for future reference, but
+     * already handled in E1 for the "normal case" of a separate request for
+     * PDU session setup.
     gtpv1u_gnb_create_tunnel_req_t create_tunnel_req = {0};
     for (int i = 0; i < nb_pdusessions_tosetup; i++) {
       UE->nb_of_pdusessions++;
@@ -404,6 +407,7 @@ int rrc_gNB_process_NGAP_INITIAL_CONTEXT_SETUP_REQ(MessageDef *msg_p, instance_t
     }
 
     nr_rrc_gNB_process_GTPV1U_CREATE_TUNNEL_RESP(&ctxt, &create_tunnel_resp, 0);
+    */
   }
 
   /* NAS PDU */
@@ -757,14 +761,17 @@ void rrc_gNB_process_NGAP_PDUSESSION_SETUP_REQ(MessageDef *msg_p, instance_t ins
   UE->amf_ue_ngap_id = msg->amf_ue_ngap_id;
   e1ap_bearer_setup_req_t bearer_req = {0};
 
+
+  e1ap_nssai_t cuup_nssai = {0};
   for (int i = 0; i < msg->nb_pdusessions_tosetup; i++) {
     rrc_pdu_session_param_t *pduSession = find_pduSession(UE, msg->pdusession_setup_params[i].pdusession_id, true);
     pdusession_t *session = &pduSession->param;
-    LOG_I(NR_RRC, "Adding pdusession %d, total nb of sessions %d\n", session->pdusession_id, UE->nb_of_pdusessions);
     session->pdusession_id = msg->pdusession_setup_params[i].pdusession_id;
+    LOG_I(NR_RRC, "Adding pdusession %d, total nb of sessions %d\n", session->pdusession_id, UE->nb_of_pdusessions);
     session->pdu_session_type = msg->pdusession_setup_params[i].pdu_session_type;
     session->nas_pdu = msg->pdusession_setup_params[i].nas_pdu;
     session->pdusessionTransfer = msg->pdusession_setup_params[i].pdusessionTransfer;
+    session->nssai = msg->pdusession_setup_params[i].nssai;
     decodePDUSessionResourceSetup(session);
     bearer_req.gNB_cu_cp_ue_id = msg->gNB_ue_ngap_id;
     bearer_req.cipheringAlgorithm = UE->ciphering_algorithm;
@@ -775,7 +782,11 @@ void rrc_gNB_process_NGAP_PDUSESSION_SETUP_REQ(MessageDef *msg_p, instance_t ins
     pdu_session_to_setup_t *pdu = bearer_req.pduSession + bearer_req.numPDUSessions;
     bearer_req.numPDUSessions++;
     pdu->sessionId = session->pdusession_id;
-    pdu->sst = msg->allowed_nssai[i].sST;
+    nssai_t *nssai = &msg->allowed_nssai[i];
+    pdu->nssai.sst = nssai->sst;
+    pdu->nssai.sd = nssai->sd;
+    if (cuup_nssai.sst == 0)
+      cuup_nssai = pdu->nssai; /* for CU-UP selection below */
     pdu->integrityProtectionIndication = rrc->security.do_drb_integrity ? E1AP_IntegrityProtectionIndication_required : E1AP_IntegrityProtectionIndication_not_needed;
 
     pdu->confidentialityProtectionIndication = rrc->security.do_drb_ciphering ? E1AP_ConfidentialityProtectionIndication_required : E1AP_ConfidentialityProtectionIndication_not_needed;
@@ -787,7 +798,7 @@ void rrc_gNB_process_NGAP_PDUSESSION_SETUP_REQ(MessageDef *msg_p, instance_t ins
 
       drb->id = i + j + UE->nb_of_pdusessions;
 
-      drb->defaultDRB = E1AP_DefaultDRB_true;
+      drb->defaultDRB = true;
 
       drb->sDAP_Header_UL = !(rrc->configuration.enable_sdap);
       drb->sDAP_Header_DL = !(rrc->configuration.enable_sdap);
@@ -823,7 +834,13 @@ void rrc_gNB_process_NGAP_PDUSESSION_SETUP_REQ(MessageDef *msg_p, instance_t ins
   }
   int xid = rrc_gNB_get_next_transaction_identifier(instance);
   UE->xids[xid] = RRC_PDUSESSION_ESTABLISH;
-  rrc->cucp_cuup.bearer_context_setup(&bearer_req, instance);
+  /* Limitation: we assume one fixed CU-UP per UE. We base the selection on
+   * NSSAI, but the UE might have multiple PDU sessions with differing slices,
+   * in which we might need to select different CU-UPs. In this case, we would
+   * actually need to group the E1 bearer context setup for the different
+   * CU-UPs, and send them to the different CU-UPs. */
+  sctp_assoc_t assoc_id = get_new_cuup_for_ue(rrc, UE, cuup_nssai.sst, cuup_nssai.sd);
+  rrc->cucp_cuup.bearer_context_setup(assoc_id, &bearer_req);
   return;
 }
 
@@ -1338,6 +1355,7 @@ int rrc_gNB_process_PAGING_IND(MessageDef *msg_p, instance_t instance)
           && RC.nrrrc[instance]->configuration.mnc[j] == NGAP_PAGING_IND(msg_p).plmn_identity[tai_size].mnc
           && RC.nrrrc[instance]->configuration.tac == NGAP_PAGING_IND(msg_p).tac[tai_size]) {
         for (uint8_t CC_id = 0; CC_id < MAX_NUM_CCs; CC_id++) {
+          AssertFatal(false, "to be implemented properly\n");
           if (NODE_IS_CU(RC.nrrrc[instance]->node_type)) {
             MessageDef *m = itti_alloc_new_message(TASK_RRC_GNB, 0, F1AP_PAGING_IND);
             F1AP_PAGING_IND(m).plmn.mcc = RC.nrrrc[j]->configuration.mcc[0];
@@ -1350,7 +1368,7 @@ int rrc_gNB_process_PAGING_IND(MessageDef *msg_p, instance_t instance)
             LOG_E(F1AP, "ueidentityindexvalue %u fiveg_s_tmsi %ld paging_drx %u\n", F1AP_PAGING_IND (m).ueidentityindexvalue, F1AP_PAGING_IND (m).fiveg_s_tmsi, F1AP_PAGING_IND (m).paging_drx);
             itti_send_msg_to_task(TASK_CU_F1, instance, m);
           } else {
-            rrc_gNB_generate_pcch_msg(NGAP_PAGING_IND(msg_p).ue_paging_identity.s_tmsi.m_tmsi,(uint8_t)NGAP_PAGING_IND(msg_p).paging_drx, instance, CC_id);
+            //rrc_gNB_generate_pcch_msg(NGAP_PAGING_IND(msg_p).ue_paging_identity.s_tmsi.m_tmsi,(uint8_t)NGAP_PAGING_IND(msg_p).paging_drx, instance, CC_id);
           } // end of nodetype check
         } // end of cc loop
       } // end of mcc mnc check

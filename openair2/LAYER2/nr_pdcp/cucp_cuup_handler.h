@@ -19,24 +19,17 @@
  *      contact@openairinterface.org
  */
 
-/* \file vars.h
- * \brief RRC layer variables
- * \author R. Knopp, K.H. HSU
- * \date 2018
- * \version 0.1
- * \company Eurecom / NTUST
- * \email: knopp@eurecom.fr, kai-hsiang.hsu@eurecom.fr
- * \note
- * \warning
- */
+#ifndef CUCP_CUUP_HANDLER_H
+#define CUCP_CUUP_HANDLER_H
 
+#include <stdbool.h>
 
-#ifndef __OPENAIR_NR_RRC_VARS_H__
-#define __OPENAIR_NR_RRC_VARS_H__
+void nr_pdcp_e1_if_init(bool uses_e1);
 
-#include "rrc_defs.h"
+struct e1ap_bearer_setup_req_s;
+struct e1ap_bearer_release_cmd_s;
+void e1_bearer_context_setup(const struct e1ap_bearer_setup_req_s *req);
+void e1_bearer_context_modif(const struct e1ap_bearer_setup_req_s *req);
+void e1_bearer_release_cmd(const struct e1ap_bearer_release_cmd_s *cmd);
 
-extern NR_UE_RRC_INST_t *NR_UE_rrc_inst;
-extern uint16_t ue_id_g;
-
-#endif
+#endif /* CUCP_CUUP_HANDLER_H */

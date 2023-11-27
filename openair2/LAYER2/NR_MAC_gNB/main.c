@@ -35,11 +35,8 @@
 #include "assertions.h"
 #include "nr_pdcp/nr_pdcp_oai_api.h"
 
-#include "RRC/NR/nr_rrc_defs.h"
 #include "common/utils/LOG/log.h"
 #include "nr_rlc/nr_rlc_oai_api.h"
-#include "RRC/NR/MESSAGES/asn1_msg.h"
-//#include "RRC/L2_INTERFACE/openair_rrc_L2_interface.h"
 #include "openair2/F1AP/f1ap_ids.h"
 
 #include "common/ran_context.h"
@@ -271,7 +268,7 @@ void mac_top_init_gNB(ngran_node_t node_type,
     AssertFatal(rlc_module_init(1) == 0,"Could not initialize RLC layer\n");
 
     // These should be out of here later
-    if (get_softmodem_params()->usim_test == 0 ) nr_pdcp_layer_init();
+    if (get_softmodem_params()->usim_test == 0 ) nr_pdcp_layer_init(false);
 
     if(IS_SOFTMODEM_NOS1 && get_softmodem_params()->phy_test) {
       // get default noS1 configuration

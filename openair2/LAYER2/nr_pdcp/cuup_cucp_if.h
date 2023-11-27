@@ -9,8 +9,6 @@
  *
  *      http://www.openairinterface.org/?page_id=698
  *
- * Author and copyright: Laurent Thomas, open-cells.com
- *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,15 +19,29 @@
  *      contact@openairinterface.org
  */
 
-#ifndef E1AP_API_H
-#define E1AP_API_H
+#ifndef CUUP_CUCP_IF_H
+#define CUUP_CUCP_IF_H
 
-#include "platform_types.h"
-#include "openair2/COMMON/e1ap_messages_types.h"
-#include "openair2/E1AP/e1ap_common.h"
-void cuup_init_n3(instance_t instance);
-void process_e1_bearer_context_setup_req(instance_t, e1ap_bearer_setup_req_t *const req);
-void CUUP_process_bearer_context_mod_req(instance_t, e1ap_bearer_setup_req_t *const req);
+#include <stdbool.h>
 
-void CUUP_process_bearer_release_command(instance_t, e1ap_bearer_release_cmd_t *const cmd);
-#endif
+struct e1ap_bearer_setup_resp_s;
+struct e1ap_bearer_modif_resp_s;
+struct e1ap_bearer_release_cplt_s;
+typedef void (*e1_bearer_setup_response_func_t)(const struct e1ap_bearer_setup_resp_s *resp);
+typedef void (*e1_bearer_modif_response_func_t)(const struct e1ap_bearer_modif_resp_s *resp);
+typedef void (*e1_bearer_release_complete_func_t)(const struct e1ap_bearer_release_cplt_s *cplt);
+
+typedef struct e1_if_t {
+  e1_bearer_setup_response_func_t bearer_setup_response;
+  e1_bearer_modif_response_func_t bearer_modif_response;
+  e1_bearer_release_complete_func_t bearer_release_complete;
+} e1_if_t;
+
+e1_if_t *get_e1_if(void);
+bool e1_used(void);
+void nr_pdcp_e1_if_init(bool uses_e1);
+
+void cuup_cucp_init_direct(e1_if_t *iface);
+void cuup_cucp_init_e1ap(e1_if_t *iface);
+
+#endif /* CUUP_CUCP_IF_H */

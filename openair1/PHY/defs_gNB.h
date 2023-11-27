@@ -87,6 +87,8 @@ typedef struct {
   uint8_t *f;
   /// LDPC lifting size
   uint32_t Z;
+  /// REs unavailable for DLSCH (overlapping with PTRS, CSIRS etc.)
+  uint32_t unav_res;
 } NR_DL_gNB_HARQ_t;
 
 typedef struct {
@@ -237,10 +239,6 @@ static inline int crcType(int nbSeg, int len)
 }
 
 typedef struct {
-  //! estimated received spatial signal power (linear)
-  fourDimArray_t * rx_spatial_power;
-  //! estimated received spatial signal power (dB)
-  fourDimArray_t * rx_spatial_power_dB;
   //! estimated rssi (dBm)
   int rx_rssi_dBm;
   //! estimated correlation (wideband linear) between spatial channels (computed in dlsch_demodulation)
@@ -266,6 +264,7 @@ typedef struct {
 typedef struct {
   uint32_t frame;
   uint32_t slot;
+  uint32_t unav_res;
   /// Pointers to 16 HARQ processes for the ULSCH
   NR_UL_gNB_HARQ_t *harq_process;
   /// HARQ process mask, indicates which processes are currently active

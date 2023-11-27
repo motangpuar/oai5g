@@ -34,7 +34,6 @@
 #include "LAYER2/NR_MAC_gNB/nr_mac_gNB.h"
 #include "NR_TAG-Id.h"
 #include "common/ngran_types.h"
-#include "rrc_messages_types.h"
 
 void set_cset_offset(uint16_t);
 
@@ -66,10 +65,6 @@ void nr_mac_update_timers(module_id_t module_id,
                           sub_frame_t slot);
 
 void gNB_dlsch_ulsch_scheduler(module_id_t module_idP, frame_t frame_rxP, sub_frame_t slot_rxP, NR_Sched_Rsp_t *sched_info);
-
-void schedule_nr_bwp_switch(module_id_t module_id,
-                            frame_t frame,
-                            sub_frame_t slot);
 
 /* \brief main DL scheduler function. Calls a preprocessor to decide on
  * resource allocation, then "post-processes" resource allocation (nFAPI
@@ -269,6 +264,8 @@ long get_K2(NR_PUSCH_TimeDomainResourceAllocationList_t *tdaList,
             int time_domain_assignment,
             int mu);
 
+const NR_DMRS_UplinkConfig_t *get_DMRS_UplinkConfig(const NR_PUSCH_Config_t *pusch_Config, const NR_tda_info_t *tda_info);
+
 NR_pusch_dmrs_t get_ul_dmrs_params(const NR_ServingCellConfigCommon_t *scc,
                                    const NR_UE_UL_BWP_t *ul_bwp,
                                    const NR_tda_info_t *tda_info,
@@ -435,12 +432,13 @@ size_t dump_mac_stats(gNB_MAC_INST *gNB, char *output, size_t strlen, bool reset
 void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE);
 
 void prepare_initial_ul_rrc_message(gNB_MAC_INST *mac, NR_UE_info_t *UE);
-void send_initial_ul_rrc_message(gNB_MAC_INST *mac, int rnti, const uint8_t *sdu, sdu_size_t sdu_len, void *rawUE);
+void send_initial_ul_rrc_message(int rnti, const uint8_t *sdu, sdu_size_t sdu_len, void *data);
 
 void abort_nr_dl_harq(NR_UE_info_t* UE, int8_t harq_pid);
 
 void nr_mac_trigger_release_timer(NR_UE_sched_ctrl_t *sched_ctrl, NR_SubcarrierSpacing_t subcarrier_spacing);
 bool nr_mac_check_release(NR_UE_sched_ctrl_t *sched_ctrl, int rnti);
+void nr_mac_release_ue(gNB_MAC_INST *mac, int rnti);
 
 void nr_mac_trigger_ul_failure(NR_UE_sched_ctrl_t *sched_ctrl, NR_SubcarrierSpacing_t subcarrier_spacing);
 void nr_mac_reset_ul_failure(NR_UE_sched_ctrl_t *sched_ctrl);
