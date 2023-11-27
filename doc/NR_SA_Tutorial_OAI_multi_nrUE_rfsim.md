@@ -38,27 +38,7 @@ Please install and configure OAI CN5G as described here:
 
 # 3. OAI gNB and OAI nrUE
 
-## 3.1 OAI gNB and OAI nrUE pre-requisites
-
-### Build UHD from source
-```bash
-sudo apt install -y libboost-all-dev libusb-1.0-0-dev doxygen python3-docutils python3-mako python3-numpy python3-requests python3-ruamel.yaml python3-setuptools cmake build-essential
-
-git clone https://github.com/EttusResearch/uhd.git ~/uhd
-cd ~/uhd
-git checkout v4.5.0.0
-cd host
-mkdir build
-cd build
-cmake ../
-make -j $(nproc)
-make test # This step is optional
-sudo make install
-sudo ldconfig
-sudo uhd_images_downloader
-```
-
-## 3.2 Build OAI gNB and OAI nrUE
+## 3.1 Build OAI gNB and OAI nrUE
 
 ```bash
 # Get openairinterface5g source code
@@ -77,9 +57,7 @@ sudo apt install -y libforms-dev libforms-bin
 cd ~/openairinterface5g
 source oaienv
 cd cmake_targets
-./build_oai -w USRP --ninja --nrUE --gNB --build-lib "nrscope" -C
-./build_oai --build-lib telnetsrv 
-
+./build_oai -w USRP --ninja --nrUE --gNB --build-lib "nrscope telnetsrv" -C
 ```
 
 # 4. Run OAI CN5G and OAI gNB
@@ -117,12 +95,31 @@ and the rest stays the same.
 
 - After editing your configuration files, now you can deploy your UE in RFsimulator as
 ```bash
+<<<<<<< HEAD
+=======
+cd ~/openairinterface5g/cmake_targets/ran_build/build
+sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --rfsim --sa --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr server --telnetsrv --telnetsrv.listenport 9099
+```
+
+
+# 5. OAI  UE 
+>>>>>>> d31609053daf6a2ae290353ad7b0158f6b3704ff
 
 cd cmake_targets/ran_build/build
 sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --ue-fo-compensation --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
 ```
 
 
+<<<<<<< HEAD
+=======
+```
+
+- After editing your configuration files, now you can deploy your UE in RFsimulator as
+```bash
+cd ~/openairinterface5g/cmake_targets/ran_build/build
+sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
+```
+>>>>>>> d31609053daf6a2ae290353ad7b0158f6b3704ff
 # 5.2 OAI multiple UE 
 
 
@@ -130,7 +127,8 @@ sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -
 Important notes:
 - This should be run on the same host as the OAI gNB
 - It only applies when running OAI gNB with RFsimulator
-- Follow the link https://www.eurecom.fr/~schmidtr/blog/2023/09/15/multiple-ues-in-rfsimulator/ and use the script (multi-ue.sh) in order to make namespaces for multiple UEs.  
+- Use the script (multi-ue.sh) in openairinterface/radio/rfsimulator to make namespaces for 
+multiple UEs.  
 
 - For the first UE, create the namespace ue1 (-c1) and then execute bash inside (-e):
 ```bash
