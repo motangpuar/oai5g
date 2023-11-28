@@ -44,7 +44,7 @@ bool read_gtp_sm(void * data)
 
   uint64_t ue_id_list[MAX_MOBILES_PER_GNB];
   size_t num_ues = nr_pdcp_get_num_ues(ue_id_list, MAX_MOBILES_PER_GNB);
-  
+
   gtp->msg.len = num_ues;
   if(gtp->msg.len > 0){
     gtp->msg.ngut = calloc(gtp->msg.len, sizeof(gtp_ngu_t_stats_t) );
@@ -66,7 +66,7 @@ bool read_gtp_sm(void * data)
     if (nb_pdu_session > 0) {
       int nb_pdu_idx = nb_pdu_session - 1;
       gtp->msg.ngut[i].teidgnb = ue_context_p->ue_context.pduSession[nb_pdu_idx].param.gNB_teid_N3;
-      gtp->msg.ngut[i].teidupf = ue_context_p->ue_context.pduSession[nb_pdu_idx].param.UPF_teid_N3;
+      gtp->msg.ngut[i].teidupf = ue_context_p->ue_context.pduSession[nb_pdu_idx].param.gtp_teid;
       // TODO: one PDU session has multiple QoS Flow
       int nb_qos_flow = ue_context_p->ue_context.pduSession[nb_pdu_idx].param.nb_qos;
       if (nb_qos_flow > 0) {
@@ -80,7 +80,7 @@ bool read_gtp_sm(void * data)
   #elif defined (NGRAN_GNB_CUUP)
   // For the moment, CU-UP doesn't store PDU session information
   printf("GTP SM not yet implemented in CU-UP\n");
-  return false;  
+  return false;
   #endif
 }
 
