@@ -37,6 +37,8 @@ add_library(e2_ran_func_du_cucp_cuup STATIC
             CUSTOMIZED/ran_func_tc.c
             ../flexric/test/rnd/fill_rnd_data_tc.c
             ../flexric/test/rnd/fill_rnd_data_slice.c
+            # For slice
+            ../../LAYER2/NR_MAC_gNB/slicing/nr_slicing.c
             )
 
 target_link_libraries(e2_ran_func_du_cucp_cuup PUBLIC asn1_nr_rrc nr_rrc asn1_nr_rrc_hdrs e2_time_obj kpm_ric_info_common_obj 3gpp_derived_ie_obj e2sm_rc_ir_obj sm_common_ie_obj)
