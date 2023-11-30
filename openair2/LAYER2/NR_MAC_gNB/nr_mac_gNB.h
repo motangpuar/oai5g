@@ -764,9 +764,9 @@ typedef struct {
   /// move a UE to a slice in DL/UL, -1 means don't move (no-op).
   void (*move_UE)(struct nr_slice_info_s *s, NR_UE_info_t* assoc_ue, int old_idx, int new_idx);
   /// get UE associated slice's index
-  int (*get_UE_slice_idx)(struct nr_slice_info_s *s, uint16_t rnti);
+  int (*get_UE_slice_idx)(struct nr_slice_info_s *s, rnti_t rnti);
   /// get UE's index from the slice
-  int (*get_UE_idx)(struct nr_slice_s *si, uint16_t rnti);
+  int (*get_UE_idx)(struct nr_slice_s *si, rnti_t rnti);
 
   /// Adds a new slice through admission control. slice_params are
   /// algorithm-specific parameters. sched is either a default_sched_ul_algo_t

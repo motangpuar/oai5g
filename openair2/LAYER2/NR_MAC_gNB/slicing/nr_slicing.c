@@ -50,13 +50,13 @@ extern RAN_CONTEXT_t RC;
 
 #define RET_FAIL(ret, x...) do { LOG_E(MAC, x); return ret; } while (0)
 
-int nr_slicing_get_UE_slice_idx(nr_slice_info_t *si, uint16_t rnti) {
+int nr_slicing_get_UE_slice_idx(nr_slice_info_t *si, rnti_t rnti)
+{
   for (int s_len = 0; s_len < si->num; s_len++) {
-    // Using UE_iterator will stop at NULL => not work for 2 UEs
     for (int i = 0; i < MAX_MOBILES_PER_GNB; i++) {
       if (si->s[s_len]->UE_list[i] != NULL) {
         if (si->s[s_len]->UE_list[i]->rnti == rnti) {
-          return si->s[s_len]->id;
+          return s_len;
         }
       }
     }
@@ -65,10 +65,11 @@ int nr_slicing_get_UE_slice_idx(nr_slice_info_t *si, uint16_t rnti) {
   return -99;
 }
 
-int nr_slicing_get_UE_idx(nr_slice_t *si, uint16_t rnti) {
+int nr_slicing_get_UE_idx(nr_slice_t *si, rnti_t rnti)
+{
   for (int i = 0; i < MAX_MOBILES_PER_GNB; i++) {
-    // Check for NULL because w.r.t 2 UEs, the former UE may already be moved!
     if (si->UE_list[i] != NULL) {
+      LOG_D(NR_MAC, "nr_slicing_get_UE_idx: si->UE_list[%d]->rnti %x map to rnti %x\n", i, si->UE_list[i]->rnti, rnti);
       if (si->UE_list[i]->rnti == rnti)
         return i;
     }
@@ -77,29 +78,37 @@ int nr_slicing_get_UE_idx(nr_slice_t *si, uint16_t rnti) {
   return -99;
 }
 
-void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t **UE_list) {
+void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t **UE_list)
+{
   // Add all the connected UEs to the first slice 0
-  UE_iterator(UE_list, UE) {
-    if (UE) {
-      UE->dl_id = 0;
-      for (int i = 0; i < MAX_MOBILES_PER_GNB; i++) {
-        if (si->s[0]->UE_list[i] == NULL) {
+  UE_iterator(UE_list, UE)
+  {
+    UE->dl_id = 0;
+    if (si->num > 0 && si->s != NULL)
+    {
+      for (int i = 0; i < MAX_MOBILES_PER_GNB; i++)
+      {
+        if (si->s[0]->UE_list[i] == NULL)
+        {
           si->s[0]->UE_list[i] = UE;
+          si->s[0]->num_UEs += 1;
           LOG_D(NR_MAC, "%s(), add UE_list[%d], rnti 0x%04x to slice idx 0\n", __func__, i, si->s[0]->UE_list[i]->rnti);
           break;
         }
       }
+    } else {
+      LOG_E(NR_MAC, "no slice exists, cannot add UEs to first slice\n");
     }
   }
-
 }
 
-void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx) {
+void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx)
+{
   for (int i = 0; i < MAX_MOBILES_PER_GNB; i++) {
-    // Check for NULL because w.r.t 2 UEs, the former UE may already be moved!
     if(si->s[idx]->UE_list[i] != NULL) {
       if (si->s[idx]->UE_list[i]->rnti == rm_ue->rnti) {
         si->s[idx]->UE_list[i] = NULL;
+        si->s[idx]->num_UEs -= 1;
         rm_ue->dl_id = -1;
         break;
       }
@@ -107,40 +116,61 @@ void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx) {
   }
 }
 
-void nr_slicing_move_UE(nr_slice_info_t *si, NR_UE_info_t* assoc_ue, int old_idx, int new_idx) {
+void nr_slicing_move_UE(nr_slice_info_t *si, NR_UE_info_t* assoc_ue, int old_idx, int new_idx)
+{
   DevAssert(new_idx >= -1 && new_idx < si->num);
   DevAssert(old_idx >= -1 && old_idx < si->num);
 
-  // remove UE from old slice
-  nr_slicing_remove_UE(si, assoc_ue, old_idx);
-
   // add UE to new slice
+  assoc_ue->dl_id = si->s[new_idx]->id;
+  int cur_idx = si->s[new_idx]->num_UEs;
+  si->s[new_idx]->UE_list[cur_idx] = assoc_ue;
+  si->s[new_idx]->num_UEs += 1;
+
+  // remove from old slice
   for (int i = 0; i < MAX_MOBILES_PER_GNB; i++) {
-    if (si->s[new_idx]->UE_list[i] == NULL) {
-      assoc_ue->dl_id = si->s[new_idx]->id;
-      si->s[new_idx]->UE_list[i] = assoc_ue;
-      break;
+    if(si->s[old_idx]->UE_list[i] != NULL) {
+      if (si->s[old_idx]->UE_list[i]->rnti == assoc_ue->rnti) {
+        si->s[old_idx]->UE_list[i] = NULL;
+        si->s[old_idx]->num_UEs -= 1;
+        break;
+      }
     }
+  }
+
+  // reorder UE_list
+  int n, m = 0;
+  for (n = 0; n < MAX_MOBILES_PER_GNB; n++) {
+    if (si->s[old_idx]->UE_list[n] != NULL) {
+      si->s[old_idx]->UE_list[m++] = si->s[old_idx]->UE_list[n];
+    }
+  }
+  while (m < MAX_MOBILES_PER_GNB) {
+    si->s[old_idx]->UE_list[m++] = NULL;
   }
 }
 
-int _nr_exists_slice(uint8_t n, nr_slice_t **s, int id) {
-  for (int i = 0; i < n; ++i)
+int _nr_exists_slice(uint8_t n, nr_slice_t **s, int id)
+{
+  for (int i = 0; i < n; ++i) {
+    LOG_D(NR_MAC, "_nr_exists_slice(): n %d, s[%d]->id %d, id %d\n", n ,i, s[i]->id, id);
     if (s[i]->id == id)
       return i;
+  }
   return -1;
 }
 
-nr_slice_t *_nr_add_slice(uint8_t *n, nr_slice_t **s) {
+nr_slice_t *_nr_add_slice(uint8_t *n, nr_slice_t **s)
+{
   s[*n] = calloc(1, sizeof(nr_slice_t));
   if (!s[*n])
     return NULL;
-  create_nr_list(&s[*n]->UEs, MAX_MOBILES_PER_GNB);
   *n += 1;
   return s[*n - 1];
 }
 
-nr_slice_t *_nr_remove_slice(uint8_t *n, nr_slice_t **s, int idx) {
+nr_slice_t *_nr_remove_slice(uint8_t *n, nr_slice_t **s, int idx)
+{
   if (idx >= *n)
     return NULL;
 
@@ -156,7 +186,6 @@ nr_slice_t *_nr_remove_slice(uint8_t *n, nr_slice_t **s, int idx) {
 
   return sr;
 }
-
 
 /************************* NVS Slicing Implementation **************************/
 
@@ -183,10 +212,12 @@ int _nvs_nr_admission_control(const nr_slice_info_t *si,
   float sum_req = 0.0f;
   for (int i = 0; i < si->num; ++i) {
     const nvs_nr_slice_param_t *sp = i == idx ? p : si->s[i]->algo_data;
-    if (sp->type == NVS_RATE)
+    if (sp->type == NVS_RATE) {
       sum_req += sp->Mbps_reserved / sp->Mbps_reference;
-    else
+    } else {
       sum_req += sp->pct_reserved;
+    }
+    LOG_D(NR_MAC, "slice idx %d, sum_req %.2f\n", i, sum_req);
   }
   if (idx < 0) { /* not an existing slice */
     if (p->type == NVS_RATE)
@@ -194,6 +225,7 @@ int _nvs_nr_admission_control(const nr_slice_info_t *si,
     else
       sum_req += p->pct_reserved;
   }
+  LOG_D(NR_MAC, "slice idx %u, pct_reserved %.2f, sum_req %.2f\n", idx, p->pct_reserved, sum_req);
   if (sum_req > 1.0)
     RET_FAIL(-3,
              "%s(): admission control failed: sum of resources is %f > 1.0\n",
@@ -357,22 +389,19 @@ void nvs_nr_dl(module_id_t mod_id,
   int max_sched_ues = bw / (average_agg_level * NR_NB_REG_PER_CCE);
 
   nr_slice_info_t *si = RC.nrmac[mod_id]->pre_processor_dl.slices;
-  int bytes_last_round = 0;
-  UE_iterator(UE_info->list, UE) {
-    const NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+  int bytes_last_round[MAX_NVS_SLICES] = {0};
+  for (int s_idx = 0; s_idx < si->num; ++s_idx) {
+    UE_iterator(UE_info->list, UE) {
+      const NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+      if (si->s[s_idx]->id == UE->dl_id) {
+        bytes_last_round[s_idx] += UE->mac_stats.dl.current_bytes;
 
-    bytes_last_round += UE->mac_stats.dl.current_bytes;
-
-    int s_idx;
-    for (s_idx = 0; s_idx < si->num; s_idx++)
-      if (si->s[s_idx]->id == UE->dl_id)
-        break;
-    DevAssert(s_idx >= 0 && s_idx < si->num);
-
-    /* if UE has data or retransmission, mark respective slice as active */
-    const int retx_pid = sched_ctrl->retrans_dl_harq.head;
-    const bool active = sched_ctrl->num_total_bytes > 0 || retx_pid >= 0;
-    ((_nvs_int_t *)si->s[s_idx]->int_data)->active |= active;
+        /* if UE has data or retransmission, mark respective slice as active */
+        const int retx_pid = sched_ctrl->retrans_dl_harq.head;
+        const bool active = sched_ctrl->num_total_bytes > 0 || retx_pid >= 0;
+        ((_nvs_int_t *)si->s[s_idx]->int_data)->active |= active;
+      }
+    }
   }
 
   float maxw = 0.0f;
@@ -391,7 +420,7 @@ void nvs_nr_dl(module_id_t mod_id,
       float inst = 0.0f;
       if (ip->rb > 0) { /* it was scheduled last round */
         /* inst rate: B in last round * 8(bit) / 1000000 (Mbps) * 1000 (1ms) */
-        inst = (float) bytes_last_round * 8 / 1000;
+        inst = (float) bytes_last_round[i] * 8 / 1000;
         ip->eff = (1.0f - ip->beta_eff) * ip->eff + ip->beta_eff * inst;
         //LOG_W(NR_MAC, "i %d slice %d ip->rb %d inst %f ip->eff %f\n", i, s->id, ip->rb, inst, ip->eff);
         ip->rb = 0;
@@ -432,7 +461,8 @@ void nvs_nr_dl(module_id_t mod_id,
     ((_nvs_int_t *)si->s[maxidx]->int_data)->active = 0;
 }
 
-void nvs_nr_destroy(nr_slice_info_t **si) {
+void nvs_nr_destroy(nr_slice_info_t **si)
+{
   const int n_dl = (*si)->num;
   (*si)->num = 0;
   for (int i = 0; i < n_dl; ++i) {
@@ -452,7 +482,7 @@ nr_pp_impl_param_dl_t nvs_nr_dl_init(module_id_t mod_id)
   DevAssert(si);
 
   si->num = 0;
-  si->s = calloc(MAX_NVS_SLICES, sizeof(nr_slice_t));
+  si->s = calloc(MAX_NVS_SLICES, sizeof(*si->s));
   DevAssert(si->s);
   for (int i = 0; i < MAX_MOBILES_PER_GNB; ++i)
     si->UE_assoc_slice[i] = -1;

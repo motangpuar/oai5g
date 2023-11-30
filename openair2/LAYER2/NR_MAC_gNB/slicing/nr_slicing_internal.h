@@ -38,9 +38,9 @@ void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx);
 
 void nr_slicing_move_UE(nr_slice_info_t *si, NR_UE_info_t* assoc_ue, int old_idx, int new_idx);
 
-int nr_slicing_get_UE_slice_idx(nr_slice_info_t *si, uint16_t rnti);
+int nr_slicing_get_UE_slice_idx(nr_slice_info_t *si, rnti_t rnti);
 
-int nr_slicing_get_UE_idx(nr_slice_t *si, uint16_t rnti);
+int nr_slicing_get_UE_idx(nr_slice_t *si, rnti_t rnti);
 
 nr_slice_t *_nr_add_slice(uint8_t *n, nr_slice_t **s);
 nr_slice_t *_nr_remove_slice(uint8_t *n, nr_slice_t **s, int idx);

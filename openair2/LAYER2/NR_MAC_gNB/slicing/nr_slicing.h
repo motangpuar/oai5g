@@ -46,7 +46,7 @@ typedef struct nr_slice_s {
   void *int_data;
 
   // list of users in this slice
-  NR_list_t UEs;
+  int num_UEs;
   NR_UE_info_t *UE_list[MAX_MOBILES_PER_GNB+1];
 } nr_slice_t;
 
