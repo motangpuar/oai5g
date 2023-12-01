@@ -794,10 +794,12 @@ static int ngap_gNB_handle_initial_context_request(sctp_assoc_t assoc_id, uint32
       OCTET_STRING_TO_INT8(&allow_nssai_item_p->s_NSSAI.sST, msg->allowed_nssai[i].sst);
 
       if(allow_nssai_item_p->s_NSSAI.sD != NULL) {
-        memcpy(&msg->allowed_nssai[i].sd, allow_nssai_item_p->s_NSSAI.sD, 3);
+        msg->allowed_nssai[i].sd = 0;
+        BUFFER_TO_INT24((uint8_t *)allow_nssai_item_p->s_NSSAI.sD->buf, msg->allowed_nssai[i].sd);
       } else {
         msg->allowed_nssai[i].sd = 0xffffff;
       }
+      NGAP_INFO("Initial Context Request, allowed_nssai ST %d SD 0x%06x\n", msg->allowed_nssai[i].sst, msg->allowed_nssai[i].sd);
     }
 
   /* id-UESecurityCapabilities */
@@ -974,13 +976,11 @@ static int ngap_gNB_handle_pdusession_setup_request(sctp_assoc_t assoc_id, uint3
     // S-NSSAI
     OCTET_STRING_TO_INT8(&item_p->s_NSSAI.sST, msg->pdusession_setup_params[i].nssai.sst);
     if (item_p->s_NSSAI.sD != NULL) {
-      uint8_t *sd_p = (uint8_t *)&msg->pdusession_setup_params[i].nssai.sd;
-      sd_p[0] = item_p->s_NSSAI.sD->buf[0];
-      sd_p[1] = item_p->s_NSSAI.sD->buf[1];
-      sd_p[2] = item_p->s_NSSAI.sD->buf[2];
+      BUFFER_TO_INT24((uint8_t *)item_p->s_NSSAI.sD->buf, msg->pdusession_setup_params[i].nssai.sd);
     } else {
       msg->pdusession_setup_params[i].nssai.sd = 0xffffff;
     }
+    NGAP_INFO("Handle Pdusession Setup Request, nssai ST %d SD 0x%06x\n", msg->pdusession_setup_params[i].nssai.sst, msg->pdusession_setup_params[i].nssai.sd);
 
     allocCopy(&msg->pdusession_setup_params[i].nas_pdu, *item_p->pDUSessionNAS_PDU);
     allocCopy(&msg->pdusession_setup_params[i].pdusessionTransfer, item_p->pDUSessionResourceSetupRequestTransfer);
