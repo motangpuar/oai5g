@@ -1439,6 +1439,12 @@ static int handle_rrcSetupComplete(const protocol_ctxt_t *const ctxt_pP,
     }
   }
 
+  // TODO: need to handle multiple PLMN in RRC Connection Setup Complete
+  UE->ue_guami.mcc = RC.nrrrc[0]->configuration.mcc[0];
+  UE->ue_guami.mnc = RC.nrrrc[0]->configuration.mnc[0];
+  UE->ue_guami.mnc_len = RC.nrrrc[0]->configuration.mnc_digit_length[0];
+  // LOG_W(NR_RRC, "mcc %d, mnc %d, mnc_len %d\n", UE->ue_guami.mcc, UE->ue_guami.mnc, UE->ue_guami.mnc_len);
+
   rrc_gNB_process_RRCSetupComplete(ctxt_pP, ue_context_p, setup_complete->criticalExtensions.choice.rrcSetupComplete);
   LOG_I(NR_RRC, PROTOCOL_NR_RRC_CTXT_UE_FMT " UE State = NR_RRC_CONNECTED \n", PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP));
   return 0;
