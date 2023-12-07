@@ -74,7 +74,7 @@ int CU_send_POSITIONING_INFORMATION_REQUEST(instance_t instance,
   /* mandatory  TODO*/
   /* c2. GNB_DU_UE_F1AP_ID */
   //  if (f1ap_ue_context_setup_req->gNB_DU_ue_id) {
-  if (1) {
+  {
     asn1cSequenceAdd(out->protocolIEs.list, F1AP_PositioningInformationRequestIEs_t, ie2);
     ie2->id = F1AP_ProtocolIE_ID_id_gNB_DU_UE_F1AP_ID;
     ie2->criticality = F1AP_Criticality_ignore;
@@ -86,14 +86,13 @@ int CU_send_POSITIONING_INFORMATION_REQUEST(instance_t instance,
 
   /* OPTIONAL */
   /* Requested_SRS_Transmission_Characteristics // IE 9.3.1.175 (O) */
-  if (0) {
+  {
     asn1cSequenceAdd(out->protocolIEs.list, F1AP_PositioningInformationRequestIEs_t, ie3);
     ie3->id = F1AP_ProtocolIE_ID_id_RequestedSRSTransmissionCharacteristics;
     ie3->criticality = F1AP_Criticality_reject;
     ie3->value.present = F1AP_PositioningInformationRequestIEs__value_PR_RequestedSRSTransmissionCharacteristics;
     // MaskedIMEISV_TO_BIT_STRING(12340000l, &ie15->value.choice.MaskedIMEISV); // size (64)
   }
-  printf("[F1AP] Test2 CU_send_POSITIONING_INFORMATION_REQUEST");
   /* encode */
   uint8_t *buffer = NULL;
   uint32_t len = 0;
@@ -109,7 +108,7 @@ int CU_send_POSITIONING_INFORMATION_REQUEST(instance_t instance,
   return 0;
 }
 
-int CU_handle_POSITIONING_INFORMATION_RESPONSE(instance_t instance, uint32_t assoc_id, uint32_t stream, F1AP_F1AP_PDU_t *pdu)
+int CU_handle_POSITIONING_INFORMATION_RESPONSE(instance_t instance, sctp_assoc_t assoc_id, uint32_t stream, F1AP_F1AP_PDU_t *pdu)
 {
   MessageDef *msg_p;
   F1AP_PositioningInformationResponse_t *container;
@@ -165,7 +164,7 @@ int CU_handle_POSITIONING_INFORMATION_RESPONSE(instance_t instance, uint32_t ass
   return 0;
 }
 
-int CU_handle_POSITIONING_INFORMATION_FAILURE(instance_t instance, uint32_t assoc_id, uint32_t stream, F1AP_F1AP_PDU_t *pdu)
+int CU_handle_POSITIONING_INFORMATION_FAILURE(instance_t instance, sctp_assoc_t assoc_id, uint32_t stream, F1AP_F1AP_PDU_t *pdu)
 {
   MessageDef *msg_p;
   F1AP_PositioningInformationFailure_t *container;
@@ -199,4 +198,5 @@ int CU_handle_POSITIONING_INFORMATION_FAILURE(instance_t instance, uint32_t asso
                              false);
 
   //  itti_send_msg_to_task(TASK_NRPPA, instance, msg_p);
+  return 0;
 }

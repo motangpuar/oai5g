@@ -104,7 +104,7 @@ nrppa_message_decoded_callback nrppa_messages_callback[][3] = {
 int nrppa_handle_DownlinkUEAssociatedNRPPaTransport(instance_t instance,
                                                     ngap_DownlinkUEAssociatedNRPPa_t *ngap_DownlinkUEAssociatedNRPPa_p)
 {
-  LOG_D(NRPPA, "nrppa_handle_DownlinkUEAssociatedNRPPaTransport Handling case NGAP_DOWNLINKUEASSOCIATEDNRPPA \n");
+  LOG_I(NRPPA, "nrppa_handle_DownlinkUEAssociatedNRPPaTransport Handling case NGAP_DOWNLINKUEASSOCIATEDNRPPA \n");
   uint8_t *const data = ngap_DownlinkUEAssociatedNRPPa_p->nrppa_pdu.buffer;
   const uint32_t data_length = ngap_DownlinkUEAssociatedNRPPa_p->nrppa_pdu.length;
   NRPPA_NRPPA_PDU_t pdu;

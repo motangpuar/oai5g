@@ -32,14 +32,12 @@
 #define NRPPA_GNB_POSITION_INFORMATION_TRANSFER_PROCEDURES_H_
 
 // DOWNLINK
-int nrppa_gNB_handle_PositioningInformationExchange(
-    nrppa_gnb_ue_info_t *nrppa_msg_info,
-    NRPPA_NRPPA_PDU_t *pdu); /* PositioningInformationExchange (Parent) procedure for  PositioningInformationRequest,
-                                PositioningInformationResponse, and PositioningInformationFailure*/
-int nrppa_gNB_handle_PositioningActivation(
-    nrppa_gnb_ue_info_t *nrppa_msg_info,
-    NRPPA_NRPPA_PDU_t *pdu); //  /* PositioningActivation (Parent) procedure for  PositioningActivationRequest,
-                             //  PositioningActivationResponse, and PositioningActivationFailure*/
+// PositioningInformationExchange (Parent) procedure for  PositioningInformationRequest,
+  //PositioningInformationResponse, and PositioningInformationFailure
+int nrppa_gNB_handle_PositioningInformationExchange(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu);
+// PositioningActivation (Parent) procedure for  PositioningActivationRequest,
+ // PositioningActivationResponse, and PositioningActivationFailure
+int nrppa_gNB_handle_PositioningActivation(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu);
 int nrppa_gNB_handle_PositioningDeactivation(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu);
 
 // UPLINK

@@ -460,7 +460,8 @@ typedef struct nrppa_f1ap_info_s {
 typedef enum f1ap_type_of_error_t { F1AP_NOT_UNDERSTOOD = 0, F1AP_MISSING = 1 } f1ap_type_of_error_t;
 
 typedef struct f1ap_criticality_diagnostics_s { // IE 9.3.1.3 (TS 38.473 V16.3.1)
-  uint16_t ID;
+  uint16_t ie_id;
+  uint16_t ie_criticality;
   f1ap_type_of_error_t type_of_error;
 
   /*F1AP_ProcedureCode_t	*procedureCode;	// OPTIONAL
@@ -653,7 +654,7 @@ typedef union f1ap_spatial_relation_pos_c{
 } f1ap_spatial_relation_pos_u;
 
 typedef struct f1ap_srs_resource_id_list_s{ // A_SEQUENCE_OF(F1AP_SRSResourceID_t) list;
-  uint8_t *srs_resource_id;
+  long *srs_resource_id;
   uint8_t srs_resource_id_list_length; // maximum no of SRS resources per resource set is 16
 } f1ap_srs_resource_id_list_t;
 
@@ -689,7 +690,7 @@ typedef struct f1ap_resource_set_type_s {
 } f1ap_resource_set_type_t;
 
 typedef struct f1ap_pos_srs_resource_id_list_s { // A_SEQUENCE_OF(F1AP_SRSPosResourceID_t) list;
-  uint8_t *srs_pos_resource_id;
+  long *srs_pos_resource_id;
   uint32_t pos_srs_resource_id_list_length;
 } f1ap_pos_srs_resource_id_list_t;
 
@@ -710,6 +711,18 @@ typedef union f1ap_pos_resource_set_type_c {
   f1ap_pos_resource_set_type_sp_t semi_persistent;
   f1ap_pos_resource_set_type_ap_t aperiodic;
 } f1ap_pos_resource_set_type_u;
+
+typedef enum f1ap_pos_resource_set_type_e {
+  f1ap_pos_resource_set_type_pr_nothing,
+  f1ap_pos_resource_set_type_pr_periodic,
+  f1ap_pos_resource_set_type_pr_semi_persistent,
+  f1ap_pos_resource_set_type_pr_aperiodic,
+} f1ap_pos_resource_set_type_pr;
+
+typedef struct f1ap_pos_resource_set_type_s{
+f1ap_pos_resource_set_type_pr present;
+f1ap_pos_resource_set_type_u choice;
+}f1ap_pos_resource_set_type_t;
 
 typedef struct f1ap_srs_resource_s {
   uint32_t sRSResourceID; //(M)
@@ -751,7 +764,7 @@ typedef struct f1ap_srs_resource_set_s {
 typedef struct f1ap_pos_srs_resource_set_item_s {
   uint8_t possrsResourceSetID; // (M)
   f1ap_pos_srs_resource_id_list_t possRSResourceID_List; // F1AP_PosSRSResourceID_List_t	 possRSResourceID_List;
-  f1ap_pos_resource_set_type_u posresourceSetType; // F1AP_PosResourceSetType_t	 posresourceSetType;
+  f1ap_pos_resource_set_type_t posresourceSetType; // F1AP_PosResourceSetType_t	 posresourceSetType;
 } f1ap_pos_srs_resource_set_item_t;
 
 // IE for srs_config
@@ -917,7 +930,7 @@ typedef struct f1ap_ssb_information_s { // IE 9.3.1.202 (TS 38.473 V16.3.1)
 } f1ap_ssb_information_t;
 
 typedef struct f1ap_requested_SRS_transmission_characteristics_s {
-  uint16_t numberOfTransmissions; // (O) no of periodic transmission, 0= infinite no of SRS transmission, Applicable only if
+  long numberOfTransmissions; // (O) no of periodic transmission, 0= infinite no of SRS transmission, Applicable only if
                                   // Resource type IE is periodic
   uint8_t resourceType; // (M)
   f1ap_bandwidth_srs_t bandwidth_srs; // (M)
@@ -1166,6 +1179,23 @@ typedef union f1ap_relative_path_delay_c {
   uint32_t k5;
 } f1ap_relative_path_delay_u, f1ap_ul_rtoa_measurement_item_u, f1ap_gnb_rx_tx_time_diff_meas_u;
 
+
+typedef enum f1ap_gnb_rx_tx_time_diff_meas_e{
+    f1ap_gnbrxtxtimediffmeas_pr_NOTHING,
+	f1ap_gnbrxtxtimediffmeas_pr_k0,
+	f1ap_gnbrxtxtimediffmeas_pr_k1,
+	f1ap_gnbrxtxtimediffmeas_pr_k2,
+	f1ap_gnbrxtxtimediffmeas_pr_k3,
+	f1ap_gnbrxtxtimediffmeas_pr_k4,
+	f1ap_gnbrxtxtimediffmeas_pr_k5
+}f1ap_gnb_rx_tx_time_diff_meas_pr;
+
+typedef struct f1ap_gnb_rx_tx_time_diff_meas_s{
+f1ap_gnb_rx_tx_time_diff_meas_pr present;
+f1ap_gnb_rx_tx_time_diff_meas_u choice;
+}f1ap_gnb_rx_tx_time_diff_meas_t;
+
+
 typedef struct f1ap_timing_measurement_quality_s {
   uint8_t measurementQuality;
   uint8_t resolution; // resolution_ 0.1m = 0, 1m= 1, 10m= 2, 30m= 3
@@ -1218,7 +1248,7 @@ typedef union f1ap_ul_rtoa_measurement_s { // IE 9.3.1.168 TS 38.473 V16.3.1
 } f1ap_ul_rtoa_measurement_t;
 
 typedef struct f1ap_gnb_rx_tx_time_diff_s { // IE 9.3.1.170 TS 38.473 V16.3.1
-  f1ap_gnb_rx_tx_time_diff_meas_u rxTxTimeDiff;
+  f1ap_gnb_rx_tx_time_diff_meas_t rxTxTimeDiff;
   f1ap_additional_path_list_t additionalPath_List; // OPTIONAL
 } f1ap_gnb_rx_tx_time_diff_t;
 
@@ -1337,7 +1367,7 @@ typedef struct f1ap_positioning_activation_req_s {
   uint32_t gNB_DU_ue_id; // IE 9.3.1.5 (M)
   nrppa_f1ap_info_t nrppa_msg_info;
   f1ap_srs_type_t srs_type;
-  bit_string_t sfn_initialisation_time;
+  bit_string_t activation_time;  // type sfn_initialisation_time
 } f1ap_positioning_activation_req_t;
 
 typedef struct f1ap_positioning_activation_resp_s {

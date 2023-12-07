@@ -29,19 +29,12 @@
  */
 
 #include "intertask_interface.h"
-
-/* todo */
 #include "nrppa_common.h"
 #include "nrppa_gNB_position_information_transfer_procedures.h"
 #include "nrppa_gNB_itti_messaging.h"
-/* todo */
+#include "nrppa_gNB_encoder.h"
 
-/*to access SRS config*/
-#include "PHY/impl_defs_nr.h" // SRS_Resource_t; SRS_ResourceSet_t;
-#include "common/ran_context.h"
-#include "NR_MAC_gNB/nr_mac_gNB.h"
-#include "RRC/NR/nr_rrc_defs.h"
-#include "PHY/defs_gNB.h"
+
 
 // DOWNLINK
 // PositioningInformationExchange (Parent) procedure for  PositioningInformationRequest/Response/Failure
@@ -49,42 +42,40 @@ int nrppa_gNB_handle_PositioningInformationExchange(nrppa_gnb_ue_info_t *nrppa_m
 {
   LOG_I(NRPPA, "Processing Received PositioningInformationRequest \n");
   DevAssert(rx_pdu != NULL);
-  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, &rx_pdu);
-
-  // Processing Received PositioningInformationRequest
-  NRPPA_PositioningInformationRequest_t *container;
-  NRPPA_PositioningInformationRequest_IEs_t *ie;
-  uint32_t nrppa_transaction_id;
-  NRPPA_RequestedSRSTransmissionCharacteristics_t req_SRS_info;
-
-  // IE 9.2.3 Message type (M)
-  container = &rx_pdu->choice.initiatingMessage->value.choice.PositioningInformationRequest;
-
-  // IE 9.2.4 nrppatransactionID (M)
-  nrppa_transaction_id = rx_pdu->choice.initiatingMessage->nrppatransactionID;
-
-  // IE 9.2.27 RequestedSRSTransmissionCharacteristics (Optional)
-  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningInformationRequest_IEs_t,
-                              ie,
-                              container,
-                              NRPPA_ProtocolIE_ID_id_RequestedSRSTransmissionCharacteristics,
-                              true);
-  req_SRS_info = ie->value.choice.RequestedSRSTransmissionCharacteristics;
+  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, rx_pdu);
 
   // Preparing f1ap request for RRC
   MessageDef *msg = itti_alloc_new_message(TASK_RRC_GNB, 0, F1AP_POSITIONING_INFORMATION_REQ);
   f1ap_positioning_information_req_t *f1ap_req = &F1AP_POSITIONING_INFORMATION_REQ(msg);
-  f1ap_req->nrppa_msg_info.nrppa_transaction_id = nrppa_transaction_id;
   f1ap_req->nrppa_msg_info.instance = nrppa_msg_info->instance;
   f1ap_req->nrppa_msg_info.gNB_ue_ngap_id = nrppa_msg_info->gNB_ue_ngap_id;
   f1ap_req->nrppa_msg_info.amf_ue_ngap_id = nrppa_msg_info->amf_ue_ngap_id;
   f1ap_req->nrppa_msg_info.routing_id_buffer = nrppa_msg_info->routing_id_buffer;
   f1ap_req->nrppa_msg_info.routing_id_length = nrppa_msg_info->routing_id_length;
 
+  // Processing Received PositioningInformationRequest
+  NRPPA_PositioningInformationRequest_t *container;
+  NRPPA_PositioningInformationRequest_IEs_t *ie;
+
+  // IE 9.2.3 Message type (M)
+  container = &rx_pdu->choice.initiatingMessage->value.choice.PositioningInformationRequest;
+
+  // IE 9.2.4 nrppatransactionID (M)
+  f1ap_req->nrppa_msg_info.nrppa_transaction_id = rx_pdu->choice.initiatingMessage->nrppatransactionID;
+
+  // IE 9.2.27 RequestedSRSTransmissionCharacteristics (Optional)
+  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningInformationRequest_IEs_t,
+                              ie,
+                              container,
+                              NRPPA_ProtocolIE_ID_id_RequestedSRSTransmissionCharacteristics,
+                              false);
+  if (ie!=NULL){
+  NRPPA_RequestedSRSTransmissionCharacteristics_t req_SRS_info = ie->value.choice.RequestedSRSTransmissionCharacteristics;
   // IE Resource Type
   f1ap_req->req_SRS_info.resourceType = req_SRS_info.resourceType;
   // IE number Of periodic Transmissions
-  f1ap_req->req_SRS_info.numberOfTransmissions = req_SRS_info.numberOfTransmissions;
+  //long	*numberOfTransmissions = req_SRS_info.numberOfTransmissions;
+  //f1ap_req->req_SRS_info.numberOfTransmissions =*numberOfTransmissions; //req_SRS_info.numberOfTransmissions; // OPTIONAL
   // IE bandwidth_srs
   switch (req_SRS_info.bandwidth.present) {
     case NRPPA_BandwidthSRS_PR_NOTHING:
@@ -102,52 +93,46 @@ int nrppa_gNB_handle_PositioningInformationExchange(nrppa_gnb_ue_info_t *nrppa_m
       NRPPA_ERROR("PositioningInformationRequest Unknown BandwidthSRS Choice\n");
       break;
   }
+  }
 
   LOG_I(NRPPA,
         "Forwarding to RRC PositioningInformationRequest gNB_CU_ue_id=%d, gNB_DU_ue_id=%d \n",
         f1ap_req->gNB_CU_ue_id,
         f1ap_req->gNB_DU_ue_id);
   itti_send_msg_to_task(TASK_RRC_GNB, 0, msg);
+  return 0;
 }
 
 // PositioningActivation (Parent) procedure for  PositioningActivationRequest/Response/Failure
-// adeel TODO fill F1AP msg for rrc
 int nrppa_gNB_handle_PositioningActivation(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu)
 {
   LOG_I(NRPPA, "Processing Received PositioningActivation \n");
   DevAssert(pdu != NULL);
-  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, &pdu);
+  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, pdu);
 
-
-  // Processing Received PositioningActivation
-  NRPPA_PositioningActivationRequest_t    *container;
-  NRPPA_PositioningActivationRequestIEs_t *ie;
-  uint32_t   nrppa_transaction_id;
-  NRPPA_SRSType_t  srs_type;
-
-  // IE 9.2.3 Message type (M)
-  container = &pdu->choice.initiatingMessage->value.choice.PositioningActivationRequest;
-
-  // IE 9.2.4 nrppatransactionID (M)
-  nrppa_transaction_id = pdu->choice.initiatingMessage->nrppatransactionID;
-
-  // IE  SRSType (M)
-  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningActivationRequestIEs_t, ie, container, NRPPA_ProtocolIE_ID_id_SRSType, true);
-  srs_type = ie->value.choice.SRSType;
-
-  // IE  Activation Time (Optional)
-  //NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningActivationRequestIEs_t, ie, container, NRPPA_ProtocolIE_ID_id_ActivationTime, true);
-
-  // Preparing f1ap request for RRC
+    // Preparing f1ap request for RRC
   MessageDef *msg = itti_alloc_new_message(TASK_RRC_GNB, 0, F1AP_POSITIONING_ACTIVATION_REQ);
   f1ap_positioning_activation_req_t *f1ap_req = &F1AP_POSITIONING_ACTIVATION_REQ(msg);
-  f1ap_req->nrppa_msg_info.nrppa_transaction_id = nrppa_transaction_id;
   f1ap_req->nrppa_msg_info.instance = nrppa_msg_info->instance;
   f1ap_req->nrppa_msg_info.gNB_ue_ngap_id = nrppa_msg_info->gNB_ue_ngap_id;
   f1ap_req->nrppa_msg_info.amf_ue_ngap_id = nrppa_msg_info->amf_ue_ngap_id;
   f1ap_req->nrppa_msg_info.routing_id_buffer = nrppa_msg_info->routing_id_buffer;
   f1ap_req->nrppa_msg_info.routing_id_length = nrppa_msg_info->routing_id_length;
 
+  // Processing Received PositioningActivation
+  NRPPA_PositioningActivationRequest_t    *container;
+  NRPPA_PositioningActivationRequestIEs_t *ie;
+
+  // IE 9.2.3 Message type (M)
+  container = &pdu->choice.initiatingMessage->value.choice.PositioningActivationRequest;
+
+  // IE 9.2.4 nrppatransactionID (M)
+  f1ap_req->nrppa_msg_info.nrppa_transaction_id = pdu->choice.initiatingMessage->nrppatransactionID;
+
+  // IE  SRSType (M)
+  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningActivationRequestIEs_t, ie, container, NRPPA_ProtocolIE_ID_id_SRSType, false);
+  if (ie!=NULL){
+  NRPPA_SRSType_t  srs_type = ie->value.choice.SRSType;
   // IE SRS type filling in f1ap message
   switch (srs_type.present) {
   case NRPPA_SRSType_PR_NOTHING:
@@ -167,6 +152,12 @@ int nrppa_gNB_handle_PositioningActivation(nrppa_gnb_ue_info_t *nrppa_msg_info, 
   NRPPA_ERROR("PositioningActivationRequest Unknown SRS type\n");
   break;
   }
+}
+
+  // IE  Activation Time 9.2.36 (Optional) type sfn_initialisation_time
+  //NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningActivationRequestIEs_t, ie, container, NRPPA_ProtocolIE_ID_id_ActivationTime, true);
+  //f1ap_req->activation_time.size
+  //f1ap_req->activation_time.buf
 
   LOG_I(NRPPA,
         "Forwarding to RRC PositioningActivationRequest gNB_CU_ue_id=%d, gNB_DU_ue_id=%d \n",
@@ -176,41 +167,35 @@ int nrppa_gNB_handle_PositioningActivation(nrppa_gnb_ue_info_t *nrppa_msg_info, 
   return 0;
 }
 
-// adeel TODO fill F1AP msg for rrc
 int nrppa_gNB_handle_PositioningDeactivation(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu)
 {
   LOG_I(NRPPA, "Processing Received PositioningDeActivation \n");
   DevAssert(pdu != NULL);
-  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, &pdu);
+  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, pdu);
 
-
-  // Processing Received PositioningDeActivation
-  NRPPA_PositioningDeactivation_t *container;
-  NRPPA_PositioningDeactivationIEs_t *ie;
-  uint32_t nrppa_transaction_id;
-  NRPPA_AbortTransmission_t abort_transmission;
-
-  // IE 9.2.3 Message type (M)
-  container = &pdu->choice.initiatingMessage->value.choice.PositioningDeactivation;
-
-  // IE 9.2.4 nrppatransactionID (M)
-  nrppa_transaction_id = pdu->choice.initiatingMessage->nrppatransactionID;
-
-  // IE  Abort Transmission(M)
-  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningDeactivationIEs_t, ie, container, NRPPA_ProtocolIE_ID_id_AbortTransmission, true);
-  abort_transmission= ie->value.choice.AbortTransmission;
-
-  // Preparing f1ap request for RRC
+    // Preparing f1ap request for RRC
   MessageDef *msg = itti_alloc_new_message(TASK_RRC_GNB, 0, F1AP_POSITIONING_DEACTIVATION);
   f1ap_positioning_deactivation_t *f1ap_req = &F1AP_POSITIONING_DEACTIVATION(msg);
-  f1ap_req->nrppa_msg_info.nrppa_transaction_id = nrppa_transaction_id;
   f1ap_req->nrppa_msg_info.instance = nrppa_msg_info->instance;
   f1ap_req->nrppa_msg_info.gNB_ue_ngap_id = nrppa_msg_info->gNB_ue_ngap_id;
   f1ap_req->nrppa_msg_info.amf_ue_ngap_id = nrppa_msg_info->amf_ue_ngap_id;
   f1ap_req->nrppa_msg_info.routing_id_buffer = nrppa_msg_info->routing_id_buffer;
   f1ap_req->nrppa_msg_info.routing_id_length = nrppa_msg_info->routing_id_length;
 
+  // Processing Received PositioningDeActivation
+  NRPPA_PositioningDeactivation_t *container;
+  NRPPA_PositioningDeactivationIEs_t *ie;
 
+  // IE 9.2.3 Message type (M)
+  container = &pdu->choice.initiatingMessage->value.choice.PositioningDeactivation;
+
+  // IE 9.2.4 nrppatransactionID (M)
+  f1ap_req->nrppa_msg_info.nrppa_transaction_id = pdu->choice.initiatingMessage->nrppatransactionID;
+
+  // IE  Abort Transmission(M)
+  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_PositioningDeactivationIEs_t, ie, container, NRPPA_ProtocolIE_ID_id_AbortTransmission, false);
+  if (ie!=NULL){
+  NRPPA_AbortTransmission_t abort_transmission= ie->value.choice.AbortTransmission;
   // IE abort_transmission filling in f1ap message
   switch(abort_transmission.present){
   case NRPPA_AbortTransmission_PR_NOTHING:
@@ -227,9 +212,8 @@ int nrppa_gNB_handle_PositioningDeactivation(nrppa_gnb_ue_info_t *nrppa_msg_info
   default:
   NRPPA_ERROR("PositioningDeActivation Unknown Abort Transmission\n");
   break;
-
   }
-
+ }
   LOG_I(NRPPA,
         "Forwarding to RRC PositioningDeactivation gNB_CU_ue_id=%d, gNB_DU_ue_id=%d \n",
         f1ap_req->gNB_CU_ue_id,
@@ -239,7 +223,6 @@ int nrppa_gNB_handle_PositioningDeactivation(nrppa_gnb_ue_info_t *nrppa_msg_info
 }
 
 // UPLINK
-// adeel TODO paritally filled F1AP msg for rrc
 int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *msg_p)
 {
   f1ap_positioning_information_resp_t *resp = &F1AP_POSITIONING_INFORMATION_RESP(msg_p);
@@ -250,12 +233,13 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
         resp->nrppa_msg_info.ue_rnti);
 
   // Prepare NRPPA Position Information transfer Response
-  NRPPA_NRPPA_PDU_t tx_pdu; // TODO rename
+  NRPPA_NRPPA_PDU_t tx_pdu;
   uint8_t *buffer = NULL;
   uint32_t length = 0;
 
   /* Prepare the NRPPA message to encode for successfulOutcome PositioningInformationResponse */
-  // IE: 9.2.3 Message Type successfulOutcome PositioningInformationResponse /* mandatory */
+
+  // IE: 9.2.3 Message Type successfulOutcome (M)
   memset(&tx_pdu, 0, sizeof(tx_pdu));
   tx_pdu.present = NRPPA_NRPPA_PDU_PR_successfulOutcome;
   asn1cCalloc(tx_pdu.choice.successfulOutcome, head);
@@ -263,13 +247,12 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
   head->criticality = NRPPA_Criticality_reject;
   head->value.present = NRPPA_SuccessfulOutcome__value_PR_PositioningInformationResponse;
 
-  // IE 9.2.4 nrppatransactionID  /* mandatory */
-  head->nrppatransactionID = resp->nrppa_msg_info.nrppa_transaction_id; // nrppa_transaction_id;
+  // IE 9.2.4 nrppatransactionID  (M)
+  head->nrppatransactionID = resp->nrppa_msg_info.nrppa_transaction_id;
   NRPPA_PositioningInformationResponse_t *out = &head->value.choice.PositioningInformationResponse;
 
-  // IE 9.2.28 SRS Configuration (O) IE of PositioningInformationResponse
-  //  Currently changing SRS configuration on the fly is not possible, therefore we add the predefined SRS configuration in NRPPA
-  //  pdu
+  // IE 9.2.28 SRS Configuration (O)
+  //  changing SRS configuration on the fly is not possible, therefore we add the predefined SRS config in NRPPa pdu
   {
     asn1cSequenceAdd(out->protocolIEs.list, NRPPA_PositioningInformationResponse_IEs_t, ie);
     ie->id = NRPPA_ProtocolIE_ID_id_SRSConfiguration;
@@ -278,7 +261,7 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
 
     // Preparing SRS Carrier List an IE  of SRS Configuration
     int nb_of_srscarrier = resp->srs_configuration.srs_carrier_list
-                               .srs_carrier_list_length; // gNB->max_nb_srs; // TODO find the acutal number for carrier and add here
+                               .srs_carrier_list_length;
     f1ap_srs_carrier_list_item_t *carrier_list_item = resp->srs_configuration.srs_carrier_list.srs_carrier_list_item;
 
     LOG_D(NRPPA, "Positioning_information_response(); nb_of_srscarrier= %d \n", nb_of_srscarrier);
@@ -286,16 +269,16 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
       asn1cSequenceAdd(ie->value.choice.SRSConfiguration.sRSCarrier_List.list, NRPPA_SRSCarrier_List_Item_t, item);
 
       item->pointA = carrier_list_item->pointA; // IE of SRSCarrier_List_Item
-      asn1cCalloc(item->pCI, pci);
-      pci = carrier_list_item->pci; // IE Physical cell ID of the cell that contians the SRS carrier
+      //asn1cCalloc(item->pCI, pci);
+      //pci = carrier_list_item->pci; //Optional IE Physical cell ID of the cell that contians the SRS carrier
 
       // Preparing Active UL BWP information IE of SRSCarrier_List
       item->activeULBWP.locationAndBandwidth = carrier_list_item->active_ul_bwp.locationAndBandwidth;
       item->activeULBWP.subcarrierSpacing = carrier_list_item->active_ul_bwp.subcarrierSpacing;
       item->activeULBWP.cyclicPrefix = carrier_list_item->active_ul_bwp.cyclicPrefix;
       item->activeULBWP.txDirectCurrentLocation = carrier_list_item->active_ul_bwp.txDirectCurrentLocation;
-      asn1cCalloc(item->activeULBWP.shift7dot5kHz, shift7dot5kHz);
-      shift7dot5kHz = carrier_list_item->active_ul_bwp.shift7dot5kHz; //  Optional
+      //asn1cCalloc(item->activeULBWP.shift7dot5kHz, shift7dot5kHz);
+      //shift7dot5kHz = carrier_list_item->active_ul_bwp.shift7dot5kHz; //  Optional
 
       // Preparing sRSResource_List  IE of SRSConfig (IE of activeULBWP)
       int nb_srsresource = carrier_list_item->active_ul_bwp.sRSConfig.sRSResource_List.srs_resource_list_length;
@@ -437,13 +420,11 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
         asn1cCalloc(pos_resource_item->resourceTypePos.choice.semi_persistent, pos_res_type_semi_persistent);
         pos_res_type_semi_persistent->periodicity =pos_res_item->resourceTypePos.choice.semi_persistent.periodicity;
         pos_res_type_semi_persistent->offset      =pos_res_item->resourceTypePos.choice.semi_persistent.offset;
-
         break;
         case f1ap_resource_type_pos_pr_aperiodic:
         pos_resource_item->resourceTypePos.present = NRPPA_ResourceTypePos_PR_aperiodic;
         asn1cCalloc(pos_resource_item->resourceTypePos.choice.aperiodic, pos_res_type_aperiodic);
         pos_res_type_aperiodic->slotOffset      =pos_res_item->resourceTypePos.choice.aperiodic.slotOffset;
-
         break;
         default:
         NRPPA_ERROR("Pos Resource Item Unknown resourceTypePos \n");
@@ -465,47 +446,41 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
       {
         asn1cSequenceAdd(srsresourceset_list->list, NRPPA_SRSResourceSet_t, srsresourceset_item);
         // IE sRSResourceSetID
-        srsresourceset_item->sRSResourceSetID = resSet_item->sRSResourceSetID; //// (M)
+        srsresourceset_item->sRSResourceSetID = resSet_item->sRSResourceSetID; // (M)
         // IE sRSResourceID_List
         int nb_srsresourceperset = resSet_item->sRSResourceID_List.srs_resource_id_list_length;
-        uint8_t *srs_res_id = resSet_item->sRSResourceID_List.srs_resource_id;
+        long *srs_res_id = resSet_item->sRSResourceID_List.srs_resource_id;
         for (int y = 0; y < nb_srsresourceperset; y++) {
           asn1cSequenceAdd(srsresourceset_item->sRSResourceID_List.list, NRPPA_SRSResourceID_t, srsresourceID);
-          srsresourceID = *srs_res_id;
+          srsresourceID = srs_res_id;
           srs_res_id++;
         }
 
-        // IE resourceSetType TODO fix this format issue
-        srsresourceset_item->resourceSetType.present =
-            NRPPA_ResourceSetType_PR_periodic; //  NRPPA_ResourceSetType_PR_NOTHING,
-                                               //  NRPPA_ResourceSetType_PR_semi_persistent,NRPPA_ResourceSetType_PR_aperiodic,
-        asn1cCalloc(srsresourceset_item->resourceSetType.choice.periodic, res_set_type_periodic);
-        res_set_type_periodic->periodicSet = resSet_item->resourceSetType.choice.periodic.periodicSet;
-
-
-       /* if(resSet_item->resourceSetType.present== f1ap_resource_set_type_pr_periodic ){
-        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_periodic; //  NRPPA_ResourceSetType_PR_NOTHING,
-       // NRPPA_ResourceSetType_PR_semi_persistent,NRPPA_ResourceSetType_PR_aperiodic,
+        // IE resourceSetType
+        switch(resSet_item->resourceSetType.present){
+        case f1ap_resource_set_type_pr_periodic:
+        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_periodic;
         asn1cCalloc(srsresourceset_item->resourceSetType.choice.periodic, res_set_type_periodic);
         res_set_type_periodic->periodicSet=resSet_item->resourceSetType.choice.periodic.periodicSet;
-        }
-        else if(resSet_item->resourceSetType.present== f1ap_resource_set_type_pr_aperiodic ){
-        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_aperiodic; //  NRPPA_ResourceSetType_PR_NOTHING,
-        //NRPPA_ResourceSetType_PR_semi_persistent,NRPPA_ResourceSetType_PR_aperiodic,
+        break;
+        case f1ap_resource_set_type_pr_aperiodic:
+        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_aperiodic;
         asn1cCalloc(srsresourceset_item->resourceSetType.choice.aperiodic, res_set_type_aperiodic);
-        res_set_type_aperiodic->sRSResourceTrigger=resSet_item->resourceSetType.choice.aperiodic.sRSResourceTrigger; // TODO verify
-        res_set_type_aperiodic->slotoffset=resSet_item->resourceSetType.choice.aperiodic.slotoffset; // TODO verify IE format
-        }
-        else if(resSet_item->resourceSetType.present== f1ap_resource_set_type_pr_semi_persistent ){
-        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_semi_persistent; // NRPPA_ResourceSetType_PR_NOTHING,
-        //NRPPA_ResourceSetType_PR_semi_persistent,NRPPA_ResourceSetType_PR_aperiodic,
+        res_set_type_aperiodic->sRSResourceTrigger=resSet_item->resourceSetType.choice.aperiodic.sRSResourceTrigger;
+        res_set_type_aperiodic->slotoffset=resSet_item->resourceSetType.choice.aperiodic.slotoffset;
+        break;
+        case f1ap_resource_set_type_pr_semi_persistent:
+        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_semi_persistent;
         asn1cCalloc(srsresourceset_item->resourceSetType.choice.semi_persistent, res_set_type_semi_persistent);
         res_set_type_semi_persistent->semi_persistentSet=resSet_item->resourceSetType.choice.semi_persistent.semi_persistentSet;
+        break;
+        case f1ap_resource_set_type_pr_nothing:
+        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_NOTHING;
+        break;
+        default:
+        NRPPA_ERROR("srsresourceset_item Unknown resourceSetType \n");
+        break;
         }
-        else if(resSet_item->resourceSetType.present== f1ap_resource_set_type_pr_nothing ){
-        srsresourceset_item->resourceSetType.present= NRPPA_ResourceSetType_PR_NOTHING; //  NRPPA_ResourceSetType_PR_NOTHING,
-        //NRPPA_ResourceSetType_PR_semi_persistent,NRPPA_ResourceSetType_PR_aperiodic,
-        }*/
 
         if (y < nb_srsresourceset - 1) {
           resSet_item++;
@@ -527,16 +502,37 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
         pos_resource_set_item->possrsResourceSetID = pos_res_set_item->possrsResourceSetID; // (M)
         // IE possRSResourceID_List
         int nb_srsposresourceperset = pos_res_set_item->possRSResourceID_List.pos_srs_resource_id_list_length;
-        uint8_t *pos_srs_res_id = pos_res_set_item->possRSResourceID_List.srs_pos_resource_id;
+        long *pos_srs_res_id = pos_res_set_item->possRSResourceID_List.srs_pos_resource_id;
         for (int y = 0; y < nb_srsposresourceperset; y++) {
           asn1cSequenceAdd(pos_resource_set_item->possRSResourceID_List.list, NRPPA_SRSPosResourceID_t, srsposresourceID);
-          srsposresourceID = *pos_srs_res_id; // TODO add increment to pointer
+          srsposresourceID = pos_srs_res_id; // TODO add increment to pointer
+          pos_srs_res_id++;
         }
 
         // IE posresourceSetType
+        switch(pos_res_set_item->posresourceSetType.present){
+        case f1ap_pos_resource_set_type_pr_nothing:
+        pos_resource_set_item->posresourceSetType.present = NRPPA_PosResourceSetType_PR_NOTHING;
+        break;
+        case f1ap_pos_resource_set_type_pr_periodic:
         pos_resource_set_item->posresourceSetType.present = NRPPA_PosResourceSetType_PR_periodic;
         asn1cCalloc(pos_resource_set_item->posresourceSetType.choice.periodic, pos_res_set_type_periodic);
-        pos_res_set_type_periodic->posperiodicSet = pos_res_set_item->posresourceSetType.periodic.posperiodicSet;
+        pos_res_set_type_periodic->posperiodicSet = pos_res_set_item->posresourceSetType.choice.periodic.posperiodicSet;
+        break;
+        case f1ap_pos_resource_set_type_pr_aperiodic:
+        pos_resource_set_item->posresourceSetType.present = NRPPA_PosResourceSetType_PR_aperiodic;
+        asn1cCalloc(pos_resource_set_item->posresourceSetType.choice.aperiodic, pos_res_set_type_aperiodic);
+        pos_res_set_type_aperiodic->sRSResourceTrigger = pos_res_set_item->posresourceSetType.choice.aperiodic.sRSResourceTrigger_List;
+        break;
+        case f1ap_pos_resource_set_type_pr_semi_persistent:
+        pos_resource_set_item->posresourceSetType.present = NRPPA_PosResourceSetType_PR_semi_persistent;
+        asn1cCalloc(pos_resource_set_item->posresourceSetType.choice.semi_persistent, pos_res_set_type_semi_persistent);
+        pos_res_set_type_semi_persistent->possemi_persistentSet = pos_res_set_item->posresourceSetType.choice.semi_persistent.possemi_persistentSet;
+        break;
+        default:
+        NRPPA_ERROR("Unknown posresourceSetType \n");
+        break;
+        }
 
         if (j < nb_possrsresourceset - 1) {
           pos_res_set_item++;
@@ -567,10 +563,9 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
     ie->id = NRPPA_ProtocolIE_ID_id_SFNInitialisationTime;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_PositioningInformationResponse_IEs__value_PR_SFNInitialisationTime;
-    // TODO Retreive SFN Initialisation Time and assign
-    // ie->value.choice.SFNInitialisationTime.buf = NULL ; //TODO adeel retrieve and add TYPE typedef struct BIT_STRING_s {uint8_t
-    // *buf;	size_t size;	int bits_unused;} BIT_STRING_t; ie->value.choice.SFNInitialisationTime.size =4;
-    // ie->value.choice.SFNInitialisationTime.bits_unused =0;
+    ie->value.choice.SFNInitialisationTime.buf = resp->sfn_initialisation_time.buf ;
+    ie->value.choice.SFNInitialisationTime.size= resp->sfn_initialisation_time.size;
+    ie->value.choice.SFNInitialisationTime.bits_unused=resp->sfn_initialisation_time.bits_unused;
   }*/
 
   /*//  IE 9.2.2 CriticalityDiagnostics (Optional)
@@ -579,15 +574,6 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
     ie->id = NRPPA_ProtocolIE_ID_id_CriticalityDiagnostics;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_PositioningInformationResponse_IEs__value_PR_CriticalityDiagnostics;
-    // TODO Retreive CriticalityDiagnostics information and assign
-    // ie->value.choice.CriticalityDiagnostics.procedureCode = 9; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.triggeringMessage = 1; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.procedureCriticality = NRPPA_Criticality_reject; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.nrppatransactionID =10;//nrppa_transaction_id ;
-    // ie->value.choice.CriticalityDiagnostics.iEsCriticalityDiagnostics = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.iEsCriticalityDiagnostics = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.iEsCriticalityDiagnostics = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.iE_Extensions = ; //TODO adeel retrieve and add
   }*/
 
   LOG_I(NRPPA, "Calling encoder for PositioningInformationResponse \n");
@@ -596,7 +582,6 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
   /* Encode NRPPA message */
   if (nrppa_gNB_encode_pdu(&tx_pdu, &buffer, &length) < 0) {
     NRPPA_ERROR("Failed to encode Uplink NRPPa PositioningInformationResponse\n");
-    /* Encode procedure has failed... */
     return -1;
   }
 
@@ -634,7 +619,6 @@ int nrppa_gNB_PositioningInformationResponse(instance_t instance, MessageDef *ms
   }
 }
 
-// adeel TODO fill F1AP msg for rrc
 int nrppa_gNB_PositioningInformationFailure(instance_t instance, MessageDef *msg_p)
 {
   f1ap_positioning_information_failure_t *failure_msg = &F1AP_POSITIONING_INFORMATION_FAILURE(msg_p);
@@ -644,14 +628,12 @@ int nrppa_gNB_PositioningInformationFailure(instance_t instance, MessageDef *msg
         failure_msg->gNB_DU_ue_id,
         failure_msg->nrppa_msg_info.ue_rnti);
 
-  // TODO UPDATE data from F1AP Message
-
   // Prepare NRPPA Position Information failure
-  NRPPA_NRPPA_PDU_t tx_pdu; // TODO rename
+  NRPPA_NRPPA_PDU_t tx_pdu;
   uint8_t *buffer = NULL;
   uint32_t length = 0;
 
-  // IE: 9.2.3 Message Type unsuccessfulOutcome PositioningInformationFaliure /* mandatory */
+  // IE: 9.2.3 Message Type unsuccessfulOutcome PositioningInformationFaliure (M)
   memset(&tx_pdu, 0, sizeof(tx_pdu));
   tx_pdu.present = NRPPA_NRPPA_PDU_PR_unsuccessfulOutcome;
   asn1cCalloc(tx_pdu.choice.unsuccessfulOutcome, head);
@@ -659,7 +641,7 @@ int nrppa_gNB_PositioningInformationFailure(instance_t instance, MessageDef *msg
   head->criticality = NRPPA_Criticality_reject;
   head->value.present = NRPPA_UnsuccessfulOutcome__value_PR_PositioningInformationFailure;
 
-  // IE 9.2.4 nrppatransactionID  /* mandatory */
+  // IE 9.2.4 nrppatransactionID  (M)
   head->nrppatransactionID = failure_msg->nrppa_msg_info.nrppa_transaction_id;
   NRPPA_PositioningInformationFailure_t *out = &head->value.choice.PositioningInformationFailure;
 
@@ -695,22 +677,12 @@ int nrppa_gNB_PositioningInformationFailure(instance_t instance, MessageDef *msg
     }
   }
 
-  //  TODO IE 9.2.2 CriticalityDiagnostics (O)
-  /*{
+  /*//  TODO IE 9.2.2 CriticalityDiagnostics (O)
+  {
     asn1cSequenceAdd(out->protocolIEs.list, NRPPA_PositioningInformationFailure_IEs_t, ie);
     ie->id = NRPPA_ProtocolIE_ID_id_CriticalityDiagnostics;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_PositioningInformationFailure_IEs__value_PR_CriticalityDiagnostics;
-    // TODO Retreive CriticalityDiagnostics information and assign
-    // ie->value.choice.CriticalityDiagnostics.procedureCode = 9; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.triggeringMessage = 1; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.procedureCriticality; = NRPPA_Criticality_reject; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.nrppatransactionID =10;//nrppa_transaction_id ;
-    // ie->value.choice.CriticalityDiagnostics.iEsCriticalityDiagnostics = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.iE_Extensions = ; //TODO adeel retrieve and add
-    // TODO Retreive CriticalityDiagnostics information and assign
-    // ie->value.choice.CriticalityDiagnostics. = ;
-    // ie->value.choice.CriticalityDiagnostics. = ;
   }*/
 
   LOG_I(NRPPA, "Calling encoder for PositioningInformationFailure \n");
@@ -719,7 +691,6 @@ int nrppa_gNB_PositioningInformationFailure(instance_t instance, MessageDef *msg
   /* Encode NRPPA message */
   if (nrppa_gNB_encode_pdu(&tx_pdu, &buffer, &length) < 0) {
     NRPPA_ERROR("Failed to encode Uplink NRPPa PositioningInformationFailure \n");
-    /* Encode procedure has failed... */
     return -1;
   }
 
@@ -735,9 +706,9 @@ int nrppa_gNB_PositioningInformationFailure(instance_t instance, MessageDef *msg
                                                 failure_msg->nrppa_msg_info.routing_id_buffer,
                                                 failure_msg->nrppa_msg_info.routing_id_length,
                                                 buffer,
-                                                length); // tx_nrppa_pdu=buffer, nrppa_pdu_length=length
+                                                length);
     return length;
-  } else if (failure_msg->nrppa_msg_info.gNB_ue_ngap_id == -1 && failure_msg->nrppa_msg_info.amf_ue_ngap_id == -1) //
+  } else if (failure_msg->nrppa_msg_info.gNB_ue_ngap_id == -1 && failure_msg->nrppa_msg_info.amf_ue_ngap_id == -1)
   {
     LOG_D(
         NRPPA,
@@ -757,11 +728,7 @@ int nrppa_gNB_PositioningInformationFailure(instance_t instance, MessageDef *msg
   }
 }
 
-// adeel TODO fill F1AP msg for rrc
-int nrppa_gNB_PositioningInformationUpdate(
-    instance_t instance,
-    MessageDef *msg_p) //( uint32_t nrppa_transaction_id, uint8_t *buffer ) // TODO adeel define when and where to call this
-                       // function and setup corresponding ITTI exchange to NGAP
+int nrppa_gNB_PositioningInformationUpdate(instance_t instance, MessageDef *msg_p)
 {
   f1ap_positioning_information_update_t *update_msg = &F1AP_POSITIONING_INFORMATION_UPDATE(msg_p);
   LOG_I(NRPPA,
@@ -771,13 +738,13 @@ int nrppa_gNB_PositioningInformationUpdate(
         update_msg->nrppa_msg_info.ue_rnti);
 
   // Prepare NRPPA Position Information Update
-  NRPPA_NRPPA_PDU_t pdu; // TODO rename
+  NRPPA_NRPPA_PDU_t pdu;
   uint8_t *buffer = NULL;
   uint32_t length = 0;
 
-  /* Prepare the NRPPA message to encode for initiating message PositioningInformationUpdate */
+  // Prepare the NRPPA message to encode for initiating message PositioningInformationUpdate
 
-  // IE: 9.2.3 Message Type initiatingMessage PositioningInformationUpdate /* mandatory */
+  // IE: 9.2.3 Message Type (M)
   memset(&pdu, 0, sizeof(pdu));
   pdu.present = NRPPA_NRPPA_PDU_PR_initiatingMessage;
   asn1cCalloc(pdu.choice.initiatingMessage, head);
@@ -785,19 +752,19 @@ int nrppa_gNB_PositioningInformationUpdate(
   head->criticality = NRPPA_Criticality_ignore;
   head->value.present = NRPPA_InitiatingMessage__value_PR_PositioningInformationUpdate;
 
-  // IE 9.2.4 nrppatransactionID  /* mandatory */
+  // IE 9.2.4 nrppatransactionID  (M)
   head->nrppatransactionID = update_msg->nrppa_msg_info.nrppa_transaction_id;
 
-  NRPPA_PositioningInformationUpdate_t *out = &head->value.choice.PositioningInformationUpdate;
+  //NRPPA_PositioningInformationUpdate_t *out = &head->value.choice.PositioningInformationUpdate;
 
-  // IE 9.2.28 SRS Configuration (Optional)
+  /*// IE 9.2.28 SRS Configuration (Optional)
   {
     asn1cSequenceAdd(out->protocolIEs.list, NRPPA_PositioningInformationUpdate_IEs_t, ie);
     ie->id = NRPPA_ProtocolIE_ID_id_SRSConfiguration;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_PositioningInformationUpdate_IEs__value_PR_SRSConfiguration;
-    // TODO
-  } // IE 9.2.28 SRS Configuration
+    // TO add refer to PositioningInformationResponse
+  } // IE 9.2.28 SRS Configuration*/
 
   /*// IE 9.2.36 SFN Initialisation Time (Optional)
   {
@@ -805,9 +772,9 @@ int nrppa_gNB_PositioningInformationUpdate(
     ie->id = NRPPA_ProtocolIE_ID_id_SFNInitialisationTime;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_PositioningInformationUpdate_IEs__value_PR_SFNInitialisationTime;
-    // TODO Retreive SFN Initialisation Time and assign
-    //        ie->value.choice.SFNInitialisationTime = "1253486"; //TODO adeel retrieve and add TYPE typedef struct BIT_STRING_s
-    //        {uint8_t *buf;	size_t size;	int bits_unused;} BIT_STRING_t;
+    ie->value.choice.SFNInitialisationTime.buf = update_msg->sfn_initialisation_time.buf ;
+    ie->value.choice.SFNInitialisationTime.size= update_msg->sfn_initialisation_time.size;
+    ie->value.choice.SFNInitialisationTime.bits_unused=update_msg->sfn_initialisation_time.bits_unused;
   }*/
 
   LOG_I(NRPPA, "Calling encoder for PositioningInformationUpdate \n");
@@ -853,8 +820,7 @@ int nrppa_gNB_PositioningInformationUpdate(
 }
 
 // adeel TODO fill F1AP msg for rrc
-int nrppa_gNB_PositioningActivationResponse(instance_t instance,
-                                            MessageDef *msg_p) //(uint32_t nrppa_transaction_id, uint8_t *buffer)
+int nrppa_gNB_PositioningActivationResponse(instance_t instance, MessageDef *msg_p)
 {
   f1ap_positioning_activation_resp_t *resp = &F1AP_POSITIONING_ACTIVATION_RESP(msg_p);
   LOG_I(NRPPA,
@@ -864,13 +830,13 @@ int nrppa_gNB_PositioningActivationResponse(instance_t instance,
         resp->nrppa_msg_info.ue_rnti);
 
   // Prepare NRPPA Positioning  Activation Response
-  NRPPA_NRPPA_PDU_t pdu; // TODO rename
+  NRPPA_NRPPA_PDU_t pdu;
   uint8_t *buffer = NULL;
   uint32_t length = 0;
 
   /* Prepare the NRPPA message to encode for successfulOutcome PositioningActivationResponse */
 
-  // IE: 9.2.3 Message Type successfulOutcome PositioningActivationResponse /* mandatory */
+  // IE: 9.2.3 Message Type successfulOutcome (M)
   memset(&pdu, 0, sizeof(pdu));
   pdu.present = NRPPA_NRPPA_PDU_PR_successfulOutcome;
   asn1cCalloc(pdu.choice.successfulOutcome, head);
@@ -881,31 +847,40 @@ int nrppa_gNB_PositioningActivationResponse(instance_t instance,
   // IE 9.2.4 nrppatransactionID  /* mandatory */
   head->nrppatransactionID = resp->nrppa_msg_info.nrppa_transaction_id;
 
-  //  TODO IE 9.2.2 CriticalityDiagnostics (O)
   NRPPA_PositioningActivationResponse_t *out = &head->value.choice.PositioningActivationResponse;
+
+  /*//  TODO IE 9.2.2 CriticalityDiagnostics (O)
   {
     asn1cSequenceAdd(out->protocolIEs.list, NRPPA_PositioningActivationResponseIEs_t, ie);
     ie->id = NRPPA_ProtocolIE_ID_id_CriticalityDiagnostics;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_PositioningActivationResponseIEs__value_PR_CriticalityDiagnostics;
-    // TODO Retreive CriticalityDiagnostics information and assign
-    // ie->value.choice.CriticalityDiagnostics.procedureCode = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.triggeringMessage; = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.procedureCriticality; = ; //TODO adeel retrieve and add
-    ie->value.choice.CriticalityDiagnostics.nrppatransactionID = resp->nrppa_msg_info.nrppa_transaction_id;
-    // ie->value.choice.CriticalityDiagnostics.iEsCriticalityDiagnostics = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.iE_Extensions = ; //TODO adeel retrieve and add
+  }*/
+  // IE  SystemFrameNumber (O)
+  {
+    asn1cSequenceAdd(out->protocolIEs.list, NRPPA_PositioningActivationResponseIEs_t, ie);
+    ie->id = NRPPA_ProtocolIE_ID_id_SystemFrameNumber;
+    ie->criticality = NRPPA_Criticality_ignore;
+    ie->value.present = NRPPA_PositioningActivationResponseIEs__value_PR_SystemFrameNumber;
+    ie->value.choice.SystemFrameNumber= resp->system_frame_number;
+  }
+  //  IE  SlotNumber (O)
+  {
+    asn1cSequenceAdd(out->protocolIEs.list, NRPPA_PositioningActivationResponseIEs_t, ie);
+    ie->id = NRPPA_ProtocolIE_ID_id_SystemFrameNumber;
+    ie->criticality = NRPPA_Criticality_ignore;
+    ie->value.present = NRPPA_PositioningActivationResponseIEs__value_PR_SlotNumber;
+    ie->value.choice.SlotNumber= resp->slot_number;
   }
 
   /* Encode NRPPA message */
   if (nrppa_gNB_encode_pdu(&pdu, &buffer, &length) < 0) {
     NRPPA_ERROR("Failed to encode Uplink NRPPa PositioningActivationResponse\n");
-    /* Encode procedure has failed... */
     return -1;
   }
 
   /* Forward the NRPPA PDU to NGAP */
-  if (resp->nrppa_msg_info.gNB_ue_ngap_id > 0 && resp->nrppa_msg_info.amf_ue_ngap_id > 0) //( 1) // TODO
+  if (resp->nrppa_msg_info.gNB_ue_ngap_id > 0 && resp->nrppa_msg_info.amf_ue_ngap_id > 0)
   {
     LOG_D(NRPPA,
           "Sending UplinkUEAssociatedNRPPa (PositioningActivationResponse) to NGAP (gNB_ue_ngap_id= %d, amf_ue_ngap_id =%ld)  \n",
@@ -919,7 +894,7 @@ int nrppa_gNB_PositioningActivationResponse(instance_t instance,
                                                 buffer,
                                                 length);
     return length;
-  } else if (resp->nrppa_msg_info.gNB_ue_ngap_id == -1 && resp->nrppa_msg_info.amf_ue_ngap_id == -1) //
+  } else if (resp->nrppa_msg_info.gNB_ue_ngap_id == -1 && resp->nrppa_msg_info.amf_ue_ngap_id == -1)
   {
     LOG_D(
         NRPPA,
@@ -939,8 +914,7 @@ int nrppa_gNB_PositioningActivationResponse(instance_t instance,
 }
 
 // adeel TODO fill F1AP msg for rrc
-int nrppa_gNB_PositioningActivationFailure(instance_t instance,
-                                           MessageDef *msg_p) //(uint32_t nrppa_transaction_id, uint8_t *buffer)
+int nrppa_gNB_PositioningActivationFailure(instance_t instance, MessageDef *msg_p)
 {
   f1ap_positioning_activation_failure_t *failure_msg = &F1AP_POSITIONING_ACTIVATION_FAILURE(msg_p);
   LOG_I(NRPPA,
@@ -951,14 +925,12 @@ int nrppa_gNB_PositioningActivationFailure(instance_t instance,
 
   // Prepare NRPPA Positioning Activation Failure
 
-  NRPPA_NRPPA_PDU_t pdu; // TODO rename
+  NRPPA_NRPPA_PDU_t pdu;
   uint8_t *buffer = NULL;
   uint32_t length = 0;
 
   /* Prepare the NRPPA message to encode for unsuccessfulOutcome PositioningActivationFailure */
   // IE: 9.2.3 Message Type unsuccessfulOutcome PositioningActivationFailure /* mandatory */
-
-  // IE 9.2.3 Message type (M)
   memset(&pdu, 0, sizeof(pdu));
   pdu.present = NRPPA_NRPPA_PDU_PR_unsuccessfulOutcome;
   asn1cCalloc(pdu.choice.unsuccessfulOutcome, head);
@@ -1017,14 +989,11 @@ int nrppa_gNB_PositioningActivationFailure(instance_t instance,
   /* Encode NRPPA message */
   if (nrppa_gNB_encode_pdu(&pdu, &buffer, &length) < 0) {
     NRPPA_ERROR("Failed to encode Uplink NRPPa PositioningActivationFailure \n");
-    /* Encode procedure has failed... */
     return -1;
   }
 
   /* Forward the NRPPA PDU to NGAP */
   if (failure_msg->nrppa_msg_info.gNB_ue_ngap_id > 0 && failure_msg->nrppa_msg_info.amf_ue_ngap_id > 0) {
-    // printf("[NRPPA] Test  4.2  Sending ITTI UplinkUEAssociatedNRPPa pdu (PositioningInformationResponse/Failure) to NGAP
-    // nrppa_pdu_length=%d \n", length); xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, &tx_pdu); // test ad
     LOG_D(NRPPA,
           "Sending UplinkUEAssociatedNRPPa (PositioningActivationFailure) to NGAP (gNB_ue_ngap_id= %d, amf_ue_ngap_id =%ld)  \n",
           failure_msg->nrppa_msg_info.gNB_ue_ngap_id,
@@ -1051,7 +1020,6 @@ int nrppa_gNB_PositioningActivationFailure(instance_t instance,
     return length;
   } else {
     NRPPA_ERROR("Failed to find context for Uplink NonUE/UE Associated NRPPa PositioningActivationFailure\n");
-
     return -1;
   }
 }

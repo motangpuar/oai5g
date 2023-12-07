@@ -32,16 +32,14 @@
 #define NRPPA_GNB_MEASUREMENT_INFORMATION_TRANSFER_PROCEDURES_H_
 
 // DOWNLINK
-int nrppa_gNB_handle_Measurement(nrppa_gnb_ue_info_t *nrppa_msg_info,
-                                 NRPPA_NRPPA_PDU_t *pdu); /* Measurement (Parent) procedure for  MeasurementRequest,
-                                                             MeasurementResponse, and MeasurementFailure*/
+// Measurement (Parent) procedure for  MeasurementRequest, MeasurementResponse, and MeasurementFailure
+int nrppa_gNB_handle_Measurement(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu);
 int nrppa_gNB_handle_MeasurementUpdate(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu);
 int nrppa_gNB_handle_MeasurementAbort(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu);
 
 // UPLINK
-int nrppa_gNB_MeasurementFailure(instance_t instance, MessageDef *msg_p); //(uint32_t nrppa_transaction_id, uint
-int nrppa_gNB_MeasurementResponse(instance_t instance, MessageDef *msg_p); //(uint32_t nrppa_transaction_id, uint8_t *buffer);
-int nrppa_gNB_MeasurementReport(instance_t instance, MessageDef *msg_p); //(uint32_t nrppa_transaction_id, uint8_t *buffer);
-int nrppa_gNB_MeasurementFailureIndication(instance_t instance,
-                                           MessageDef *msg_p); //(uint32_t nrppa_transaction_id, uint8_t *buffer);
+int nrppa_gNB_MeasurementFailure(instance_t instance, MessageDef *msg_p);
+int nrppa_gNB_MeasurementResponse(instance_t instance, MessageDef *msg_p);
+int nrppa_gNB_MeasurementReport(instance_t instance, MessageDef *msg_p);
+int nrppa_gNB_MeasurementFailureIndication(instance_t instance, MessageDef *msg_p);
 #endif /* NGAP_GNB_MEASUREMENT_INFORMATION_TRANSFER_PROCEDURES_H_ */

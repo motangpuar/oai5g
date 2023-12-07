@@ -368,29 +368,31 @@ static void positioning_information_response(const f1ap_positioning_information_
 
           NR_SRS_ResourceSet_t *srs_resourceset = srs_config->srs_ResourceSetToAddModList->list.array[y];
 
-          // IE sRSResourceSetID
-          resourceSet_item->sRSResourceSetID = srs_resourceset->srs_ResourceSetId; //// (M)
+          // IE sRSResourceSetID (M)
+          resourceSet_item->sRSResourceSetID = srs_resourceset->srs_ResourceSetId;
 
           // IE resourceSetType
-          if (srs_resourceset->resourceType.present == NR_SRS_ResourceSet__resourceType_PR_periodic) {
-            resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_periodic;
-            resourceSet_item->resourceSetType.choice.periodic.periodicSet =
-                0; // TODO IE not foundsrs_resourceset->resourceType.choice.periodic->associatedCSI_RS;//(M) F1AP_ResourceSetType_t
-                   // resourceSetType;
-          } else if (srs_resourceset->resourceType.present == NR_SRS_ResourceSet__resourceType_PR_aperiodic) {
-            resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_aperiodic;
-            resourceSet_item->resourceSetType.choice.aperiodic.sRSResourceTrigger =
-                0; // TODO verify IE format  srs_resourceset->resourceType.choice.aperiodic->aperiodicSRS_ResourceTriggerList; //
-                   // TODO IE not found ;//(M) F1AP_ResourceSetType_t	 resourceSetType;
-            resourceSet_item->resourceSetType.choice.aperiodic.slotoffset =
-                0; // TODO verify IE format srs_resourceset->resourceType.choice.aperiodic->slotOffset;
-          } else if (srs_resourceset->resourceType.present == NR_SRS_ResourceSet__resourceType_PR_semi_persistent) {
-            resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_semi_persistent;
-            resourceSet_item->resourceSetType.choice.semi_persistent.semi_persistentSet =
-                0; // TODO IE not foundsrs_resourceset->resourceType.choice.semi_persistent->associatedCSI_RS;//(M)
-                   // F1AP_ResourceSetType_t	 resourceSetType;
-          } else if (srs_resourceset->resourceType.present == NR_SRS_ResourceSet__resourceType_PR_NOTHING) {
-            resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_nothing;
+          // TODO IE not found srs_resourceset->resourceType.choice.periodic->associatedCSI_RS;//(M) F1AP_ResourceSetType_t// resourceSetType;
+          switch(srs_resourceset->resourceType.present){
+          case NR_SRS_ResourceSet__resourceType_PR_periodic:
+          resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_periodic;
+          resourceSet_item->resourceSetType.choice.periodic.periodicSet =0;
+          break;
+          case NR_SRS_ResourceSet__resourceType_PR_aperiodic:
+          resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_aperiodic;
+          resourceSet_item->resourceSetType.choice.aperiodic.sRSResourceTrigger =1; // range 1-3
+          resourceSet_item->resourceSetType.choice.aperiodic.slotoffset =1; // range 1-32
+          break;
+          case NR_SRS_ResourceSet__resourceType_PR_semi_persistent:
+          resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_semi_persistent;
+          resourceSet_item->resourceSetType.choice.semi_persistent.semi_persistentSet =0;
+          break;
+          case NR_SRS_ResourceSet__resourceType_PR_NOTHING:
+          resourceSet_item->resourceSetType.present = f1ap_resource_set_type_pr_nothing;
+          break;
+          default:
+          LOG_E(MAC, "Unknown NR_SRS_ResourceSet__resourceType \n");
+          break;
           }
 
           // IE sRSResourceID_List
@@ -454,19 +456,25 @@ static void positioning_information_response(const f1ap_positioning_information_
         f1ap_pos_srs_resource_set_item_t *pos_resourceSet_item =
             srs_carrier_list_item->active_ul_bwp.sRSConfig.posSRSResourceSet_List.pos_srs_resource_set_item;
         LOG_D(MAC, "Preparing posSRSResourceSet_List for NRRPA  maxnoPosSRSResourceSets=%d \n", maxnoPosSRSResourceSets);
-        for (int f = 0; f < maxnoPosSRSResourceSets; f++) { // Preparing SRS Resource Set List
-          pos_resourceSet_item->possrsResourceSetID =
-              0; // (M) srs_config->possrs_ResourceSetToAddModList->list.array[y]->srs_ResourceSetId; //// (M)
-          pos_resourceSet_item->posresourceSetType.periodic.posperiodicSet = 0; // f1ap_pos_resource_set_type_u	 posresourceSetType;
+        for (int f = 0; f < maxnoPosSRSResourceSets; f++) { // Preparing Pos SRS Resource Set List
+          pos_resourceSet_item->possrsResourceSetID = 0; // (M) srs_config->possrs_ResourceSetToAddModList->list.array[y]->srs_ResourceSetId; //// (M)
+
           // pos_resourceSet_item->possRSResourceID_List; //f1ap_pos_srs_resource_id_list_t	 possRSResourceID_List;
-          int maxnoPosSRSResourcePerSets = 1; // TODO retrieve and add
+          int maxnoPosSRSResourcePerSets = 1;
           pos_resourceSet_item->possRSResourceID_List.pos_srs_resource_id_list_length = maxnoPosSRSResourcePerSets;
           pos_resourceSet_item->possRSResourceID_List.srs_pos_resource_id = malloc(maxnoPosSRSResourcePerSets * sizeof(uint8_t));
           DevAssert(pos_resourceSet_item->possRSResourceID_List.srs_pos_resource_id);
           for (int z = 0; z < maxnoPosSRSResourcePerSets; z++) {
             pos_resourceSet_item->possRSResourceID_List.srs_pos_resource_id = 0; // TODO pointer address update
           }
+
+          //  IE posresourceSetType TODO
+          //pos_resourceSet_item->posresourceSetType.present=f1ap_pos_resource_set_type_pr_nothing;
+          pos_resourceSet_item->posresourceSetType.present=f1ap_pos_resource_set_type_pr_aperiodic;
+          pos_resourceSet_item->posresourceSetType.choice.aperiodic.sRSResourceTrigger_List=1;
+          //pos_resourceSet_item->posresourceSetType.periodic.posperiodicSet = 0; // f1ap_pos_resource_set_type_u	 posresourceSetType;
         } // for(int f=0; f < maxnoSRSResourceSets; f++)
+
 
         //  Preparing Uplink Channel BW Per SCS List information IE of SRSCarrier_List f1ap_uplink_channel_bw_per_scs_list_t
         //  uplink_channel_bw_per_scs_list ; //(M)

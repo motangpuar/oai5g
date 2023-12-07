@@ -42,22 +42,23 @@
 #include "assertions.h"
 #include "conversions.h"
 
-/* Start: Adeel New added For NRPPA */
+
 #include "nrppa_gNB.h"
 #include "nrppa_common.h"
 #include "nrppa_gNB_handlers.h"
-/* END: Adeel New added for NRPPA */
+#include "nrppa_gNB_position_information_transfer_procedures.h"
+#include "nrppa_gNB_TRP_information_transfer_procedures.h"
+#include "nrppa_gNB_measurement_information_transfer_procedures.h"
+
 
 void nrppa_gNB_init(void)
 {
   NRPPA_DEBUG("Starting NRPPA layer\n");
-  // ngap_gNB_prepare_internal_data();
   itti_mark_task_ready(TASK_NRPPA);
 }
 
 void *nrppa_gNB_process_itti_msg(void *notUsed)
 {
-  // printf("Test 1 Adeel: NRPPA Waiting for message\n");
   MessageDef *received_msg = NULL;
   int result;
   itti_receive_msg(TASK_NRPPA, &received_msg);
@@ -69,69 +70,51 @@ void *nrppa_gNB_process_itti_msg(void *notUsed)
         NRPPA_WARN(" *** Exiting NRPPA thread\n"); // to be implemented // ad**l
         itti_exit_task();
         break;
-
       case NGAP_DOWNLINKUEASSOCIATEDNRPPA:
-        //   printf("\n[NRPPA] Test Adeel: calling handler case NGAP_DOWNLINKUEASSOCIATEDNRPPA\n");
         nrppa_handle_DownlinkUEAssociatedNRPPaTransport(instance,
-                                                        &NGAP_DOWNLINKUEASSOCIATEDNRPPA(received_msg)); // adeel changes NRPPA
-        // nrppa_handle_DownlinkUEAssociatedNRPPaTransport(&NGAP_DOWNLINKUEASSOCIATEDNRPPA(received_msg));
+                                                        &NGAP_DOWNLINKUEASSOCIATEDNRPPA(received_msg));
         break;
-
       case NGAP_DOWNLINKNONUEASSOCIATEDNRPPA:
         nrppa_handle_DownlinkNonUEAssociatedNRPPaTransport(instance,
-                                                           &NGAP_DOWNLINKNONUEASSOCIATEDNRPPA(received_msg)); // adeel changes NRPPA
-        // nrppa_handle_DownlinkNonUEAssociatedNRPPaTransport(&NGAP_DOWNLINKNONUEASSOCIATEDNRPPA(received_msg));
+                                                           &NGAP_DOWNLINKNONUEASSOCIATEDNRPPA(received_msg));
         break;
-
       case F1AP_POSITIONING_INFORMATION_RESP:
         nrppa_gNB_PositioningInformationResponse(instance, received_msg);
         break;
-
       case F1AP_POSITIONING_INFORMATION_FAILURE:
         nrppa_gNB_PositioningInformationFailure(instance, received_msg);
         break;
-
       case F1AP_POSITIONING_INFORMATION_UPDATE:
         nrppa_gNB_PositioningInformationUpdate(instance, received_msg);
         break;
-
       case F1AP_POSITIONING_ACTIVATION_RESP:
         nrppa_gNB_PositioningActivationResponse(instance, received_msg);
         break;
-
       case F1AP_POSITIONING_ACTIVATION_FAILURE:
         nrppa_gNB_PositioningActivationFailure(instance, received_msg);
         break;
-
       case F1AP_MEASUREMENT_RESP:
         nrppa_gNB_MeasurementResponse(instance, received_msg);
         break;
-
       case F1AP_MEASUREMENT_FAILURE:
         nrppa_gNB_MeasurementFailure(instance, received_msg);
         break;
-
       case F1AP_MEASUREMENT_REPORT:
         nrppa_gNB_MeasurementReport(instance, received_msg);
         break;
-
       case F1AP_MEASUREMENT_FAILURE_IND:
         nrppa_gNB_MeasurementFailureIndication(instance, received_msg);
         break;
-
       case F1AP_TRP_INFORMATION_RESP:
         nrppa_gNB_TRPInformationResponse(instance, received_msg);
         break;
-
       case F1AP_TRP_INFORMATION_FAILURE:
         nrppa_gNB_TRPInformationFailure(instance, received_msg);
         break;
-
       default:
         NRPPA_ERROR("Received unhandled message: %d:%s\n", ITTI_MSG_ID(received_msg), ITTI_MSG_NAME(received_msg));
         break;
     }
-
     result = itti_free(ITTI_MSG_ORIGIN_ID(received_msg), received_msg);
     AssertFatal(result == EXIT_SUCCESS, "Failed to free memory (%d)!\n", result);
   }
@@ -140,7 +123,6 @@ void *nrppa_gNB_process_itti_msg(void *notUsed)
 
 void *nrppa_gNB_task(void *arg)
 {
-  // printf("Test 1 Adeel: NRPPA Waiting for message\n");
   nrppa_gNB_init();
 
   while (1) {

@@ -51,11 +51,11 @@
 int ngap_gNB_UplinkUEAssociatedNRPPaTransport(instance_t instance, ngap_UplinkUEAssociatedNRPPa_t *ngap_UplinkUEAssociatedNRPPa_p)
 {
   LOG_I(NGAP, "Initiating ngap_gNB_UplinkUEAssociatedNRPPaTransport \n");
-  struct ngap_gNB_ue_context_s *ue_context_p;
-  ngap_gNB_instance_t *ngap_gNB_instance_p;
+  struct ngap_gNB_ue_context_s *ue_context_p = NULL;
+  ngap_gNB_instance_t *ngap_gNB_instance_p = NULL;
   NGAP_NGAP_PDU_t pdu;
-  uint8_t *buffer;
-  uint32_t length;
+  uint8_t *buffer= NULL;
+  uint32_t length=0;
   DevAssert(ngap_UplinkUEAssociatedNRPPa_p != NULL);
   /* Retrieve the NGAP gNB instance associated with Mod_id */
   ngap_gNB_instance_p = ngap_gNB_get_instance(instance);
@@ -140,18 +140,18 @@ int ngap_gNB_UplinkUEAssociatedNRPPaTransport(instance_t instance, ngap_UplinkUE
 int ngap_gNB_UplinkNonUEAssociatedNRPPaTransport(instance_t instance,
                                                  ngap_UplinkNonUEAssociatedNRPPa_t *ngap_UplinkNonUEAssociatedNRPPa_p)
 {
-  ngap_gNB_instance_t *ngap_gNB_instance_p;
-  ngap_gNB_amf_data_t *amf_desc_p;
+  ngap_gNB_instance_t *ngap_gNB_instance_p= NULL;
+  ngap_gNB_amf_data_t *amf_desc_p= NULL;
   NGAP_NGAP_PDU_t pdu;
-  uint8_t *buffer;
-  uint32_t length;
+  uint8_t *buffer= NULL;
+  uint32_t length=0;
   DevAssert(ngap_UplinkNonUEAssociatedNRPPa_p != NULL);
   /* Retrieve the NGAP gNB instance associated with Mod_id */
   ngap_gNB_instance_p = ngap_gNB_get_instance(instance);
   DevAssert(ngap_gNB_instance_p != NULL);
 
   /* Retrieve the NGAP gNB  amf data */
-  amf_desc_p = ngap_gNB_get_AMF_from_instance(instance);
+  amf_desc_p = ngap_gNB_get_AMF_from_instance(ngap_gNB_instance_p);
   DevAssert(amf_desc_p != NULL);
 
   /* Prepare the NGAP message to encode */
@@ -199,7 +199,7 @@ int ngap_gNB_UplinkNonUEAssociatedNRPPaTransport(instance_t instance,
 }
 
 // handel DOWNLINK UE ASSOCIATED NRPPA TRANSPORT (9.2.9.1 of TS 38.413 Version 16.0.0.0 Release 16)
-int ngap_gNB_handle_DownlinkUEAssociatedNRPPaTransport(uint32_t assoc_id, uint32_t stream, NGAP_NGAP_PDU_t *pdu)
+int ngap_gNB_handle_DownlinkUEAssociatedNRPPaTransport(sctp_assoc_t assoc_id, uint32_t stream, NGAP_NGAP_PDU_t *pdu)
 {
   ngap_gNB_amf_data_t *amf_desc_p = NULL;
   ngap_gNB_ue_context_t *ue_desc_p = NULL;
@@ -249,17 +249,6 @@ int ngap_gNB_handle_DownlinkUEAssociatedNRPPaTransport(uint32_t assoc_id, uint32
                gnb_ue_ngap_id);
     return -1;
   }
-  // printf("Test 1 [NGAP]Adeel: NGAP handel_DownlinkUEAssociatedNRPPa gNB_UE_NGAP_ID= %d\n", gnb_ue_ngap_id);
-  // printf("Test 1 [NGAP]Adeel: NGAP handel_DownlinkUEAssociatedNRPPa gNB_UE_NGAP_ID: 0x%lx\n", gnb_ue_ngap_id);
-  /* todo ad**l
-    if (0 == ue_desc_p->rx_stream) {
-      ue_desc_p->rx_stream = stream;
-    } else if (stream != ue_desc_p->rx_stream) {
-      NGAP_ERROR("[SCTP %d] Received UE-related procedure on stream %u, expecting %u\n",
-                 assoc_id, stream, ue_desc_p->rx_stream);
-      return -1;
-    } */
-
   /* Is it the first outcome of the AMF for this UE ? If so store the amf
    * UE ngap id.
    */
@@ -280,60 +269,26 @@ int ngap_gNB_handle_DownlinkUEAssociatedNRPPaTransport(uint32_t assoc_id, uint32
   NGAP_FIND_PROTOCOLIE_BY_ID(NGAP_DownlinkUEAssociatedNRPPaTransportIEs_t, ie, container, NGAP_ProtocolIE_ID_id_RoutingID, true);
   routingId_buffer = ie->value.choice.RoutingID.buf;
   routingId_buffer_length = ie->value.choice.RoutingID.size;
-  /*printf("Test 1 Adeel: NGAP itti send_DownlinkUEAssociatedNRPPa Routing pdu buffer size =%d and buffer is \n ",
-  ie->value.choice.RoutingID.size); uint8_t *rId_buffer= ie->value.choice.RoutingID.buf ; printf("Routing ID buffer startind addr %p
-  and value \n", rId_buffer); for (int i = 0; i < ie->value.choice.RoutingID.size; i++){ printf("%02x ", *rId_buffer++);
-  //printf("%d ", *rId_buffer++);
-  //printf("%p ", rId_buffer++);
-  }*/
 
   // IE: 9.3.3.14 NRPPa-PDU
   NGAP_FIND_PROTOCOLIE_BY_ID(NGAP_DownlinkUEAssociatedNRPPaTransportIEs_t, ie, container, NGAP_ProtocolIE_ID_id_NRPPa_PDU, true);
   nrppa_pdu_buffer = ie->value.choice.NRPPa_PDU.buf;
   nrppa_pdu_length = ie->value.choice.NRPPa_PDU.size;
 
-  // ie->value.choice.NRPPa_PDU.buf, ie->value.choice.NRPPa_PDU.size);
-  // printf("Test 1 Adeel: NGAP itti send_DownlinkUEAssociatedNRPPa Nrppa pdu buffer size =%d and buffer is \n ",
-  // ie->value.choice.NRPPa_PDU.size);
-  /*uint8_t *nrp_buffer= ie->value.choice.NRPPa_PDU.buf ;
-  printf("Nrppa pdu buffer startind addr %p and value \n", nrp_buffer);
-  for (int i = 0; i < ie->value.choice.NRPPa_PDU.size; i++){
-  printf("%02x ", *nrp_buffer++);
-  //printf("%d ", *nrp_buffer++);
-  //printf("%p ", nrp_buffer++);
-  }*/
-
-  /*printf("Test 1 Adeel: NGAP itti send_DownlinkUEAssociatedNRPPa Routing pdu buffer size =%d and buffer is \n ",
-  routingId_buffer_length); printf("[NGAP] Routing ID buffer startind addr %p  and value \n", routingId_buffer); for (int i = 0; i <
-  routingId_buffer_length; i++){ printf("%02x ", *routingId_buffer++);
-  //printf("%d ", *rId_buffer++);
-  //printf("%p ", rId_buffer++);
-  }*/
-
-  /*printf("Test 1 Adeel: NGAP itti send_DownlinkUEAssociatedNRPPa Nrppa pdu buffer size =%d and buffer is \n ",
-  ie->value.choice.NRPPa_PDU.size); printf("[NGAP] Nrppa pdu buffer startind addr %p and value \n", nrppa_pdu_buffer); for (int i =
-  0; i < nrppa_pdu_length; i++){ printf("%02x ", *nrppa_pdu_buffer++);
-  //printf("%d ", *nrppa_pdu_buffer++);
-  //printf("%p ", nrppa_pdu_buffer++);
-  }*/
-
   /* Forward the NRPPA PDU to NRPPA */
-  // ngap_gNB_itti_send_DownlinkUEAssociatedNRPPa(ngap_gNB_instance->instance, gnb_ue_ngap_id, amf_ue_ngap_id,
-  // ie->value.choice.RoutingID.buf, ie->value.choice.RoutingID.size,ie->value.choice.NRPPa_PDU.buf,
-  // ie->value.choice.NRPPa_PDU.size); //ad**l todo
   ngap_gNB_itti_send_DownlinkUEAssociatedNRPPa(ngap_gNB_instance->instance,
                                                gnb_ue_ngap_id,
                                                amf_ue_ngap_id,
                                                routingId_buffer,
                                                routingId_buffer_length,
                                                nrppa_pdu_buffer,
-                                               nrppa_pdu_length); // ad**l todo
+                                               nrppa_pdu_length);
 
   return 0;
 }
 
 // DOWNLINK NON UE ASSOCIATED NRPPA TRANSPORT (9.2.9.3 of TS 38.413 Version 16.0.0.0 Release 16)
-int ngap_gNB_handle_DownlinkNonUEAssociatedNRPPaTransport(uint32_t assoc_id, uint32_t stream, NGAP_NGAP_PDU_t *pdu)
+int ngap_gNB_handle_DownlinkNonUEAssociatedNRPPaTransport(sctp_assoc_t assoc_id, uint32_t stream, NGAP_NGAP_PDU_t *pdu)
 {
   ngap_gNB_amf_data_t *amf_desc_p = NULL;
   ngap_gNB_instance_t *ngap_gNB_instance = NULL;

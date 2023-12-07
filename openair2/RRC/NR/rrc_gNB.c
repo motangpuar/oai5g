@@ -2300,15 +2300,12 @@ static void rrc_CU_process_trp_information_request(f1ap_trp_information_req_t *r
 
 static void rrc_CU_process_measurement_request(f1ap_measurement_req_t *req)
 {
-  // rrc_gNB_ue_context_t *ue_context_p = rrc_gNB_get_ue_context(RC.nrrrc[req->nrppa_msg_info.instance],
-  // req->nrppa_msg_info.gNB_ue_ngap_id); gNB_RRC_UE_t *UE = &ue_context_p->ue_context; req->nrppa_msg_info.ue_rnti=UE->rnti;
-  //  f1_ue_data_t ue_data = cu_get_f1_ue_data(UE->rrc_ue_id);
-  gNB_RRC_INST *rrc = RC.nrrrc[req->nrppa_msg_info.instance];
+   gNB_RRC_INST *rrc = RC.nrrrc[req->nrppa_msg_info.instance];
 
   rrc_gNB_ue_context_t *ue_context_p =
       rrc_gNB_get_ue_context(RC.nrrrc[req->nrppa_msg_info.instance], req->nrppa_msg_info.gNB_ue_ngap_id);
   gNB_RRC_UE_t *UE = &ue_context_p->ue_context;
-  f1_ue_data_t ue_data = cu_get_f1_ue_data(UE->rrc_ue_id);
+  //f1_ue_data_t ue_data = cu_get_f1_ue_data(UE->rrc_ue_id);
   req->nrppa_msg_info.ue_rnti = UE->rnti;
   //req->gNB_DU_ue_id = ue_data.secondary_ue;
   //req->gNB_CU_ue_id = UE->rrc_ue_id;

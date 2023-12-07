@@ -104,40 +104,10 @@ void ngap_gNB_itti_send_DownlinkUEAssociatedNRPPa(instance_t instance,
   memcpy(ngap_DownlinkUEAssociatedNRPPa->routing_id.buffer, routingId_buffer, routingId_buffer_length);
   ngap_DownlinkUEAssociatedNRPPa->routing_id.length = routingId_buffer_length;
 
-  /*printf("\n [NGAP]Ngap_gNB_itti_send_DownlinkUEAssociatedNRPPaNrppaRouting pdu buffer size =%d and buffer is \n ",
-  routingId_buffer_length); printf("\n [NGAP] Routing ID buffer startind addr %p  and value \n", routingId_buffer); for (int i = 0;
-  i < routingId_buffer_length; i++){ printf("%02x ", *routingId_buffer++);
-  //printf("%d ", *rId_buffer++);
-  //printf("%p ", rId_buffer++);
-  }*/
-  printf("[NGAP] Ngap_gNB_itti_send_DownlinkUEAssociatedNRPPa Routing id size =%d and id is \n ",
-         ngap_DownlinkUEAssociatedNRPPa->routing_id.length);
-  uint8_t *rId_buffer = ngap_DownlinkUEAssociatedNRPPa->routing_id.buffer;
-  for (int i = 0; i < ngap_DownlinkUEAssociatedNRPPa->routing_id.length; i++) {
-    printf("%02x ", *rId_buffer++);
-    // printf("%d ", *rId_buffer++);
-    // printf("%p ", rId_buffer++);
-  }
-
   /* NRPPa PDU*/
   ngap_DownlinkUEAssociatedNRPPa->nrppa_pdu.buffer = malloc(sizeof(uint8_t) * nrppa_pdu_length);
   memcpy(ngap_DownlinkUEAssociatedNRPPa->nrppa_pdu.buffer, nrppa_pdu, nrppa_pdu_length);
   ngap_DownlinkUEAssociatedNRPPa->nrppa_pdu.length = nrppa_pdu_length;
-
-  /*printf("\n Ngap_gNB_itti_send_DownlinkUEAssociatedNRPPaNrppa pdu buffer size =%d and buffer is \n ", nrppa_pdu_length);
-  printf("\n [NGAP] Nrppa pdu buffer startind addr %p and value \n", nrppa_pdu);
-  for (int i = 0; i < nrppa_pdu_length; i++){
-  printf("%02x ", *nrppa_pdu++);
-  //printf("%d ", *nrppa_pdu_buffer++);
-  //printf("%p ", nrppa_pdu_buffer++);
-  }*/
-
-  /*printf("\n [NGAP] Ngap_gNB_itti_send_DownlinkUEAssociatedNRPPa Nrppa pdu size =%d and pdu is \n ",
-  ngap_DownlinkUEAssociatedNRPPa->nrppa_pdu.length); uint8_t *n_pdu_buffer= ngap_DownlinkUEAssociatedNRPPa->nrppa_pdu.buffer; for
-  (int i = 0; i < ngap_DownlinkUEAssociatedNRPPa->nrppa_pdu.length; i++){ printf("%02x ", *n_pdu_buffer++);
-  //printf("%d ", *nrppa_pdu_buffer++);
-  //printf("%p ", nrppa_pdu_buffer++);
-  }*/
 
   itti_send_msg_to_task(TASK_NRPPA, instance, message_p);
 }

@@ -33,53 +33,55 @@
 #include "nrppa_common.h"
 #include "nrppa_gNB_TRP_information_transfer_procedures.h"
 #include "nrppa_gNB_itti_messaging.h"
+#include "nrppa_gNB_encoder.h"
 
 /* TRPInformationExchange (Parent) procedure for  TRPInformationRequest, TRPInformationResponse, and TRPInformationFailure*/
 // adeel TODO fill F1AP msg for rrc
 int nrppa_gNB_handle_TRPInformationExchange(nrppa_gnb_ue_info_t *nrppa_msg_info, NRPPA_NRPPA_PDU_t *pdu)
 {
   LOG_I(NRPPA, "Processing Received TRPInformationRequest \n");
-  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, &pdu);
-  uint32_t nrppa_transaction_id;
-
-  /*  TODO process and fill F1AP message
-  // Processing Received TRPInformationRequest
-  NRPPA_TRPInformationRequest_t *container;
-  NRPPA_TRPInformationRequest_IEs_t *ie;
-
   DevAssert(pdu != NULL);
+  xer_fprint(stdout, &asn_DEF_NRPPA_NRPPA_PDU, pdu);
 
-  container = &pdu->choice.initiatingMessage->value.choice.TRPInformationRequest; // IE 9.2.3 Message type (M)
-  nrppa_transaction_id = pdu->choice.initiatingMessage->nrppatransactionID; // IE 9.2.4 nrppatransactionID (M)
-
-  // IE TRP List
-  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_TRPInformationRequest_IEs_t, ie, container, NRPPA_ProtocolIE_ID_id_TRPList, true);
-  //    NRPPA_TRPList_t TRP_List = ie->value.choice.TRPList;  // TODO process this information
-
-  // IE TRP Information Type List
-  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_TRPInformationRequest_IEs_t,
-                              ie,
-                              container,
-                              NRPPA_ProtocolIE_ID_id_TRPInformationTypeList,
-                              true);
-  // NRPPA_TRPInformationTypeList_t TRP_Info_Type_List= ie->value.choice.TRPInformationTypeList; // TODO process this information*/
-
-  // Forward request to RRC
+   // Forward request to RRC
   MessageDef *msg = itti_alloc_new_message(TASK_RRC_GNB, 0, F1AP_TRP_INFORMATION_REQ);
   f1ap_trp_information_req_t *f1ap_req = &F1AP_TRP_INFORMATION_REQ(msg);
-  f1ap_req->transaction_id = 0;
-  f1ap_req->nrppa_msg_info.nrppa_transaction_id = nrppa_transaction_id;
   f1ap_req->nrppa_msg_info.instance = nrppa_msg_info->instance;
   f1ap_req->nrppa_msg_info.gNB_ue_ngap_id = nrppa_msg_info->gNB_ue_ngap_id;
   f1ap_req->nrppa_msg_info.amf_ue_ngap_id = nrppa_msg_info->amf_ue_ngap_id;
   f1ap_req->nrppa_msg_info.routing_id_buffer = nrppa_msg_info->routing_id_buffer;
   f1ap_req->nrppa_msg_info.routing_id_length = nrppa_msg_info->routing_id_length;
 
-  LOG_I(NRPPA, "Forwarding to RRC TRPInformationRequest transaction_id=%d\n", f1ap_req->transaction_id);
-  itti_send_msg_to_task(TASK_RRC_GNB, 0, msg);
+  // Processing Received TRPInformationRequest
+  NRPPA_TRPInformationRequest_t *container;
+  NRPPA_TRPInformationRequest_IEs_t *ie;
+
+  // IE 9.2.3 Message type (M)
+  container = &pdu->choice.initiatingMessage->value.choice.TRPInformationRequest;
+  // IE 9.2.4 nrppatransactionID (M)
+  f1ap_req->transaction_id = pdu->choice.initiatingMessage->nrppatransactionID;
+  f1ap_req->nrppa_msg_info.nrppa_transaction_id = pdu->choice.initiatingMessage->nrppatransactionID;
+
+  // IE TRP List
+  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_TRPInformationRequest_IEs_t, ie, container, NRPPA_ProtocolIE_ID_id_TRPList, false);
+  if (ie!= NULL){
+  LOG_I(NRPPA, "Process TRPInformationRequest IE  TRP List");
+  //    NRPPA_TRPList_t TRP_List = ie->value.choice.TRPList;  // TODO process this and fill f1ap message
+  }
+
+  // IE TRP Information Type List
+  NRPPA_FIND_PROTOCOLIE_BY_ID(NRPPA_TRPInformationRequest_IEs_t, ie, container, NRPPA_ProtocolIE_ID_id_TRPInformationTypeList, false);
+  if (ie!= NULL){
+  LOG_I(NRPPA, "Process TRPInformationRequest IE TRPInformationTypeList");
+  // NRPPA_TRPInformationTypeList_t TRP_Info_Type_List= ie->value.choice.TRPInformationTypeList; // TODO process this and fill f1ap message
 }
 
-// adeel TODO fill F1AP msg for rrc
+  LOG_I(NRPPA, "Forwarding to RRC TRPInformationRequest transaction_id=%d\n", f1ap_req->transaction_id);
+  itti_send_msg_to_task(TASK_RRC_GNB, 0, msg);
+  return 0;
+}
+
+// TODO fill F1AP msg for rrc
 
 int nrppa_gNB_TRPInformationResponse(instance_t instance, MessageDef *msg_p)
 {
@@ -90,12 +92,12 @@ int nrppa_gNB_TRPInformationResponse(instance_t instance, MessageDef *msg_p)
         resp->nrppa_msg_info.ue_rnti);
 
   // Prepare NRPPA TRP Information transfer Response
-  NRPPA_NRPPA_PDU_t pdu; // TODO rename
+  NRPPA_NRPPA_PDU_t pdu;
   uint8_t *buffer = NULL;
   uint32_t length = 0;
   /* Prepare the NRPPA message to encode for successfulOutcome TRPInformationResponse */
 
-  // IE: 9.2.3 Message Type successfulOutcome TRPInformationResponse /* mandatory */
+  // IE: 9.2.3 Message Type successfulOutcome TRPInformationResponse (M)
   memset(&pdu, 0, sizeof(pdu));
   pdu.present = NRPPA_NRPPA_PDU_PR_successfulOutcome;
   asn1cCalloc(pdu.choice.successfulOutcome, head);
@@ -103,12 +105,13 @@ int nrppa_gNB_TRPInformationResponse(instance_t instance, MessageDef *msg_p)
   head->criticality = NRPPA_Criticality_reject;
   head->value.present = NRPPA_SuccessfulOutcome__value_PR_TRPInformationResponse;
 
-  // IE 9.2.4 nrppatransactionID  /* mandatory */
+  // IE 9.2.4 nrppatransactionID  (M)
   head->nrppatransactionID = resp->nrppa_msg_info.nrppa_transaction_id;
 
   NRPPA_TRPInformationResponse_t *out = &head->value.choice.TRPInformationResponse;
 
-  // IE TRP Information List
+  // IE TRP Information List (M)
+  // TODO fill pdu using f1ap_trp_information_resp_t *resp
   {
     asn1cSequenceAdd(out->protocolIEs.list, NRPPA_TRPInformationResponse_IEs_t, ie);
     ie->id = NRPPA_ProtocolIE_ID_id_TRPInformationList;
@@ -127,7 +130,6 @@ int nrppa_gNB_TRPInformationResponse(instance_t instance, MessageDef *msg_p)
       for (int k = 0; k < nb_tRPInfoTypes; k++) // Preparing NRPPA_TRPInformation_t a list of  TRPInformation_item
       {
         asn1cSequenceAdd(item->tRPInformation.list, NRPPA_TRPInformationItem_t, trpinfo_item);
-
         // TODO adeel retrive relevent info and add
         trpinfo_item->choice.pCI_NR = 0; // long dummy value
         trpinfo_item->choice.sSBinformation = NULL; // dummy values
@@ -140,20 +142,13 @@ int nrppa_gNB_TRPInformationResponse(instance_t instance, MessageDef *msg_p)
 
   } // IE Information List
 
-  //  TODO IE 9.2.2 CriticalityDiagnostics (O)
+  /*//  TODO IE 9.2.2 CriticalityDiagnostics (O)
   {
     asn1cSequenceAdd(out->protocolIEs.list, NRPPA_TRPInformationResponse_IEs_t, ie);
     ie->id = NRPPA_ProtocolIE_ID_id_CriticalityDiagnostics;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_TRPInformationResponse_IEs__value_PR_CriticalityDiagnostics;
-    // TODO Retreive CriticalityDiagnostics information and assign
-    // ie->value.choice.CriticalityDiagnostics.procedureCode = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.triggeringMessage; = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.procedureCriticality; = ; //TODO adeel retrieve and add
-    ie->value.choice.CriticalityDiagnostics.nrppatransactionID = resp->nrppa_msg_info.nrppa_transaction_id;
-    // ie->value.choice.CriticalityDiagnostics.iEsCriticalityDiagnostics = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.iE_Extensions = ; //TODO adeel retrieve and add
-  }
+  }*/
 
   /* Encode NRPPA message */
   if (nrppa_gNB_encode_pdu(&pdu, &buffer, &length) < 0) {
@@ -195,7 +190,7 @@ int nrppa_gNB_TRPInformationResponse(instance_t instance, MessageDef *msg_p)
   }
 }
 
-// adeel TODO fill F1AP msg for rrc
+// TODO fill F1AP msg for rrc
 int nrppa_gNB_TRPInformationFailure(instance_t instance, MessageDef *msg_p)
 {
   f1ap_trp_information_failure_t *failure_msg = &F1AP_TRP_INFORMATION_FAILURE(msg_p);
@@ -204,16 +199,13 @@ int nrppa_gNB_TRPInformationFailure(instance_t instance, MessageDef *msg_p)
         failure_msg->transaction_id,
         failure_msg->nrppa_msg_info.ue_rnti);
 
-  // TODO UPDATE data from F1AP Message
-
   // Prepare NRPPA Position Information failure
-  NRPPA_NRPPA_PDU_t pdu; // TODO rename
+  NRPPA_NRPPA_PDU_t pdu;
   uint8_t *buffer = NULL;
   uint32_t length = 0;
   /* Prepare the NRPPA message to encode for unsuccessfulOutcome TRPInformationFailure */
 
-  // IE: 9.2.3 Message Type unsuccessfulOutcome TRPInformationFaliure /* mandatory */
-  // IE 9.2.3 Message type (M)
+  // IE: 9.2.3 Message Type unsuccessfulOutcome TRPInformationFaliure (M)
   memset(&pdu, 0, sizeof(pdu));
   pdu.present = NRPPA_NRPPA_PDU_PR_unsuccessfulOutcome;
   asn1cCalloc(pdu.choice.unsuccessfulOutcome, head);
@@ -221,7 +213,7 @@ int nrppa_gNB_TRPInformationFailure(instance_t instance, MessageDef *msg_p)
   head->criticality = NRPPA_Criticality_reject;
   head->value.present = NRPPA_UnsuccessfulOutcome__value_PR_TRPInformationFailure;
 
-  // IE 9.2.4 nrppatransactionID  /* mandatory */
+  // IE 9.2.4 nrppatransactionID  (M)
   head->nrppatransactionID = failure_msg->nrppa_msg_info.nrppa_transaction_id;
 
   NRPPA_TRPInformationFailure_t *out = &head->value.choice.TRPInformationFailure;
@@ -231,35 +223,44 @@ int nrppa_gNB_TRPInformationFailure(instance_t instance, MessageDef *msg_p)
     ie->id = NRPPA_ProtocolIE_ID_id_Cause;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_TRPInformationFailure_IEs__value_PR_Cause;
-    // TODO Reteive Cause and assign
-    // ie->value.choice.Cause. = ; //IE 1
-    // ie->value.choice.Cause. =;  // IE 2 and so on
-    /* Send a dummy cause */
-    // sample
-    //    ie->value.present = NGAP_NASNonDeliveryIndication_IEs__value_PR_Cause;
-    //   ie->value.choice.Cause.present = NGAP_Cause_PR_radioNetwork;
-    //  ie->value.choice.Cause.choice.radioNetwork = NGAP_CauseRadioNetwork_radio_connection_with_ue_lost;
+    switch (failure_msg->cause.present) {
+      case f1ap_cause_nothing:
+        ie->value.choice.Cause.present = NRPPA_Cause_PR_NOTHING;
+        break;
+      case f1ap_cause_radio_network:
+        ie->value.choice.Cause.present = NRPPA_Cause_PR_radioNetwork;
+        ie->value.choice.Cause.choice.radioNetwork = failure_msg->cause.choice.radioNetwork;
+        break;
+      // case f1ap_cause_transport:
+      // ie->value.choice.Cause.present = NRPPA_Cause_PR_transport;
+      // ie->value.choice.Cause.choice.transport = 0;
+      // break; // IE not in nrppa specification
+      case f1ap_cause_protocol:
+        ie->value.choice.Cause.present = NRPPA_Cause_PR_protocol;
+        ie->value.choice.Cause.choice.protocol = failure_msg->cause.choice.protocol;
+        break;
+      case f1ap_cause_misc:
+        ie->value.choice.Cause.present = NRPPA_Cause_PR_misc;
+        ie->value.choice.Cause.choice.misc = failure_msg->cause.choice.misc;
+        break;
+      default:
+        NRPPA_ERROR("Unknown TrpInformationFailure Cause\n");
+        break;
+    }
+
   }
 
-  //  TODO IE 9.2.2 CriticalityDiagnostics (O)
+  /*//  TODO IE 9.2.2 CriticalityDiagnostics (O)
   {
     asn1cSequenceAdd(out->protocolIEs.list, NRPPA_TRPInformationFailure_IEs_t, ie);
     ie->id = NRPPA_ProtocolIE_ID_id_CriticalityDiagnostics;
     ie->criticality = NRPPA_Criticality_ignore;
     ie->value.present = NRPPA_TRPInformationFailure_IEs__value_PR_CriticalityDiagnostics;
-    // TODO Retreive CriticalityDiagnostics information and assign
-    // ie->value.choice.CriticalityDiagnostics.procedureCode = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.triggeringMessage; = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.procedureCriticality; = ; //TODO adeel retrieve and add
-    ie->value.choice.CriticalityDiagnostics.nrppatransactionID = failure_msg->nrppa_msg_info.nrppa_transaction_id;
-    // ie->value.choice.CriticalityDiagnostics.iEsCriticalityDiagnostics = ; //TODO adeel retrieve and add
-    // ie->value.choice.CriticalityDiagnostics.iE_Extensions = ; //TODO adeel retrieve and add
-  }
+  }*/
 
   /* Encode NRPPA message */
   if (nrppa_gNB_encode_pdu(&pdu, &buffer, &length) < 0) {
     NRPPA_ERROR("Failed to encode Uplink NRPPa TRPInformationFailure \n");
-    /* Encode procedure has failed... */
     return -1;
   }
 
