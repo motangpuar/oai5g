@@ -45,7 +45,7 @@
 #define dBc(x,y) (dB_fixed(((int32_t)(x))*(x) + ((int32_t)(y))*(y)))
 
 /* Generic function to find the peak of channel estimation buffer */
-float nr_est_toa_ns_srs(NR_DL_FRAME_PARMS *frame_parms,
+int32_t nr_est_toa_ns_srs(NR_DL_FRAME_PARMS *frame_parms,
 		       uint8_t N_ap,
 		       int32_t srs_estimated_channel_freq[N_ap][frame_parms->ofdm_symbol_size])
 {
@@ -55,8 +55,7 @@ float nr_est_toa_ns_srs(NR_DL_FRAME_PARMS *frame_parms,
   memset(chF_interpol,0,sizeof(chF_interpol));
   memset(chT_interpol,0,sizeof(chT_interpol));
 
-  int32_t max_val = 0, max_idx = 0, abs_val = 0;
-  int32_t ch_pwr = 0, mean_val = 0, srs_toa = 0;
+  int32_t max_val = 0, max_idx = 0, abs_val = 0, mean_val = 0;
 
   int16_t start_offset = (NR_SRS_IDFT_OVERSAMP_FACTOR*frame_parms->ofdm_symbol_size)-(frame_parms->ofdm_symbol_size>>1);
   
@@ -77,15 +76,13 @@ float nr_est_toa_ns_srs(NR_DL_FRAME_PARMS *frame_parms,
     for (int p_index = 0; p_index < N_ap; p_index++) {
       abs_val += squaredMod(((c16_t*)chT_interpol[p_index])[k]);
     }
+    mean_val += (abs_val - mean_val)/k;
     if(abs_val > max_val)
       {
 	max_val = abs_val;
 	max_idx = k;
       }
   }
-
-  //*peak_val = max_val;
-  //*peak_idx = max_idx;
 
   // Add T tracer to log these chF and chT
   /*
@@ -106,25 +103,17 @@ float nr_est_toa_ns_srs(NR_DL_FRAME_PARMS *frame_parms,
     T_BUFFER(chT_interpol[0][0], NR_SRS_IDFT_OVERSAMP_FACTOR*frame_parms->ofdm_symbol_size * sizeof(int32_t)));
   */
 
+  if(max_idx > NR_SRS_IDFT_OVERSAMP_FACTOR*frame_parms->ofdm_symbol_size >>1)
+    max_idx = max_idx - NR_SRS_IDFT_OVERSAMP_FACTOR*frame_parms->ofdm_symbol_size;
+
   // Check for detection threshold
   LOG_D(PHY, "SRS ToA estimator: max_val %d, mean_val %d, max_idx %d\n", max_val, mean_val, max_idx);
-  /*if ((mean_val != 0) && (max_val / mean_val > 10)) {
-    *peak_val = max_val;
-    *peak_idx = max_idx;
+  if ((mean_val != 0) && (max_val / mean_val > 10)) {
+    return (max_idx*1e9)/(NR_SRS_IDFT_OVERSAMP_FACTOR*frame_parms->samples_per_frame*100);
   } else {
-    *peak_val = 0;
-    *peak_idx = 0;
-  }*/
+    return 0xFFFF;
+  }
 
-
-  float ul_toa = srs_toa/(float)NR_SRS_IDFT_OVERSAMP_FACTOR;
-  
-  if(ul_toa > frame_parms->ofdm_symbol_size >>1)
-    ul_toa = ul_toa - frame_parms->ofdm_symbol_size;
-  
-  LOG_I(NR_PHY,"SRS peak detector interpolated by higher fft %.1f srs_toa %d, ch_pwr %d\n",ul_toa,srs_toa, ch_pwr);
-  
-  return (ul_toa); //converto to NS
 }
 
 __attribute__((always_inline)) inline c16_t c32x16cumulVectVectWithSteps(c16_t *in1,
