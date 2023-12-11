@@ -95,7 +95,7 @@ and in the rfsimu_channel_ue0 model part, edit the noise power as the following:
         noise_power_dB                   = -20; 
 and the rest stays the same. 
 
-You can check 
+You can check the example run 1 in this link:(../radio/rfsimulator/README.md)
 
 
 # 5. OAI  UE 
