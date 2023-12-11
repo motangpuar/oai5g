@@ -115,6 +115,11 @@ make rfsimulator
 ```bash
 sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-LTE-EPC/CONF/gnb.band78.tm1.106PRB.usrpn300.conf --parallel-config PARALLEL_SINGLE_THREAD --rfsim --phy-test
 ```
+Example run:
+
+```bash
+sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --rfsim --sa --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr server --telnetsrv --telnetsrv.listenport 9099
+```
 
 ### Launch UE in another window
 
@@ -130,6 +135,13 @@ Notes:
 4. To operate the gNB/UE with a 5GC, start them using the `--sa` option. More information can be found [here](../../../doc/NR_SA_Tutorial_OAI_CN5G.md).
 
 In the UE, you can add `-d` option to get the softscope.
+
+
+Example run:
+
+```bash
+sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --ue-fo-compensation --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
+```
 
 ### Testing IP traffic (ping and iperf)
 
