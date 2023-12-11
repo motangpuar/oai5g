@@ -83,7 +83,9 @@ and add this line to the bottom of your conf file.
 ```bash
 @include "channelmod_rfsimu.conf"
 ```
- 
+
+You can check the example run 2 in this link:(../radio/rfsimulator/README.md)
+
 
 - For the channel model configuration, follow the path to openairinterface5g/ci-scripts/conf_files and edit the channelmod_rfsimu.conf as:
 
@@ -93,11 +95,7 @@ and in the rfsimu_channel_ue0 model part, edit the noise power as the following:
         noise_power_dB                   = -20; 
 and the rest stays the same. 
 
-- After editing your configuration files, now you can deploy your UE in RFsimulator as
-```bash
-cd ~/openairinterface5g/cmake_targets/ran_build/build
-sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --rfsim --sa --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr server --telnetsrv --telnetsrv.listenport 9099
-```
+You can check 
 
 
 # 5. OAI  UE 
