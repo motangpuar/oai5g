@@ -112,10 +112,12 @@ make rfsimulator
 
 ### Launch gNB in one window
 
+Example run 1:
+
 ```bash
 sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-LTE-EPC/CONF/gnb.band78.tm1.106PRB.usrpn300.conf --parallel-config PARALLEL_SINGLE_THREAD --rfsim --phy-test
 ```
-Example run:
+Example run 2 (RFSIMULATOR):
 
 ```bash
 sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --rfsim --sa --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr server --telnetsrv --telnetsrv.listenport 9099
@@ -137,7 +139,7 @@ Notes:
 In the UE, you can add `-d` option to get the softscope.
 
 
-Example run:
+Example run 1 (RFSIMULATOR):
 
 ```bash
 sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --ue-fo-compensation --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
