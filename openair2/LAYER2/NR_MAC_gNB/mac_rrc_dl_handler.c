@@ -619,8 +619,14 @@ void positioning_measurement_request(const f1ap_measurement_req_t *req)
     AssertFatal(false, "Not implemented\n");
   }
 
-  // move this to the response function
-    /* response has same type as request... */
+  // we need to check if this message is for the serving cell or neighboring cell. In case of neighboring cell we need to program the SRS measurement somehow.
+  gNB_MAC_INST *mac = RC.nrmac[req->nrppa_msg_info.instance];
+
+  //store the whole measurement request (incl SRS config) from measurement in MAC
+  //TODO: we have to copy the whole memory of this nested structure
+  mac->f1ap_meas_req = req;
+
+  /* response has same type as request... */
   f1ap_measurement_resp_t resp = {
     .transaction_id = req->transaction_id,
     .lmf_measurement_id = req->lmf_measurement_id,
@@ -635,7 +641,6 @@ void positioning_measurement_request(const f1ap_measurement_req_t *req)
   };
 
   //call the response handler
-  gNB_MAC_INST *mac = RC.nrmac[req->nrppa_msg_info.instance];
   mac->mac_rrc.positioning_measurement_response(&resp);
 
 }

@@ -527,8 +527,10 @@ void nr_mac_config_scc(gNB_MAC_INST *nrmac, NR_ServingCellConfigCommon_t *scc, c
   }
 
   //configure SRS for secondary cell
+  //we can't do this here anymore. the SRS config needs to come from NRPPA measurement requesst
+  /*
   int curr_bwp = NRRIV2BW(scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters.locationAndBandwidth,MAX_BWP_SIZE);
-
+  
   RC.nrmac[Mod_idP]->setup_srs_config[0] = calloc(1,sizeof(NR_SetupRelease_SRS_Config_t));
   config_srs(scc,
 	     RC.nrmac[Mod_idP]->setup_srs_config[0],
@@ -538,6 +540,7 @@ void nr_mac_config_scc(gNB_MAC_INST *nrmac, NR_ServingCellConfigCommon_t *scc, c
 	     0,   //res_id = 0 for initial BWP
 	     1,   //maxMIMO_Layers
 	     1);  //do_srsg
+  */
   
   //NR_SCHED_UNLOCK(&nrmac->sched_lock);
 }

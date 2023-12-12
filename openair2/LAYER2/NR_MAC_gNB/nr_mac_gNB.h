@@ -872,7 +872,9 @@ typedef struct gNB_MAC_INST_s {
 
   //holds the SRS config for UEs of neighboring cells
   //to be expanded to multiple users later
-  NR_SetupRelease_SRS_Config_t *setup_srs_config[1]; 
+  NR_SetupRelease_SRS_Config_t *setup_srs_config[1];
+
+  f1ap_measurement_req_t *f1ap_meas_req;
 } gNB_MAC_INST;
 
 #endif /*__LAYER2_NR_MAC_GNB_H__ */
