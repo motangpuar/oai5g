@@ -125,6 +125,14 @@ void nr_rrc_handle_timers(NR_UE_RRC_INST_t *rrc)
     handle_t300_expiry(rrc);
   }
 
+  bool t301_expired = nr_timer_tick(&timers->T301);
+  // Upon T301 expiry, the UE shall perform the actions upon going to RRC_IDLE
+  // with release cause 'RRC connection failure'
+  if(t301_expired) {
+    LOG_W(NR_RRC, "Timer T301 expired\n");
+    nr_rrc_going_to_IDLE(rrc, RRC_CONNECTION_FAILURE, NULL);
+  }
+
   bool t304_expired = nr_timer_tick(&timers->T304);
   if(t304_expired) {
     LOG_W(NR_RRC, "Timer T304 expired\n");
