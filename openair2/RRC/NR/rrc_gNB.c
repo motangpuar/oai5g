@@ -510,6 +510,16 @@ static void rrc_gNB_process_RRCSetupComplete(const protocol_ctxt_t *const ctxt_p
 #endif
 }
 
+static void clone_MeasConfig(const NR_MeasConfig_t *orig, rrc_gNB_ue_context_t *ue_context_pP)
+{
+  uint8_t buf[16636];
+  asn_enc_rval_t enc_rval = uper_encode_to_buffer(&asn_DEF_NR_MeasConfig, NULL, orig, buf, sizeof(buf));
+  AssertFatal(enc_rval.encoded > 0, "could not clone Meas Config: problem while encoding\n");
+  asn_dec_rval_t dec_rval = uper_decode(NULL, &asn_DEF_NR_MeasConfig, (void **)&ue_context_pP->ue_context.measConfig, buf, enc_rval.encoded, 0, 0);
+  AssertFatal(dec_rval.code == RC_OK && dec_rval.consumed == enc_rval.encoded,
+              "could not clone NR_MeasConfig_t: problem while decodung\n");
+}
+
 //-----------------------------------------------------------------------------
 static void rrc_gNB_generate_defaultRRCReconfiguration(const protocol_ctxt_t *const ctxt_pP, rrc_gNB_ue_context_t *ue_context_pP)
 //-----------------------------------------------------------------------------
@@ -555,11 +565,26 @@ static void rrc_gNB_generate_defaultRRCReconfiguration(const protocol_ctxt_t *co
     /* we cannot calculate the default measurement config without MIB&SIB1, as
      * we don't know the DU's SSB ARFCN */
     uint32_t ssb_arfcn = get_ssb_arfcn(cell_info, du->mib, du->sib1);
-    measconfig = get_defaultMeasConfig(ssb_arfcn, band, scs);
+    if (rrc->measurementConfiguration.enableA3 && rrc->number_of_neighbours > 0) {
+      LOG_D(NR_RRC, "HO LOG: Event Based Measurement is Selected!\n");
+      measconfig = get_EventBasedMeasConfig(ssb_arfcn, band, scs, &(rrc->measurementConfiguration), rrc->neighbourConfiguration, rrc->number_of_neighbours);
+    } else{
+      measconfig = get_defaultMeasConfig(ssb_arfcn, band, scs);
+    }
   }
+
+  
+  if (ue_p->measConfig != NULL) {
+    free(ue_p->measConfig);
+    ue_p->measConfig = NULL;
+  }
+  
+  if (measconfig != NULL)
+    clone_MeasConfig(measconfig, ue_context_pP);
+      
   NR_SRB_ToAddModList_t *SRBs = createSRBlist(ue_p, false);
   NR_DRB_ToAddModList_t *DRBs = createDRBlist(ue_p, false);
-
+    
   uint8_t buffer[RRC_BUF_SIZE] = {0};
   int size = do_RRCReconfiguration(ue_p,
                                    buffer,
@@ -1204,22 +1229,120 @@ fallback_rrc_setup:
 
 static void rrc_gNB_process_MeasurementReport(rrc_gNB_ue_context_t *ue_context, NR_MeasurementReport_t *measurementReport)
 {
+  LOG_D(NR_RRC, "Process Measurement Report\n");
   if (LOG_DEBUGFLAG(DEBUG_ASN1))
     xer_fprint(stdout, &asn_DEF_NR_MeasurementReport, (void *)measurementReport);
+
 
   DevAssert(measurementReport->criticalExtensions.present == NR_MeasurementReport__criticalExtensions_PR_measurementReport
             && measurementReport->criticalExtensions.choice.measurementReport != NULL);
 
-  gNB_RRC_UE_t *ue_ctxt = &ue_context->ue_context;
-  ASN_STRUCT_FREE(asn_DEF_NR_MeasResults, ue_ctxt->measResults);
-  ue_ctxt->measResults = NULL;
+  gNB_RRC_UE_t *ue_ctxt = &ue_context->ue_context; 
+  NR_MeasConfig_t *meas_config = ue_ctxt->measConfig;
+  if (meas_config == NULL) {
+    LOG_E(NR_RRC, "%s: %i - meas_config = %p\n", __FUNCTION__, __LINE__, meas_config);
+    return;
+  }
+  // xer_fprint(stdout, &asn_DEF_NR_MeasurementReport, (void *)measurementReport);
+  // xer_fprint(stdout, &asn_DEF_NR_MeasConfig, (void*)ue_ctxt->measConfig);
+  NR_MeasurementReport_IEs_t *measurementReport_IEs = measurementReport->criticalExtensions.choice.measurementReport;
+  const NR_MeasId_t measId = measurementReport_IEs->measResults.measId;
 
-  const NR_MeasId_t id = measurementReport->criticalExtensions.choice.measurementReport->measResults.measId;
-  AssertFatal(id, "unexpected MeasResult for MeasurementId %ld received\n", id);
-  asn1cCallocOne(ue_ctxt->measResults, measurementReport->criticalExtensions.choice.measurementReport->measResults);
-  /* we "keep" the measurement report, so set to 0 */
-  free(measurementReport->criticalExtensions.choice.measurementReport);
-  measurementReport->criticalExtensions.choice.measurementReport = NULL;
+  NR_MeasIdToAddMod_t *meas_id_s = NULL;
+  for (int meas_idx = 0; meas_idx < meas_config->measIdToAddModList->list.count; meas_idx++) {
+    if (measId == meas_config->measIdToAddModList->list.array[meas_idx]->measId) {
+      meas_id_s = meas_config->measIdToAddModList->list.array[meas_idx];
+      break;
+    }
+  }
+
+  if (meas_id_s == NULL){
+    LOG_E(NR_RRC, "Incoming Meas ID with id: %d Can not Found!\n", (int)measId);
+    return;
+  }
+
+  LOG_D(NR_RRC, "HO LOG: Meas Id is found: %d\n", (int)meas_id_s->measId);
+
+  struct NR_ReportConfigToAddMod__reportConfig *report_config = NULL;
+  for (int rep_id = 0; rep_id < meas_config->reportConfigToAddModList->list.count; rep_id++) {
+    if (meas_id_s->reportConfigId == meas_config->reportConfigToAddModList->list.array[rep_id]->reportConfigId) {
+      report_config = &meas_config->reportConfigToAddModList->list.array[rep_id]->reportConfig;
+    }
+  }
+
+  if (report_config == NULL) {
+    LOG_E(NR_RRC, "There is no related report configuration for this measId!\n");
+    return;
+  }
+
+  if (report_config->choice.reportConfigNR->reportType.present == NR_ReportConfigNR__reportType_PR_periodical){
+    LOG_I(NR_RRC, "Periodical Event Report! Do Nothing for now...\n");
+    ASN_STRUCT_FREE(asn_DEF_NR_MeasResults, ue_ctxt->measResults);
+    ue_ctxt->measResults = NULL;
+
+    const NR_MeasId_t id = measurementReport->criticalExtensions.choice.measurementReport->measResults.measId;
+    AssertFatal(id, "unexpected MeasResult for MeasurementId %ld received\n", id);
+    asn1cCallocOne(ue_ctxt->measResults, measurementReport->criticalExtensions.choice.measurementReport->measResults);
+    /* we "keep" the measurement report, so set to 0 */
+    free(measurementReport->criticalExtensions.choice.measurementReport);
+    measurementReport->criticalExtensions.choice.measurementReport = NULL;
+    return;
+  }
+    
+  if (report_config->choice.reportConfigNR->reportType.present != NR_ReportConfigNR__reportType_PR_eventTriggered){
+    LOG_D(NR_RRC, "Incoming Report Type: %d is not supported! \n", report_config->choice.reportConfigNR->reportType.present);
+    return;
+  }
+
+  NR_EventTriggerConfig_t *event_triggered = report_config->choice.reportConfigNR->reportType.choice.eventTriggered;
+  LOG_I(NR_RRC, "HO LOG: Incoming Report Id: %d\n", (int)measId);
+
+
+  int servingCellRSRP = 0;
+  int neighbourCellRSRP = 0;
+
+  switch (event_triggered->eventId.present) {
+    case NR_EventTriggerConfig__eventId_PR_eventA2:
+      LOG_I(NR_RRC, "\nHO LOG: Event A2 (Serving becomes worse than threshold)\n");
+      break;
+
+    case NR_EventTriggerConfig__eventId_PR_eventA3:
+    {
+      LOG_I(NR_RRC, "\nHO LOG: Event A3 Report - Neighbour Becomes Better than Serving!\n");
+      for (int serving_cell_idx = 0; serving_cell_idx < measurementReport->criticalExtensions.choice.measurementReport->measResults.measResultServingMOList.list.count; serving_cell_idx++) {
+        const NR_MeasResultServMO_t* meas_result_serv_MO = measurementReport->criticalExtensions.choice.measurementReport->measResults.measResultServingMOList.list.array[serving_cell_idx];
+        
+        if (meas_result_serv_MO->measResultServingCell.measResult.cellResults.resultsSSB_Cell) {
+          servingCellRSRP =  *(meas_result_serv_MO->measResultServingCell.measResult.cellResults.resultsSSB_Cell->rsrp) - 157;
+        } else {
+          servingCellRSRP =  *(meas_result_serv_MO->measResultServingCell.measResult.cellResults.resultsCSI_RS_Cell->rsrp) - 157;
+        }
+        LOG_D(NR_RRC, "Serving Cell RSRP: %d\n", servingCellRSRP);
+      }
+      //Only Meas Result NR is supported at the moment
+      if (measurementReport->criticalExtensions.choice.measurementReport->measResults.measResultNeighCells == NULL)
+        break;
+
+      if (measurementReport->criticalExtensions.choice.measurementReport->measResults.measResultNeighCells->present != NR_MeasResults__measResultNeighCells_PR_measResultListNR)
+        break;
+
+      for (int neigh_meas_idx = 0; neigh_meas_idx < measurementReport->criticalExtensions.choice.measurementReport->measResults.measResultNeighCells->choice.measResultListNR->list.count; neigh_meas_idx++){
+        const NR_MeasResultNR_t* meas_result_neigh_cell = (measurementReport->criticalExtensions.choice.measurementReport->measResults.measResultNeighCells->choice.measResultListNR->list.array[neigh_meas_idx]);
+        const int neighbourCellId = *(meas_result_neigh_cell->physCellId);
+        if (meas_result_neigh_cell->measResult.cellResults.resultsSSB_Cell) {
+          neighbourCellRSRP =  *(meas_result_neigh_cell->measResult.cellResults.resultsSSB_Cell->rsrp) - 157;
+        } else {
+          neighbourCellRSRP =  *(meas_result_neigh_cell->measResult.cellResults.resultsCSI_RS_Cell->rsrp) - 157;
+        }
+        LOG_I(NR_RRC, "HO LOG: Measurement Report has came for the neighbour: %d with RSRP: %d\n", neighbourCellId, neighbourCellRSRP);
+      }
+
+    }
+      break;
+    default:
+      LOG_D(NR_RRC, "NR_EventTriggerConfig__eventId_PR_NOTHING or Other event report\n");
+      break;
+  }  
 }
 
 static int handle_rrcReestablishmentComplete(const protocol_ctxt_t *const ctxt_pP,
