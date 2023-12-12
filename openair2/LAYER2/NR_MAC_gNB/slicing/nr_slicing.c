@@ -78,28 +78,50 @@ int nr_slicing_get_UE_idx(nr_slice_t *si, rnti_t rnti)
   return -99;
 }
 
-void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t **UE_list)
+static bool nssai_matches(nssai_t a_nssai, uint8_t b_sst, const uint32_t *b_sd)
 {
-  // Add all the connected UEs to the first slice 0
-  UE_iterator(UE_list, UE)
-  {
-    UE->dl_id = 0;
-    if (si->num > 0 && si->s != NULL)
-    {
-      for (int i = 0; i < MAX_MOBILES_PER_GNB; i++)
-      {
-        if (si->s[0]->UE_list[i] == NULL)
-        {
-          si->s[0]->UE_list[i] = UE;
-          si->s[0]->num_UEs += 1;
-          LOG_D(NR_MAC, "%s(), add UE_list[%d], rnti 0x%04x to slice idx 0\n", __func__, i, si->s[0]->UE_list[i]->rnti);
-          break;
-        }
+  AssertFatal(b_sd == NULL || *b_sd <= 0xffffff, "illegal SD %d\n", *b_sd);
+  if (b_sd == NULL) {
+    return a_nssai.sst == b_sst && a_nssai.sd == 0xffffff;
+  } else {
+    return a_nssai.sst == b_sst && a_nssai.sd == *b_sd;
+  }
+}
+
+void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t *new_ue)
+{
+  AssertFatal(si->num > 0 && si->s != NULL, "no slices exists, cannot add UEs\n");
+  NR_UE_sched_ctrl_t *sched_ctrl = &new_ue->UE_sched_ctrl;
+  bool matched_ue = 0;
+  long lcid = 0;
+  int slice_idx = 0;
+  for (int i = 0; i < si->num; ++i) {
+    for (int l = 0; l < sched_ctrl->dl_lc_num; ++l) {
+      lcid = sched_ctrl->dl_lc_ids[l];
+      LOG_D(NR_MAC, "l %d, lcid %ld, sst %d, sd %d\n", l, lcid, sched_ctrl->dl_lc_nssai[lcid].sst, sched_ctrl->dl_lc_nssai[lcid].sd);
+      if (nssai_matches(sched_ctrl->dl_lc_nssai[lcid], si->s[i]->nssai.sst, &si->s[i]->nssai.sd)) {
+        matched_ue = 1; // assume UE only associates to one slice
+        break;
       }
+    }
+    if (matched_ue) {
+      slice_idx = i;
+      break;
     } else {
-      LOG_E(NR_MAC, "no slice exists, cannot add UEs to first slice\n");
+      LOG_W(NR_MAC, "cannot find lcid for UE rnti 0x%04x, associate UE at the first slice\n", new_ue->rnti);
     }
   }
+
+  new_ue->dl_id = si->s[slice_idx]->id;
+  int num_UEs = si->s[slice_idx]->num_UEs;
+  if (si->s[slice_idx]->UE_list[num_UEs] == NULL) {
+    si->s[slice_idx]->UE_list[num_UEs] = new_ue;
+    si->s[slice_idx]->num_UEs += 1;
+  } else {
+    LOG_E(NR_MAC, "cannot add new UE rnti 0x%04x to slice idx %d, num_UEs %d\n", new_ue->rnti, slice_idx, si->s[slice_idx]->num_UEs);
+  }
+  LOG_W(NR_MAC, "Add UE rnti 0x%04x to slice idx %d, sst %d, sd %d\n", new_ue->rnti, slice_idx, si->s[slice_idx]->nssai.sst, si->s[slice_idx]->nssai.sd);
+
 }
 
 void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx)
@@ -235,6 +257,7 @@ int _nvs_nr_admission_control(const nr_slice_info_t *si,
 
 int addmod_nvs_nr_slice_dl(nr_slice_info_t *si,
                            int id,
+                           nssai_t nssai,
                            char *label,
                            void *algo,
                            void *slice_params_dl)
@@ -272,6 +295,7 @@ int addmod_nvs_nr_slice_dl(nr_slice_info_t *si,
     } else { /* we have no parameters: we are done */
       return index;
     }
+    s->nssai = nssai;
   } else {
     if (!algo)
       RET_FAIL(-14, "%s(): no scheduler algorithm provided\n", __func__);
@@ -289,6 +313,7 @@ int addmod_nvs_nr_slice_dl(nr_slice_info_t *si,
     if (!s->dl_algo.data)
       s->dl_algo.data = s->dl_algo.setup();
     s->algo_data = dl;
+    s->nssai = nssai;
   }
 
   _nvs_int_t *nvs_p = s->int_data;
@@ -494,10 +519,14 @@ nr_pp_impl_param_dl_t nvs_nr_dl_init(module_id_t mod_id)
   dlp->pct_reserved = 1.0f;
   nr_dl_sched_algo_t *algo = &RC.nrmac[mod_id]->pre_processor_dl.dl_algo;
   algo->data = NULL;
-  const int rc = addmod_nvs_nr_slice_dl(si, 0, strdup("default"), algo, dlp);
+  nssai_t nssai = {.sst = 1, .sd = 0};
+  const int rc = addmod_nvs_nr_slice_dl(si, 0, nssai, strdup("default"), algo, dlp);
   DevAssert(0 == rc);
   NR_UEs_t *UE_info = &RC.nrmac[mod_id]->UE_info;
-  nr_slicing_add_UE(si, UE_info->list);
+  UE_iterator(UE_info->list, UE) {
+    nr_slicing_add_UE(si, UE);
+  }
+
 
   nr_pp_impl_param_dl_t nvs;
   nvs.algorithm = NVS_SLICING;

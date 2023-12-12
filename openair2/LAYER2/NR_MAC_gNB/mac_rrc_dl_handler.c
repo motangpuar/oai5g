@@ -462,6 +462,11 @@ void ue_context_modification_request(const f1ap_ue_context_modif_req_t *req)
 
     /* Set NSSAI config in MAC for each active DRB */
     set_nssaiConfig(req->drbs_to_be_setup_length, req->drbs_to_be_setup, &UE->UE_sched_ctrl);
+
+    /* Associate UE to the corresponding slice*/
+    nr_pp_impl_param_dl_t *dl = &mac->pre_processor_dl;
+    if (dl->slices)
+      dl->add_UE(dl->slices, UE);
   } else {
     ASN_STRUCT_FREE(asn_DEF_NR_CellGroupConfig, new_CellGroup); // we actually don't need it
   }

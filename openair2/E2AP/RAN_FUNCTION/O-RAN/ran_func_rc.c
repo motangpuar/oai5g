@@ -220,7 +220,13 @@ sm_ag_if_ans_t write_subs_rc_sm(void const* src)
 }
 
 
-static int add_mod_dl_slice(int mod_id, slice_algorithm_e current_algo, int id, char* sst_str, int64_t pct_reserved)
+static int add_mod_dl_slice(int mod_id,
+                            slice_algorithm_e current_algo,
+                            int id,
+                            uint8_t sst,
+                            uint32_t sd,
+                            char* label,
+                            int64_t pct_reserved)
 {
   void *params = NULL;
   char *slice_algo = NULL;
@@ -238,10 +244,11 @@ static int add_mod_dl_slice(int mod_id, slice_algorithm_e current_algo, int id, 
   nr_pp_impl_param_dl_t *dl = &RC.nrmac[mod_id]->pre_processor_dl;
   void *algo = &dl->dl_algo;
   char *l = NULL;
-  if (sst_str)
-    l = strdup(sst_str);
+  if (label)
+    l = strdup(label);
+  nssai_t nssai = {.sst = sst, .sd = sd};
   LOG_W(NR_MAC, "add DL slice id %d, label %s, slice sched algo %s, pct_reserved %.2f, ue sched algo %s\n", id, l, slice_algo, ((nvs_nr_slice_param_t *)params)->pct_reserved, dl->dl_algo.name);
-  return dl->addmod_slice(dl->slices, id, l, algo, params);
+  return dl->addmod_slice(dl->slices, id, nssai, l, algo, params);
 }
 
 static void set_new_dl_slice_algo(int mod_id, int algo)
@@ -274,19 +281,6 @@ static void set_new_dl_slice_algo(int mod_id, int algo)
 //  }
 //  return -1;
 //}
-
-static int assoc_ue_to_dl_slice(int mod_id, NR_UE_info_t* assoc_ue, uint32_t assoc_dl_id)
-{
-  nr_pp_impl_param_dl_t *dl = &RC.nrmac[mod_id]->pre_processor_dl;
-  int new_idx = find_dl_slice(dl->slices, assoc_dl_id);
-  int old_idx = find_dl_slice(dl->slices, assoc_ue->dl_id);
-  if (new_idx < 0 || old_idx < 0)
-    return -100;
-  LOG_W(NR_MAC, "associate UE RNTI 0x%04x from slice ID %d idx %d to slice ID %d idx %d\n",
-        assoc_ue->rnti, assoc_ue->dl_id, old_idx, assoc_dl_id, new_idx);
-  dl->move_UE(dl->slices, assoc_ue, old_idx, new_idx);
-  return 0;
-}
 
 static char* copy_bytearr_to_str(const byte_array_t* ba)
 {
@@ -429,7 +423,7 @@ static bool add_mod_rc_slice(int mod_id, size_t slices_len, ran_param_list_t* ls
     //LOG_I(NR_MAC, "configure slice %ld, label %s, Max_PRB_Policy_Ratio %ld\n", i, label_nssai, max_prb_ratio);
 
     ///// ADD SLICE /////
-    const int rc = add_mod_dl_slice(mod_id, current_algo, i, label_nssai, (float)nvs_cap);
+    const int rc = add_mod_dl_slice(mod_id, current_algo, i+1, RC_sst, RC_sd, label_nssai, (float)nvs_cap);
     free(label_nssai);
     if (rc < 0) {
       pthread_mutex_unlock(&nrmac->UE_info.mutex);
@@ -443,6 +437,7 @@ static bool add_mod_rc_slice(int mod_id, size_t slices_len, ran_param_list_t* ls
 
     if (nrmac->UE_info.list[0] == NULL)
       LOG_E(NR_MAC, "no UE connected\n");
+
 
     nr_pp_impl_param_dl_t *dl = &RC.nrmac[mod_id]->pre_processor_dl;
     NR_UEs_t *UE_info = &RC.nrmac[mod_id]->UE_info;
@@ -474,24 +469,7 @@ static bool add_mod_rc_slice(int mod_id, size_t slices_len, ran_param_list_t* ls
             UE_mcc, UE_mnc, UE_sst, UE_sd, RC_mcc, RC_mnc, RC_sst, RC_sd);
 
       if (UE_mcc == RC_mcc && UE_mnc == RC_mnc && UE_sst == RC_sst && UE_sd == RC_sd) {
-        /* Check current slice of this RNTI before assoc */
-        size_t cur_idx = dl->get_UE_slice_idx(dl->slices, rnti);
-        if (i == cur_idx) {
-          LOG_D(NR_MAC, "expected DL slice association for UE RNTI 0x%04x\n", rnti);
-          continue;
-        }
-        /* Check this RNTI in the current slice before assoc */
-        int cur_ue_idx = dl->get_UE_idx(dl->slices->s[cur_idx], rnti);
-        if (cur_ue_idx < 0) {
-          LOG_E(NR_MAC, "error while associating RNTI 0x%04x\n", rnti);
-          continue;
-        }
-        /* Associate this RNTI to another dl slice */
-        int rc = assoc_ue_to_dl_slice(mod_id, nrmac->UE_info.list[cur_ue_idx], i);
-        if (rc < 0) {
-          LOG_E(NR_MAC, "error code %d while associating RNTI 0x%04x\n", rc, rnti);
-          continue;
-        }
+          dl->add_UE(dl->slices, UE);
       } else {
         LOG_W(NR_MAC, "cannot find specified PLMN (mcc %d mnc %d) NSSAI (sst %d sd %d) from the existing UE PLMN (mcc %d mnc %d) NSSAI (sst %d sd %d) \n",
               RC_mcc, RC_mnc, RC_sst, RC_sd, UE_mcc, UE_mnc, UE_sst, UE_sd);

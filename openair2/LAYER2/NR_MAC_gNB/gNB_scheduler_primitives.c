@@ -2430,6 +2430,10 @@ NR_UE_info_t *add_new_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rntiP, NR_CellGroupConf
 
   reset_srs_stats(UE);
 
+  // associate UEs to the first slice if slice exists (there is no DRB setup in this stage)
+  nr_pp_impl_param_dl_t *dl = &RC.nrmac[0]->pre_processor_dl;
+  if (dl->slices)
+    dl->add_UE(dl->slices, UE);
   NR_SCHED_LOCK(&UE_info->mutex);
   int i;
   for(i=0; i<MAX_MOBILES_PER_GNB; i++) {

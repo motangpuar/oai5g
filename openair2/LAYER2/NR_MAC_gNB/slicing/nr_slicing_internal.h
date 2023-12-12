@@ -32,7 +32,7 @@
 
 #include "nr_slicing.h"
 
-void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t **UE_list);
+void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t *new_ue);
 
 void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx);
 

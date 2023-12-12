@@ -758,7 +758,7 @@ typedef struct {
   int algorithm;
 
   /// inform the slice algorithm about a new UE
-  void (*add_UE)(struct nr_slice_info_s *s, NR_UE_info_t **UE_list);
+  void (*add_UE)(struct nr_slice_info_s *s, NR_UE_info_t *new_ue);
   /// inform the slice algorithm about a UE that disconnected
   void (*remove_UE)(struct nr_slice_info_s *s, NR_UE_info_t* rm_ue, int idx);
   /// move a UE to a slice in DL/UL, -1 means don't move (no-op).
@@ -775,6 +775,7 @@ typedef struct {
   /// slice. Returns index of new slice or -1 on failure.
   int (*addmod_slice)(struct nr_slice_info_s *s,
                       int id,
+                      nssai_t nssai,
                       char *label,
                       void *sched,
                       void *slice_params);
