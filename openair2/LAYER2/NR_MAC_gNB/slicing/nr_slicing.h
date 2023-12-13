@@ -60,7 +60,7 @@ typedef struct nr_slice_info_s {
 
 #define NVS_SLICING 20
 /* arbitrary upper limit, increase if you want to instantiate more slices */
-#define MAX_NVS_SLICES 10
+#define MAX_NVS_SLICES NR_MAX_NUM_SLICES
 /* window for slice weight averaging -> 1s for fine granularity */
 #define BETA 0.001f
 typedef struct {

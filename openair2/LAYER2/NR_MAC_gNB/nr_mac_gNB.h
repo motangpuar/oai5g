@@ -111,6 +111,8 @@ typedef struct {
   int len;
 } NR_list_t;
 
+#define NR_List_Iterator(BaSe, CuR) for (int *CuR = &(BaSe)->head, *nxt = (BaSe)->next; *CuR >= 0; CuR = &nxt[*CuR])
+
 typedef enum {
   RA_IDLE = 0,
   Msg2 = 1,
@@ -543,6 +545,14 @@ typedef struct NR_QoS_config_s {
   uint64_t priority;
 } NR_QoS_config_t;
 
+typedef struct {
+  /// LCs in this slice
+  NR_list_t lcid;
+  /// total amount of data awaiting for this UE
+  uint32_t num_total_bytes;
+  uint16_t dl_pdus_total;
+} NR_UE_slice_info_t;
+
 /*! \brief scheduling control information set through an API */
 #define MAX_CSI_REPORTS 48
 typedef struct {
@@ -643,6 +653,13 @@ typedef struct {
   nr_srs_feedback_t srs_feedback;
   nssai_t dl_lc_nssai[NR_MAX_NUM_LCID];
 
+  /// last scheduled slice index
+  int last_sched_slice;
+  /// hold information of slices
+  NR_UE_slice_info_t sliceInfo[NR_MAX_NUM_SLICES];
+  /// DL harq to slice map
+  int harq_slice_map[NR_MAX_HARQ_PROCESSES];
+
   // Information about the QoS configuration for each LCID/DRB
   NR_QoS_config_t qos_config[NR_MAX_NUM_LCID - 4][NR_MAX_NUM_QFI]; // 0 -CCCH and 1- 3 SRBs(0,1,2)
 } NR_UE_sched_ctrl_t;
@@ -717,7 +734,7 @@ typedef struct {
   float dl_thr_ue;
   long pdsch_HARQ_ACK_Codebook;
   /// Assoc slice
-  slice_id_t dl_id;
+  NR_list_t dl_id;
 } NR_UE_info_t;
 
 typedef struct {

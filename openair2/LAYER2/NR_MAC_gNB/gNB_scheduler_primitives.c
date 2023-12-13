@@ -57,6 +57,7 @@
 #define DEBUG_gNB_SCHEDULER 1
 
 #include "common/ran_context.h"
+#include "NR_MAC_gNB/slicing/nr_slicing.h"
 
 //#define DEBUG_DCI
 
@@ -1843,6 +1844,30 @@ void create_nr_list(NR_list_t *list, int len)
 }
 
 /*
+ * Reset NR_list
+ */
+void reset_nr_list(NR_list_t *list)
+{
+  list->head = -1;
+  memset(list->next, -1, list->len);
+  list->tail = -1;
+}
+
+/*
+ * Check if id is in the list
+ */
+bool check_nr_list(const NR_list_t *listP, int id)
+{
+  const int *cur = &listP->head;
+  while (*cur >= 0) {
+    if (*cur == id)
+      return true;
+    cur = &listP->next[*cur];
+  }
+  return false;
+}
+
+/*
  * Resize an NR_list
  */
 void resize_nr_list(NR_list_t *list, int new_len)
@@ -2018,6 +2043,10 @@ void delete_nr_ue_data(NR_UE_info_t *UE, NR_COMMON_channels_t *ccPtr, uid_alloca
   destroy_nr_list(&sched_ctrl->retrans_ul_harq);
   free_sched_pucch_list(sched_ctrl);
   uid_linear_allocator_free(uia, UE->uid);
+  for (int slice = 0; slice < NR_MAX_NUM_SLICES; slice++) {
+    destroy_nr_list(&sched_ctrl->sliceInfo[slice].lcid);
+  }
+  destroy_nr_list(&UE->dl_id);
   LOG_I(NR_MAC, "Remove NR rnti 0x%04x\n", UE->rnti);
   free(UE);
 }
@@ -2430,6 +2459,12 @@ NR_UE_info_t *add_new_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rntiP, NR_CellGroupConf
 
   reset_srs_stats(UE);
 
+  /* prepare LC list for all slices in this UE */
+  for (int slice = 0; slice < NR_MAX_NUM_SLICES; slice++) {
+    create_nr_list(&sched_ctrl->sliceInfo[slice].lcid, NR_MAX_NUM_LCID);
+  }
+  create_nr_list(&UE->dl_id, NR_MAX_NUM_SLICES);
+
   // associate UEs to the first slice if slice exists (there is no DRB setup in this stage)
   nr_pp_impl_param_dl_t *dl = &RC.nrmac[0]->pre_processor_dl;
   if (dl->slices)
@@ -2571,6 +2606,14 @@ void mac_remove_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rnti)
     LOG_W(NR_MAC,"Call to del rnti %04x, but not existing\n", rnti);
     NR_SCHED_UNLOCK(&UE_info->mutex);
     return;
+  }
+
+  /* Dissociate UE from all corresponding slice*/
+  nr_pp_impl_param_dl_t *dl = &nr_mac->pre_processor_dl;
+  if (dl->slices) {
+    for (int i = 0; i < dl->slices->num; i++) {
+      dl->remove_UE(dl->slices, UE, i);
+    }
   }
 
   NR_UE_info_t * newUEs[MAX_MOBILES_PER_GNB+1]={0};
@@ -3043,6 +3086,17 @@ void prepare_initial_ul_rrc_message(gNB_MAC_INST *mac, NR_UE_info_t *UE)
 
   UE->CellGroup = cellGroupConfig;
   process_CellGroup(cellGroupConfig, UE);
+
+  /* Assign SRB1 to default slice */
+  const long lcid = 1;
+  nr_pp_impl_param_dl_t *dl = &mac->pre_processor_dl;
+  if (dl->slices) {
+    nssai_t *default_nssai = &dl->slices->s[0]->nssai;
+    UE->UE_sched_ctrl.dl_lc_nssai[lcid] = *default_nssai;
+    LOG_I(NR_MAC, "Setting NSSAI sst: %d, sd: %d for SRB: %ld\n", default_nssai->sst, default_nssai->sd, lcid);
+
+    dl->add_UE(dl->slices, UE);
+  }
 
   /* activate SRB0 */
   nr_rlc_activate_srb0(UE->rnti, UE, send_initial_ul_rrc_message);

@@ -92,36 +92,36 @@ void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t *new_ue)
 {
   AssertFatal(si->num > 0 && si->s != NULL, "no slices exists, cannot add UEs\n");
   NR_UE_sched_ctrl_t *sched_ctrl = &new_ue->UE_sched_ctrl;
-  bool matched_ue = 0;
   long lcid = 0;
-  int slice_idx = 0;
+  reset_nr_list(&new_ue->dl_id);
   for (int i = 0; i < si->num; ++i) {
+    reset_nr_list(&new_ue->UE_sched_ctrl.sliceInfo[i].lcid);
+    bool matched_ue = false;
     for (int l = 0; l < sched_ctrl->dl_lc_num; ++l) {
       lcid = sched_ctrl->dl_lc_ids[l];
       LOG_D(NR_MAC, "l %d, lcid %ld, sst %d, sd %d\n", l, lcid, sched_ctrl->dl_lc_nssai[lcid].sst, sched_ctrl->dl_lc_nssai[lcid].sd);
       if (nssai_matches(sched_ctrl->dl_lc_nssai[lcid], si->s[i]->nssai.sst, &si->s[i]->nssai.sd)) {
-        matched_ue = 1; // assume UE only associates to one slice
-        break;
+        add_nr_list(&new_ue->UE_sched_ctrl.sliceInfo[i].lcid, lcid);
+        matched_ue = true;
       }
     }
     if (matched_ue) {
-      slice_idx = i;
-      break;
-    } else {
-      LOG_W(NR_MAC, "cannot find lcid for UE rnti 0x%04x, associate UE at the first slice\n", new_ue->rnti);
+      add_nr_list(&new_ue->dl_id, si->s[i]->id);
+      int num_UEs = si->s[i]->num_UEs;
+      if (si->s[i]->UE_list[num_UEs] == NULL) {
+        si->s[i]->UE_list[num_UEs] = new_ue;
+        si->s[i]->num_UEs += 1;
+      } else {
+        LOG_E(NR_MAC, "cannot add new UE rnti 0x%04x to slice idx %d, num_UEs %d\n", new_ue->rnti, i, si->s[i]->num_UEs);
+      }
+      LOG_W(NR_MAC,
+            "Add UE rnti 0x%04x to slice idx %d, sst %d, sd %d\n",
+            new_ue->rnti,
+            i,
+            si->s[i]->nssai.sst,
+            si->s[i]->nssai.sd);
     }
   }
-
-  new_ue->dl_id = si->s[slice_idx]->id;
-  int num_UEs = si->s[slice_idx]->num_UEs;
-  if (si->s[slice_idx]->UE_list[num_UEs] == NULL) {
-    si->s[slice_idx]->UE_list[num_UEs] = new_ue;
-    si->s[slice_idx]->num_UEs += 1;
-  } else {
-    LOG_E(NR_MAC, "cannot add new UE rnti 0x%04x to slice idx %d, num_UEs %d\n", new_ue->rnti, slice_idx, si->s[slice_idx]->num_UEs);
-  }
-  LOG_W(NR_MAC, "Add UE rnti 0x%04x to slice idx %d, sst %d, sd %d\n", new_ue->rnti, slice_idx, si->s[slice_idx]->nssai.sst, si->s[slice_idx]->nssai.sd);
-
 }
 
 void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx)
@@ -131,7 +131,7 @@ void nr_slicing_remove_UE(nr_slice_info_t *si, NR_UE_info_t* rm_ue, int idx)
       if (si->s[idx]->UE_list[i]->rnti == rm_ue->rnti) {
         si->s[idx]->UE_list[i] = NULL;
         si->s[idx]->num_UEs -= 1;
-        rm_ue->dl_id = -1;
+        remove_nr_list(&rm_ue->dl_id, si->s[idx]->id);
         break;
       }
     }
@@ -144,7 +144,8 @@ void nr_slicing_move_UE(nr_slice_info_t *si, NR_UE_info_t* assoc_ue, int old_idx
   DevAssert(old_idx >= -1 && old_idx < si->num);
 
   // add UE to new slice
-  assoc_ue->dl_id = si->s[new_idx]->id;
+  remove_nr_list(&assoc_ue->dl_id, si->s[old_idx]->id);
+  add_nr_list(&assoc_ue->dl_id, si->s[new_idx]->id);
   int cur_idx = si->s[new_idx]->num_UEs;
   si->s[new_idx]->UE_list[cur_idx] = assoc_ue;
   si->s[new_idx]->num_UEs += 1;
@@ -339,7 +340,7 @@ int remove_nvs_nr_slice_dl(nr_slice_info_t *si, uint8_t slice_idx)
     return 0;
   UE_iterator(si->s[slice_idx]->UE_list, rm_ue) {
     nr_slicing_remove_UE(si, rm_ue, slice_idx);
-    rm_ue->dl_id = si->s[0]->id;
+    remove_nr_list(&rm_ue->dl_id, si->s[slice_idx]->id);
     LOG_D(NR_MAC, "%s(), move UE rnti 0x%04x in slice ID %d idx %d to slice ID %d idx %d\n",
           __func__, rm_ue->rnti, si->s[slice_idx]->id, slice_idx, si->s[0]->id, 0);
     for (int i = 0; i < MAX_MOBILES_PER_GNB; i++) {
@@ -360,7 +361,50 @@ int remove_nvs_nr_slice_dl(nr_slice_info_t *si, uint8_t slice_idx)
   return 1;
 }
 
-extern void nr_store_dlsch_buffer(module_id_t, frame_t, sub_frame_t);
+static void nr_store_dlsch_buffer(module_id_t module_id, frame_t frame, sub_frame_t slot)
+{
+  nr_slice_info_t *si = RC.nrmac[module_id]->pre_processor_dl.slices;
+  for (int s = 0; s < si->num; s++) {
+    UE_iterator (si->s[s]->UE_list, UE) {
+      NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+      sched_ctrl->sliceInfo[s].num_total_bytes = 0;
+      sched_ctrl->sliceInfo[s].dl_pdus_total = 0;
+      NR_List_Iterator(&UE->UE_sched_ctrl.sliceInfo[s].lcid, lcidP)
+      {
+        const int lcid = *lcidP;
+        const uint16_t rnti = UE->rnti;
+        LOG_D(NR_MAC, "In %s: UE %x: LCID %d\n", __FUNCTION__, rnti, lcid);
+        if (lcid == DL_SCH_LCID_DTCH && sched_ctrl->rrc_processing_timer > 0) {
+          continue;
+        }
+        start_meas(&RC.nrmac[module_id]->rlc_status_ind);
+        sched_ctrl->rlc_status[lcid] =
+            mac_rlc_status_ind(module_id, rnti, module_id, frame, slot, ENB_FLAG_YES, MBMS_FLAG_NO, lcid, 0, 0);
+        stop_meas(&RC.nrmac[module_id]->rlc_status_ind);
+
+        if (sched_ctrl->rlc_status[lcid].bytes_in_buffer == 0)
+          continue;
+
+        sched_ctrl->sliceInfo[s].dl_pdus_total += sched_ctrl->rlc_status[lcid].pdus_in_buffer;
+        sched_ctrl->sliceInfo[s].num_total_bytes += sched_ctrl->rlc_status[lcid].bytes_in_buffer;
+        LOG_D(MAC,
+              "[gNB %d][%4d.%2d] %s%d->DLSCH, RLC status for UE %d, slice %d: %d bytes in buffer, total DL buffer size = %d bytes, "
+              "%d total PDU bytes, %s TA command\n",
+              module_id,
+              frame,
+              slot,
+              lcid < 4 ? "DCCH" : "DTCH",
+              lcid,
+              UE->rnti,
+              s,
+              sched_ctrl->rlc_status[lcid].bytes_in_buffer,
+              sched_ctrl->sliceInfo[s].num_total_bytes,
+              sched_ctrl->sliceInfo[s].dl_pdus_total,
+              sched_ctrl->ta_apply ? "send" : "do not send");
+      }
+    }
+  }
+}
 
 void nvs_nr_dl(module_id_t mod_id,
                frame_t frame,
@@ -416,16 +460,15 @@ void nvs_nr_dl(module_id_t mod_id,
   nr_slice_info_t *si = RC.nrmac[mod_id]->pre_processor_dl.slices;
   int bytes_last_round[MAX_NVS_SLICES] = {0};
   for (int s_idx = 0; s_idx < si->num; ++s_idx) {
-    UE_iterator(UE_info->list, UE) {
+    UE_iterator (si->s[s_idx]->UE_list, UE) {
       const NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
-      if (si->s[s_idx]->id == UE->dl_id) {
-        bytes_last_round[s_idx] += UE->mac_stats.dl.current_bytes;
+      bytes_last_round[s_idx] += UE->mac_stats.dl.current_bytes;
 
-        /* if UE has data or retransmission, mark respective slice as active */
-        const int retx_pid = sched_ctrl->retrans_dl_harq.head;
-        const bool active = sched_ctrl->num_total_bytes > 0 || retx_pid >= 0;
-        ((_nvs_int_t *)si->s[s_idx]->int_data)->active |= active;
-      }
+      /* if UE has data or retransmission, mark respective slice as active */
+      const int retx_pid = sched_ctrl->retrans_dl_harq.head;
+      const int retx_slice = sched_ctrl->harq_slice_map[retx_pid];
+      const bool active = sched_ctrl->sliceInfo[s_idx].num_total_bytes > 0 || retx_slice == s_idx;
+      ((_nvs_int_t *)si->s[s_idx]->int_data)->active |= active;
     }
   }
 
@@ -470,6 +513,10 @@ void nvs_nr_dl(module_id_t mod_id,
     return;
 
   ((_nvs_int_t *)si->s[maxidx]->int_data)->rb = n_rb_sched;
+
+  UE_iterator (si->s[maxidx]->UE_list, UE) {
+    UE->UE_sched_ctrl.last_sched_slice = maxidx;
+  }
 
   /* proportional fair scheduling algorithm */
   int rb_rem = si->s[maxidx]->dl_algo.run(mod_id,

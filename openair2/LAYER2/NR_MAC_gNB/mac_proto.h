@@ -298,6 +298,8 @@ void remove_nr_list(NR_list_t *listP, int id);
 void add_tail_nr_list(NR_list_t *listP, int id);
 void add_front_nr_list(NR_list_t *listP, int id);
 void remove_front_nr_list(NR_list_t *listP);
+void reset_nr_list(NR_list_t *listP);
+bool check_nr_list(const NR_list_t *listP, int id);
 
 NR_UE_info_t * find_nr_UE(NR_UEs_t* UEs, rnti_t rntiP);
 
