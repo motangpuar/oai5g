@@ -82,22 +82,22 @@ docker compose up -d
 @include "channelmod_rfsimu.conf"
 ```
 
-You can check the example run 2 in this link:[RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
+You can check the example run 2 in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
 
 
-- For the channel model configuration, follow the path to openairinterface5g/ci-scripts/conf_files and edit the channelmod_rfsimu.conf as:
+- For the channel model configuration, follow the path to openairinterface5g/ci-scripts/conf_files and edit the channelmod_rfsimu.conf 
 
-In the rfsimu_channel_enB0 model part, edit the noise power as the following:
+- In the rfsimu_channel_enB0 model part, edit the noise power as the following:
 ```bash
         noise_power_dB                   = -10;
 ```
-and in the rfsimu_channel_ue0 model part, edit the noise power as the following:
+-In the rfsimu_channel_ue0 model part, edit the noise power as the following:
 ```bash
         noise_power_dB                   = -20; 
 ```
-and the rest stays the same. 
+and the rest of the channelmod_rfsimu.conf remains unchanged. 
 
-You can check the example run 1 in this link:(../radio/rfsimulator/README.md)
+You can check the example run 1 in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
 
 
 # 5. OAI  UE 
