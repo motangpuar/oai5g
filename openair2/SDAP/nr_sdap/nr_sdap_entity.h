@@ -80,6 +80,11 @@ typedef struct nr_sdap_entity_s {
   ue_id_t ue_id;
   rb_id_t default_drb;
   int pdusession_id;
+  int pdusession_sock;
+  pthread_t pdusession_thread;
+  bool stop_thread;
+  int qfi;
+
   qfi2drb_t qfi2drb_table[SDAP_MAX_QFI];
 
   void (*qfi2drb_map_update)(struct nr_sdap_entity_s *entity, uint8_t qfi, rb_id_t drb, bool has_sdap_rx, bool has_sdap_tx);
@@ -188,4 +193,7 @@ bool nr_sdap_delete_entity(ue_id_t ue_id, int pdusession_id);
  * @return                  True, it deleted at least one entity, false otherwise.
  */
 bool nr_sdap_delete_ue_entities(ue_id_t ue_id);
+void set_qfi(uint8_t qfi, uint8_t pduid, ue_id_t ue_id);
+bool nr_sdap_get_first_ue_id(ue_id_t *ret);
+void remove_ue_ip_if(ue_id_t ue_id, int pdusession_id);
 #endif

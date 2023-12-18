@@ -235,6 +235,27 @@ int NAS_config(char *interfaceName, char *ipAddress, char *networkMask, char *br
   return returnValue;
 }
 
+int doesInterfaceExist(const char *interfaceName)
+{
+  int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  if (sockfd == -1) {
+    exit(1);
+  }
+
+  struct ifreq ifr;
+  memset(&ifr, 0, sizeof(struct ifreq));
+  strncpy(ifr.ifr_name, interfaceName, IFNAMSIZ - 1);
+
+  if (ioctl(sockfd, SIOCGIFFLAGS, &ifr) == -1) {
+    close(sockfd);
+    return 1;
+  }
+
+  close(sockfd);
+  return 0;
+}
+
 int nas_config_mbms(int interface_id, int thirdOctet, int fourthOctet, char *ifname) {
   //char buf[5];
   char ipAddress[20];
@@ -315,18 +336,31 @@ int nas_config_mbms_s1(int interface_id, int thirdOctet, int fourthOctet, char *
   return returnValue;
 }
 
+void nas_config_interface_name(int if_id, int if_suffix, const char *ifname, char *ret)
+{
+  char prefixName[20];
+  sprintf(prefixName,
+          "%s%s%d",
+          (UE_NAS_USE_TUN || ENB_NAS_USE_TUN) ? "oaitun_" : ifname,
+          UE_NAS_USE_TUN ? "ue" : (ENB_NAS_USE_TUN ? "enb" : ""),
+          if_id);
+  if (UE_NAS_USE_TUN) {
+    sprintf(ret, "%s%s%d", prefixName, "p", if_suffix);
+  } else {
+    strcpy(ret, prefixName);
+  }
+}
 
 // non blocking full configuration of the interface (address, and the two lest octets of the address)
-int nas_config(int interface_id, int thirdOctet, int fourthOctet, char *ifname) {
-  //char buf[5];
+int nas_config(int interface_id, int thirdOctet, int fourthOctet, char *ifname, int interface_suffix)
+{
   char ipAddress[20];
   char broadcastAddress[20];
   char interfaceName[20];
   int returnValue;
   sprintf(ipAddress, "%s.%d.%d", baseNetAddress,thirdOctet,fourthOctet);
   sprintf(broadcastAddress, "%s.%d.255",baseNetAddress, thirdOctet);
-  sprintf(interfaceName, "%s%s%d", (UE_NAS_USE_TUN || ENB_NAS_USE_TUN)?"oaitun_":ifname,
-          UE_NAS_USE_TUN?"ue": (ENB_NAS_USE_TUN?"enb":""),interface_id);
+  nas_config_interface_name(interface_id, interface_suffix, ifname, interfaceName);
   bringInterfaceUp(interfaceName, 0);
   // sets the machine address
   returnValue= setInterfaceParameter(interfaceName, ipAddress,SIOCSIFADDR);
@@ -350,15 +384,21 @@ int nas_config(int interface_id, int thirdOctet, int fourthOctet, char *ifname) 
           interfaceName, ipAddress, netMask, broadcastAddress);
 
   int res;
+  char pdu_suffix[10];
+  sprintf(pdu_suffix, "p%d", interface_suffix);
   char command_line[500];
   res = sprintf(command_line,
-    "ip rule add from %s/32 table %d && "
-    "ip rule add to %s/32 table %d && "
-    "ip route add default dev %s%d table %d",
-    ipAddress, interface_id - 1 + 10000,
-    ipAddress, interface_id - 1 + 10000,
-    UE_NAS_USE_TUN ? "oaitun_ue" : "oip",
-    interface_id, interface_id - 1 + 10000);
+                "ip rule add from %s/32 table %d && "
+                "ip rule add to %s/32 table %d && "
+                "ip route add default dev %s%d%s table %d",
+                ipAddress,
+                interface_id - 1 + 10000,
+                ipAddress,
+                interface_id - 1 + 10000,
+                UE_NAS_USE_TUN ? "oaitun_ue" : "oip",
+                interface_id,
+                UE_NAS_USE_TUN ? pdu_suffix : "",
+                interface_id - 1 + 10000);
 
   if (res < 0) {
     LOG_E(OIP,"Could not create ip rule/route commands string\n");

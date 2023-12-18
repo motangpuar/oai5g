@@ -19,10 +19,161 @@
  *      contact@openairinterface.org
  */
 
+#define _GNU_SOURCE
 #include "nr_sdap.h"
+#include "openair2/LAYER2/RLC/rlc.h"
+#include "openair2/RRC/NAS/nas_config.h"
+#include "openair1/SIMULATION/ETH_TRANSPORT/proto.h"
+#include <pthread.h>
 
-uint8_t nas_qfi;
-uint8_t nas_pduid;
+struct thread_args {
+  int sock_fd;
+};
+
+static void *gnb_tun_read_thread(void *arg)
+{
+  int sock_fd = ((struct thread_args *)arg)->sock_fd;
+  char rx_buf[NL_MAX_PAYLOAD];
+  int len;
+  protocol_ctxt_t ctxt;
+  ue_id_t UEid;
+
+  int rb_id = 1;
+  pthread_setname_np(pthread_self(), "gnb_tun_read");
+
+  while (1) {
+    len = read(sock_fd, &rx_buf, NL_MAX_PAYLOAD);
+    if (len == -1) {
+      LOG_E(SDAP, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
+      exit(1);
+    }
+
+    LOG_D(SDAP, "%s read data of size %d\n", __func__, len);
+
+    const bool has_ue = nr_sdap_get_first_ue_id(&UEid);
+
+    if (!has_ue)
+      continue;
+
+    ctxt.module_id = 0;
+    ctxt.enb_flag = 1;
+    ctxt.instance = 0;
+    ctxt.frame = 0;
+    ctxt.subframe = 0;
+    ctxt.eNB_index = 0;
+    ctxt.brOption = 0;
+    ctxt.rntiMaybeUEid = UEid;
+
+    uint8_t qfi = 7;
+    bool rqi = 0;
+    int pdusession_id = 10;
+
+    sdap_data_req(&ctxt,
+                  UEid,
+                  SRB_FLAG_NO,
+                  rb_id,
+                  RLC_MUI_UNDEFINED,
+                  RLC_SDU_CONFIRM_NO,
+                  len,
+                  (unsigned char *)rx_buf,
+                  PDCP_TRANSMISSION_MODE_DATA,
+                  NULL,
+                  NULL,
+                  qfi,
+                  rqi,
+                  pdusession_id);
+  }
+
+  free(arg);
+
+  return NULL;
+}
+
+void start_sdap_tun_gnb(int id)
+{
+  pthread_t t;
+
+  struct thread_args *arg = malloc(sizeof(struct thread_args));
+  char ifname[20];
+  nas_config_interface_name(id + 1, 1, "oaitun_", ifname);
+  arg->sock_fd = init_single_tun(ifname);
+  nas_config(id + 1, 1, 1, ifname, 1);
+  {
+    // default ue id & pdu session id in nos1 mode
+    nr_sdap_entity_t *entity = nr_sdap_get_entity(1, 10);
+    DevAssert(entity != NULL);
+    entity->pdusession_sock = arg->sock_fd;
+  }
+  if (pthread_create(&t, NULL, gnb_tun_read_thread, (void *)arg) != 0) {
+    LOG_E(PDCP, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
+    exit(1);
+  }
+}
+
+static void *ue_tun_read_thread(void *arg)
+{
+  nr_sdap_entity_t *entity = (nr_sdap_entity_t *)arg;
+  char rx_buf[NL_MAX_PAYLOAD];
+  int len;
+  protocol_ctxt_t ctxt;
+
+  int rb_id = 1;
+  char thread_name[64];
+  sprintf(thread_name, "ue_tun_read_%d\n", entity->pdusession_id);
+  pthread_setname_np(pthread_self(), thread_name);
+  while (1) {
+    len = read(entity->pdusession_sock, &rx_buf, NL_MAX_PAYLOAD);
+
+    if (entity->stop_thread)
+      break;
+
+    if (len == -1) {
+      LOG_E(PDCP, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
+      exit(1);
+    }
+
+    LOG_D(PDCP, "%s(): pdusession_sock read returns len %d\n", __func__, len);
+
+    ctxt.module_id = 0;
+    ctxt.enb_flag = 0;
+    ctxt.instance = 0;
+    ctxt.frame = 0;
+    ctxt.subframe = 0;
+    ctxt.eNB_index = 0;
+    ctxt.brOption = 0;
+    ctxt.rntiMaybeUEid = entity->ue_id;
+
+    bool dc = SDAP_HDR_UL_DATA_PDU;
+
+    entity->tx_entity(entity,
+                      &ctxt,
+                      SRB_FLAG_NO,
+                      rb_id,
+                      RLC_MUI_UNDEFINED,
+                      RLC_SDU_CONFIRM_NO,
+                      len,
+                      (unsigned char *)rx_buf,
+                      PDCP_TRANSMISSION_MODE_DATA,
+                      NULL,
+                      NULL,
+                      entity->qfi,
+                      dc);
+  }
+
+  return NULL;
+}
+
+void start_sdap_tun_ue(ue_id_t ue_id, int pdu_session_id, int sock)
+{
+  nr_sdap_entity_t *entity = nr_sdap_get_entity(ue_id, pdu_session_id);
+  DevAssert(entity != NULL);
+  entity->pdusession_sock = sock;
+  entity->stop_thread = false;
+  if (pthread_create(&entity->pdusession_thread, NULL, ue_tun_read_thread, (void *)entity) != 0) {
+    LOG_E(PDCP, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
+    exit(1);
+  }
+}
 
 bool sdap_data_req(protocol_ctxt_t *ctxt_p,
                    const ue_id_t ue_id,
@@ -85,10 +236,4 @@ void sdap_data_ind(rb_id_t pdcp_entity,
                          ue_id,
                          buf,
                          size);
-}
-
-void set_qfi_pduid(uint8_t qfi, uint8_t pduid){
-  nas_qfi = qfi;
-  nas_pduid = pduid;
-  return;
 }

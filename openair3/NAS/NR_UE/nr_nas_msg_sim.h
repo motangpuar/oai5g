@@ -184,6 +184,7 @@ nr_ue_nas_t *get_ue_nas_info(module_id_t module_id);
 void generateRegistrationRequest(as_nas_info_t *initialNasMsg, nr_ue_nas_t *nas);
 void *nas_nrue_task(void *args_p);
 void *nas_nrue(void *args_p);
+void nr_ue_create_ip_if(char *ifname, int ue_id, int pdu_session_id, int third_octet, int fourth_octet);
 
 #endif /* __NR_NAS_MSG_SIM_H__*/
 

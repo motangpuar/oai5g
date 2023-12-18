@@ -61,7 +61,7 @@ int NAS_config(char *interfaceName, char *ipAddress, char *networkMask, char *br
  * \note
  * @ingroup  _nas
  */
-int nas_config(int interface_id, int thirdOctet, int fourthOctet, char *ifsuffix);
+int nas_config(int interface_id, int thirdOctet, int fourthOctet, char *ifsuffix, int interface_suffix);
 
 /*! \fn int  nas_config_mbms(char*, int, int)
  * \brief This function initializes the nasmesh interface using the basic values,
@@ -181,4 +181,6 @@ void rb_ioctl_init(int inst);
 int rb_stats_req(int inst);
 void init_socket(void);
 in_addr_t ipv4_address(int thirdOctet, int fourthOctet);
+int doesInterfaceExist(const char *interfaceName);
+void nas_config_interface_name(int if_id, int if_suffix, const char *ifname, char *ret);
 #endif /*NAS_CONFIG_H_*/
