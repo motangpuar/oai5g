@@ -1991,6 +1991,27 @@ static void process_lte_nsa_msg(NR_UE_RRC_INST_t *rrc, nsa_msg_t *msg, int msg_l
     }
 }
 
+void handle_rlf_detection(NR_UE_RRC_INST_t *rrc)
+{
+  // 5.3.10.3 in 38.331
+  rrcPerNB_t *nb = &rrc->perNB[0];
+  bool srb2 = nb->Srb[2] != RB_NOT_PRESENT;
+  bool any_drb = false;
+  for (int i = 0; i < MAX_DRBS_PER_UE; i++) {
+    if (nb->status_DRBs[i] != RB_NOT_PRESENT) {
+      any_drb = true;
+      break;
+    }
+  }
+
+  if (rrc->as_security_activated && srb2 && any_drb) // initiate the connection re-establishment procedure
+    nr_rrc_initiate_rrcReestablishment(rrc, NR_ReestablishmentCause_otherFailure, 0);
+  else {
+    NR_Release_Cause_t cause = rrc->as_security_activated ? RRC_CONNECTION_FAILURE : OTHER;
+    nr_rrc_going_to_IDLE(rrc, cause, NULL);
+  }
+}
+
 void nr_rrc_going_to_IDLE(NR_UE_RRC_INST_t *rrc,
                           NR_Release_Cause_t release_cause,
                           NR_RRCRelease_t *RRCRelease)
