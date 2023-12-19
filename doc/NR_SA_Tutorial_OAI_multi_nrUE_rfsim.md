@@ -74,7 +74,7 @@ docker compose up -d
 
 ### RFsimulator
 
-- For the gNB configuration file, follow the path to openairinterface5g/ci-scripts/conf_files and edit the gnb.sa.band78.106prb.rfsim.conf as:
+- For the gNB configuration file, follow the path to openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF and edit the gnb.sa.band78.106prb.rfsim.conf as:
 ```bash
 min_rxtxtime                                              = 6;
 ```
@@ -84,7 +84,7 @@ and add this line to the bottom of your conf file.
 @include "channelmod_rfsimu.conf"
 ```
 
-You can check the example run 2 in this link:(../radio/rfsimulator/README.md)
+- You can check the example run 2 in the gNB part in this link:(../radio/rfsimulator/README.md)
 
 
 - For the channel model configuration, follow the path to openairinterface5g/ci-scripts/conf_files and edit the channelmod_rfsimu.conf as:
@@ -103,17 +103,20 @@ You can check the example run 1 in this link:(../radio/rfsimulator/README.md)
 
 
 # 5. OAI  UE 
+
+- For the UE configuration file, follow the path to openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF and edit the ue.conf as:
 ```bash
-cd cmake_targets/ran_build/build
-sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --ue-fo-compensation --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
+imsi="0010100000001";
+```
+and add this line to the bottom of your conf file. 
+
+```bash
+@include "channelmod_rfsimu.conf"
 ```
 
+- You can check the example run 2 in the UE part in this link:(../radio/rfsimulator/README.md)
 
-- After editing your configuration files, now you can deploy your UE in RFsimulator as
-```bash
-cd ~/openairinterface5g/cmake_targets/ran_build/build
-sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
-```
+
 # 5.2 OAI multiple UE 
 
 
