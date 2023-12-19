@@ -74,27 +74,17 @@ docker compose up -d
 
 ### RFsimulator
 
-<<<<<<< HEAD
 - For the gNB configuration file, follow the path to openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF and edit the gnb.sa.band78.106prb.rfsim.conf as:
 ```bash
 min_rxtxtime                                              = 6;
 ```
 and add this line to the bottom of your conf file. 
-=======
-- For the gNB configuration file, follow the link to the configuration files:  [Configurations](../ci-scripts/conf_files/gnb.sa.band78.106prb.rfsim.conf)
-
-- Add this line to the bottom of the conf file for including the channel models in your simulations. 
->>>>>>> 01273261b73171d6d95987b746f41c3fc600b16f
 
 ```bash
 @include "channelmod_rfsimu.conf"
 ```
 
-<<<<<<< HEAD
 - You can check the example run 2 in the gNB part in this link:(../radio/rfsimulator/README.md)
-=======
-You can check the example run 2 in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
->>>>>>> 01273261b73171d6d95987b746f41c3fc600b16f
 
 
 - For the channel model configuration, follow the link to the configurtion files:  [Configurations](../ci-scripts/conf_files/channelmod_rfsimu.conf) 
