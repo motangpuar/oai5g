@@ -124,7 +124,7 @@ and add this line to the bottom of your conf file.
 Important notes:
 - This should be run on the same host as the OAI gNB
 - It only applies when running OAI gNB with RFsimulator
-- Use the script (multi-ue.sh) in openairinterface/radio/rfsimulator to make namespaces for 
+- Use the script (multi-ue.sh) in [RFSIMULATOR Tutorial](openairinterface/radio/rfsimulator) to make namespaces for 
 multiple UEs.  
 
 - For the first UE, create the namespace ue1 (-c1) and then execute bash inside (-e):
