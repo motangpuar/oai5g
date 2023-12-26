@@ -228,6 +228,7 @@ typedef struct {
   // BWP for RA
   NR_UE_DL_BWP_t DL_BWP;
   NR_UE_UL_BWP_t UL_BWP;
+  NR_UE_ServingCell_Info_t sc_info;
 } NR_RA_t;
 
 /*! \brief gNB common channels */
@@ -536,6 +537,11 @@ typedef struct NR_UE_ul_harq {
   NR_sched_pusch_t sched_pusch;
 } NR_UE_ul_harq_t;
 
+typedef struct NR_QoS_config_s {
+  uint64_t fiveQI;
+  uint64_t priority;
+} NR_QoS_config_t;
+
 /*! \brief scheduling control information set through an API */
 #define MAX_CSI_REPORTS 48
 typedef struct {
@@ -635,6 +641,9 @@ typedef struct {
   /// sri, ul_ri and tpmi based on SRS
   nr_srs_feedback_t srs_feedback;
   nssai_t dl_lc_nssai[NR_MAX_NUM_LCID];
+
+  // Information about the QoS configuration for each LCID/DRB
+  NR_QoS_config_t qos_config[NR_MAX_NUM_LCID - 4][NR_MAX_NUM_QFI]; // 0 -CCCH and 1- 3 SRBs(0,1,2)
 } NR_UE_sched_ctrl_t;
 
 typedef struct {
@@ -691,6 +700,7 @@ typedef struct {
   NR_UE_sched_ctrl_t UE_sched_ctrl;
   NR_UE_DL_BWP_t current_DL_BWP;
   NR_UE_UL_BWP_t current_UL_BWP;
+  NR_UE_ServingCell_Info_t sc_info;
   NR_mac_stats_t mac_stats;
   /// currently active CellGroupConfig
   NR_CellGroupConfig_t *CellGroup;
@@ -705,6 +715,7 @@ typedef struct {
   uint32_t ra_timer;
   float ul_thr_ue;
   float dl_thr_ue;
+  long pdsch_HARQ_ACK_Codebook;
 } NR_UE_info_t;
 
 typedef struct {
@@ -729,6 +740,7 @@ typedef bool (*nr_pp_impl_ul)(module_id_t mod_id,
 typedef struct f1_config_t {
   f1ap_setup_req_t *setup_req;
   f1ap_setup_resp_t *setup_resp;
+  uint32_t gnb_id; // associated gNB's ID, not used in DU itself
 } f1_config_t;
 
 /*! \brief top level eNB MAC structure */

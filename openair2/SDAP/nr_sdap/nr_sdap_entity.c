@@ -468,6 +468,21 @@ nr_sdap_entity_t *nr_sdap_get_entity(ue_id_t ue_id, int pdusession_id)
   return NULL;
 }
 
+void nr_sdap_release_drb(ue_id_t ue_id, int drb_id, int pdusession_id)
+{
+  // remove all QoS flow to DRB mappings associated with the released DRB
+  nr_sdap_entity_t *sdap = nr_sdap_get_entity(ue_id, pdusession_id);
+  if (sdap) {
+    for (int i = 0; i < SDAP_MAX_QFI; i++) {
+      if (sdap->qfi2drb_table[i].drb_id == drb_id)
+        sdap->qfi2drb_table[i].drb_id = SDAP_NO_MAPPING_RULE;
+    }
+  }
+  else
+    LOG_E(SDAP, "Couldn't find a SDAP entity associated with PDU session ID %d\n",
+          pdusession_id);
+}
+
 bool nr_sdap_delete_entity(ue_id_t ue_id, int pdusession_id)
 {
   nr_sdap_entity_t *entityPtr = sdap_info.sdap_entity_llist;
@@ -476,7 +491,7 @@ bool nr_sdap_delete_entity(ue_id_t ue_id, int pdusession_id)
   int upperBound = 0;
 
   if (entityPtr == NULL && (pdusession_id) * (pdusession_id - NGAP_MAX_PDU_SESSION) > 0) {
-    LOG_W(SDAP, "SDAP entities not established or Invalid range of pdusession_id [0, 256].\n");
+    LOG_E(SDAP, "SDAP entities not established or Invalid range of pdusession_id [0, 256].\n");
     return ret;
   }
   LOG_D(SDAP, "Deleting SDAP entity for UE %lx and PDU Session id %d\n", ue_id, entityPtr->pdusession_id);
@@ -501,7 +516,7 @@ bool nr_sdap_delete_entity(ue_id_t ue_id, int pdusession_id)
       ret = true;
     }
   }
-  LOG_W(SDAP, "Entity does not exist or it was not found.\n");
+  LOG_E(SDAP, "Entity does not exist or it was not found.\n");
   return ret;
 }
 

@@ -56,14 +56,21 @@ extern queue_t nr_ul_tti_req_queue;
 //  main_rrc.c
 //
 /**\brief Layer 3 initialization*/
-NR_UE_RRC_INST_t *nr_l3_init_ue(char *, char *, char *);
+NR_UE_RRC_INST_t *nr_l3_init_ue(char *);
 
 //
 //  UE_rrc.c
 //
 
 /**\brief Initial the top level RRC structure instance*/
-NR_UE_RRC_INST_t *openair_rrc_top_init_ue_nr(char *, char *, char *);
+NR_UE_RRC_INST_t *openair_rrc_top_init_ue_nr(char *);
+void init_nsa_message (NR_UE_RRC_INST_t *rrc, char* reconfig_file, char* rbconfig_file);
+
+void process_nsa_message(NR_UE_RRC_INST_t *rrc, nsa_message_t nsa_message_type, void *message, int msg_len);
+
+void nr_rrc_cellgroup_configuration(rrcPerNB_t *rrcNB,
+                                    instance_t instance,
+                                    NR_CellGroupConfig_t *cellGroupConfig);
 
 /**\brief interface between MAC and RRC thru SRB0 (RLC TM/no PDCP)
    \param module_id  module id
@@ -85,6 +92,11 @@ int8_t nr_mac_rrc_data_ind_ue(const module_id_t module_id,
 void nr_mac_rrc_sync_ind(const module_id_t module_id,
                          const frame_t frame,
                          const bool in_sync);
+
+void nr_rrc_going_to_IDLE(instance_t instance,
+                          NR_Release_Cause_t release_cause,
+                          NR_RRCRelease_t *RRCRelease);
+
 void nr_mac_rrc_ra_ind(const module_id_t mod_id, int frame, bool success);
 void nr_mac_rrc_msg3_ind(const module_id_t mod_id, int rnti);
 
@@ -103,7 +115,7 @@ void init_connections_with_lte_ue(void);
 
 void nsa_sendmsg_to_lte_ue(const void *message, size_t msg_len, Rrc_Msg_Type_t msg_type);
 
-void start_oai_nrue_threads(void);
+extern void start_oai_nrue_threads(void);
 
 int get_from_lte_ue_fd();
 

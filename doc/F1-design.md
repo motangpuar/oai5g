@@ -116,6 +116,14 @@ sudo cmake_targets/ran_build/build/nr-softmodem --sa -O ci-scripts/conf_files/gn
 These files are tested in the CI, and are configured for use in docker,
 see [this `docker-compose` file](../ci-scripts/yaml_files/5g_f1_rfsimulator/docker-compose.yaml).
 
+The rules to decide if a config triggers a start of a DU, CU, or monolithic
+gNB, are, in order:
+1. If the `MACRLCs` section lists `f1` as northbound transport preference
+   (`tr_n_preference`), it is a DU.
+2. If the `gNBs` section lists `f1` as a southound transport preference
+   (`tr_s_preference`), it is a CU.
+3. It is a (monolithic) gNB.
+
 ## Configuration of F1 IP/port information
 
 For a local deployment, you should update the following fields.
@@ -144,9 +152,11 @@ In the CU file:
 In the DU file:
 - Set `MACRLCs.[0].tr_n_preference` to `f1`
 - Update `MACRLCs.[0].local_n_address` (local north-bound address of the DU) to
-  `127.0.0.4`
+  `127.0.0.4`. This IP address is used to bind the GTP socket (F1-U user plane
+  traffic).
 - Update `MACRLCs.[].remote_n_address` (remote north-bound address of the CU)
-  to `127.0.0.3`
+  to `127.0.0.3`. This IP address is used as the CU destination IP address for
+  F1AP communication.
 
 Note: all `local_*_if_name` parameters are ignored.
 

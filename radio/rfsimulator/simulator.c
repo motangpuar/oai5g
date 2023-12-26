@@ -314,7 +314,7 @@ static void fullwrite(int fd, void *_buf, ssize_t count, rfsimulator_state_t *t)
         continue;
 
       if (errno == EAGAIN) {
-        LOG_E(HW, "write() failed, errno(%d)\n", errno);
+        LOG_D(HW, "write() failed, errno(%d)\n", errno);
         usleep(250);
         continue;
       } else
@@ -1117,6 +1117,12 @@ int device_init(openair0_device *device, openair0_config_t *openair0_cfg) {
         break;
       }
     }
+  }
+
+  /* write on a socket fails if the other end is closed and we get SIGPIPE */
+  if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+    perror("SIGPIPE");
+    exit(1);
   }
 
   return 0;

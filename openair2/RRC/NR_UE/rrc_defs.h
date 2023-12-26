@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "platform_types.h"
+#include "common/platform_types.h"
 #include "commonDef.h"
 #include "common/platform_constants.h"
 
@@ -148,17 +148,25 @@ typedef struct NR_UE_Timers_Constants_s {
   // timers status
   bool T300_active;
   bool T301_active;
+  bool T302_active;
   bool T304_active;
   bool T310_active;
   bool T311_active;
   bool T319_active;
+  bool T320_active;
+  bool T325_active;
+  bool T390_active;
   // timers
   uint32_t T300_cnt;
   uint32_t T301_cnt;
+  uint32_t T302_cnt;
   uint32_t T304_cnt;
   uint32_t T310_cnt;
   uint32_t T311_cnt;
   uint32_t T319_cnt;
+  uint32_t T320_cnt;
+  uint32_t T325_cnt;
+  uint32_t T390_cnt;
   // counters
   uint32_t N310_cnt;
   uint32_t N311_cnt;
@@ -167,10 +175,14 @@ typedef struct NR_UE_Timers_Constants_s {
   uint32_t N311_k;
   uint32_t T300_k;
   uint32_t T301_k;
+  uint32_t T302_k;
   uint32_t T304_k;
   uint32_t T310_k;
   uint32_t T311_k;
   uint32_t T319_k;
+  uint32_t T320_k;
+  uint32_t T325_k;
+  uint32_t T390_k;
 } NR_UE_Timers_Constants_t;
 
 typedef enum {
@@ -180,18 +192,14 @@ typedef enum {
 
 typedef enum { RB_NOT_PRESENT, RB_ESTABLISHED, RB_SUSPENDED } NR_RB_status_t;
 
-typedef struct NR_UE_RRC_SRB_INFO_s {
-  NR_RB_status_t status;
-} NR_UE_RRC_SRB_INFO_t;
-
 typedef struct rrcPerNB {
   NR_MeasObjectToAddMod_t *MeasObj[MAX_MEAS_OBJ];
   NR_ReportConfigToAddMod_t *ReportConfig[MAX_MEAS_CONFIG];
   NR_QuantityConfig_t *QuantityConfig;
   NR_MeasIdToAddMod_t *MeasId[MAX_MEAS_ID];
   NR_MeasGapConfig_t *measGapConfig;
-  NR_UE_RRC_SRB_INFO_t Srb[NR_NUM_SRB];
-  bool active_DRBs[MAX_DRBS_PER_UE];
+  NR_RB_status_t Srb[NR_NUM_SRB];
+  NR_RB_status_t status_DRBs[MAX_DRBS_PER_UE];
   bool active_RLC_entity[NR_MAX_NUM_LCID];
   NR_UE_RRC_SI_INFO SInfo;
   NR_RSRP_Range_t s_measure;
@@ -199,10 +207,6 @@ typedef struct rrcPerNB {
 
 typedef struct NR_UE_RRC_INST_s {
   NR_MeasConfig_t        *meas_config;
-  NR_CellGroupConfig_t   *cell_group_config;
-  NR_ServingCellConfigCommonSIB_t *servingCellConfigCommonSIB;
-  NR_CellGroupConfig_t   *scell_group_config;
-  NR_RadioBearerConfig_t *radio_bearer_config;
 
   rrcPerNB_t perNB[NB_CNX_UE];
 
@@ -215,11 +219,10 @@ typedef struct NR_UE_RRC_INST_s {
 
   // NR_MIB_t *mib;
 
-  // active BWPs
-  NR_BWP_DownlinkDedicated_t *bwpd;
-  NR_BWP_UplinkDedicated_t *ubwpd;
+  NR_BWP_Id_t dl_bwp_id;
+  NR_BWP_Id_t ul_bwp_id;
 
-  /* KeNB as computed from parameters within USIM card */
+  /* KgNB as computed from parameters within USIM card */
   uint8_t kgnb[32];
   /* Used integrity/ciphering algorithms */
   //RRC_LIST_TYPE(NR_SecurityAlgorithmConfig_t, NR_SecurityAlgorithmConfig) SecurityAlgorithmConfig_list;
