@@ -108,7 +108,7 @@ For the UE configuration file, follow the link to the configuration files: [Conf
 ```bash
 imsi="0010100000001";
 ```
-- - Add this line to the bottom of the conf file for including the channel models in your simulations. 
+- Add this line to the bottom of the conf file for including the channel models in your simulations. 
 
 
 ```bash
