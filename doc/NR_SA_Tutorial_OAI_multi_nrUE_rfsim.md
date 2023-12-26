@@ -74,7 +74,7 @@ docker compose up -d
 
 ### RFsimulator
 
-- For the gNB configuration file, follow the link to the configuration files:  [Configurations](../ci-scripts/conf_files/gnb.sa.band78.106prb.rfsim.conf)
+- For the gNB configuration file, follow the link to the configuration files: [Configurations](../ci-scripts/conf_files/gnb.sa.band78.106prb.rfsim.conf)
 
 - Add this line to the bottom of the conf file for including the channel models in your simulations. 
 
@@ -82,7 +82,7 @@ docker compose up -d
 @include "channelmod_rfsimu.conf"
 ```
 
-You can check the example run 2 in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
+You can check the example run 2(RFSIMULATOR) in the Launch gNB in one window part in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
 
 
 - For the channel model configuration, follow the link to the configurtion files:  [Configurations](../ci-scripts/conf_files/channelmod_rfsimu.conf) 
@@ -97,21 +97,23 @@ You can check the example run 2 in this link: [RFSIMULATOR Tutorial](../radio/rf
 ```
 and the rest of the channelmod_rfsimu.conf remains unchanged. 
 
-You can check the example run 1 in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
+
 
 
 # 5. OAI  UE 
-```bash
-cd cmake_targets/ran_build/build
-sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --ue-fo-compensation --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
-```
 
+For the UE configuration file, follow the link to the configuration files: [Configurations](../ci-scripts/conf_files/ue.sa.conf)
 
-- After editing your configuration files, now you can deploy your UE in RFsimulator as
+- Edit the IMSI as the following
 ```bash
-cd ~/openairinterface5g/cmake_targets/ran_build/build
-sudo ./nr-uesoftmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/ue.conf -r 106 --numerology 1 --band 78 -C 3619200000 --rfsim --sa --uicc0.imsi 001010000000001 --nokrnmod -E --rfsimulator.options chanmod --rfsimulator.serveraddr 127.0.0.1 --telnetsrv --telnetsrv.listenport 9095
+imsi="0010100000001";
 ```
+- - Add this line to the bottom of the conf file for including the channel models in your simulations. 
+
+```bash
+@include "channelmod_rfsimu.conf"
+```
+You can check the example run 1(RFSIMULATOR) in the Launch UE in another window part in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
 # 5.2 OAI multiple UE 
 
 
