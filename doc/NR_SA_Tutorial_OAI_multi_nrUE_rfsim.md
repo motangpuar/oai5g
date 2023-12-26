@@ -74,15 +74,27 @@ docker compose up -d
 
 ### RFsimulator
 
+<<<<<<< HEAD
 - For the gNB configuration file, follow the link to the configuration files: [Configurations](../ci-scripts/conf_files/gnb.sa.band78.106prb.rfsim.conf)
 
 - Add this line to the bottom of the conf file for including the channel models in your simulations. 
+=======
+- For the gNB configuration file, follow the path to openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF and edit the gnb.sa.band78.106prb.rfsim.conf as:
+```bash
+min_rxtxtime                                              = 6;
+```
+and add this line to the bottom of your conf file. 
+>>>>>>> 1efeb08c13bdba72880502499ac3d2a4c5ce54a7
 
 ```bash
 @include "channelmod_rfsimu.conf"
 ```
 
+<<<<<<< HEAD
 You can check the example run 2(RFSIMULATOR) in the Launch gNB in one window part in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
+=======
+- You can check the example run 2 in the gNB part in this link:(../radio/rfsimulator/README.md)
+>>>>>>> 1efeb08c13bdba72880502499ac3d2a4c5ce54a7
 
 
 - For the channel model configuration, follow the link to the configurtion files:  [Configurations](../ci-scripts/conf_files/channelmod_rfsimu.conf) 
@@ -102,6 +114,7 @@ and the rest of the channelmod_rfsimu.conf remains unchanged.
 
 # 5. OAI  UE 
 
+<<<<<<< HEAD
 For the UE configuration file, follow the link to the configuration files: [Configurations](../ci-scripts/conf_files/ue.sa.conf)
 
 - Edit the IMSI as the following
@@ -109,11 +122,25 @@ For the UE configuration file, follow the link to the configuration files: [Conf
 imsi="0010100000001";
 ```
 - - Add this line to the bottom of the conf file for including the channel models in your simulations. 
+=======
+- For the UE configuration file, follow the path to openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF and edit the ue.conf as:
+```bash
+imsi="0010100000001";
+```
+and add this line to the bottom of your conf file. 
+>>>>>>> 1efeb08c13bdba72880502499ac3d2a4c5ce54a7
 
 ```bash
 @include "channelmod_rfsimu.conf"
 ```
+<<<<<<< HEAD
 You can check the example run 1(RFSIMULATOR) in the Launch UE in another window part in this link: [RFSIMULATOR Tutorial](../radio/rfsimulator/README.md)
+=======
+
+- You can check the example run 2 in the UE part in this link:(../radio/rfsimulator/README.md)
+
+
+>>>>>>> 1efeb08c13bdba72880502499ac3d2a4c5ce54a7
 # 5.2 OAI multiple UE 
 
 
@@ -121,7 +148,7 @@ You can check the example run 1(RFSIMULATOR) in the Launch UE in another window 
 Important notes:
 - This should be run on the same host as the OAI gNB
 - It only applies when running OAI gNB with RFsimulator
-- Use the script (multi-ue.sh) in openairinterface/radio/rfsimulator to make namespaces for 
+- Use the script (multi-ue.sh) in [RFSIMULATOR Tutorial](../radio/rfsimulator) to make namespaces for 
 multiple UEs.  
 
 - For the first UE, create the namespace ue1 (-c1) and then execute bash inside (-e):
