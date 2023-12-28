@@ -43,6 +43,8 @@
     000100
     000010
     000020
+    000030
+    000040
     000200
     003000
     004000
@@ -136,22 +138,40 @@
     <class>Iperf</class>
     <desc>iperf (DL/7Mbps/UDP)(30 sec)(multi-ue profile)</desc>
     <iperf_args>-u -b 70M -t 30 -i 1 -R</iperf_args>
-    <direction>IPERF3</direction>
     <id>amarisoft_ue_1 amarisoft_ue_2 amarisoft_ue_3 amarisoft_ue_4 amarisoft_ue_5 amarisoft_ue_6 amarisoft_ue_7 amarisoft_ue_8 amarisoft_ue_9 amarisoft_ue_10</id>
+    <svr_id>oc-cn5g</svr_id>
     <iperf_packetloss_threshold>25</iperf_packetloss_threshold>
     <iperf_bitrate_threshold>80</iperf_bitrate_threshold>
     <iperf_profile>balanced</iperf_profile>
+  </testCase>
+
+  <testCase id="000030">
+    <class>Iperf</class>
+    <desc>iperf (DL/TCP)(30 sec)(multi-ue profile)</desc>
+    <iperf_args>-t 30 -i 1 -R --json</iperf_args>
+    <id>amarisoft_ue_1 amarisoft_ue_2 amarisoft_ue_3 amarisoft_ue_4 amarisoft_ue_5 amarisoft_ue_6 amarisoft_ue_7 amarisoft_ue_8 amarisoft_ue_9 amarisoft_ue_10</id>
+    <svr_id>oc-cn5g</svr_id>
+    <iperf_bitrate_check>4</iperf_bitrate_check>
   </testCase>
 
   <testCase id="000020">
     <class>Iperf</class>
     <desc>iperf (UL/3.6Mbps/UDP)(30 sec)(multi-ue profile)</desc>
     <iperf_args>-u -b 36M -t 30 -i 1 </iperf_args>
-    <direction>IPERF3</direction>
     <id>amarisoft_ue_1 amarisoft_ue_2 amarisoft_ue_3 amarisoft_ue_4 amarisoft_ue_5 amarisoft_ue_6 amarisoft_ue_7 amarisoft_ue_8 amarisoft_ue_9 amarisoft_ue_10</id>
+    <svr_id>oc-cn5g</svr_id>
     <iperf_packetloss_threshold>25</iperf_packetloss_threshold>
     <iperf_bitrate_threshold>80</iperf_bitrate_threshold>
     <iperf_profile>balanced</iperf_profile>
+  </testCase>
+
+  <testCase id="000040">
+    <class>Iperf</class>
+    <desc>iperf (UL/TCP)(30 sec)(multi-ue profile)</desc>
+    <iperf_args>-t 30 -i 1 --json</iperf_args>
+    <svr_id>oc-cn5g</svr_id>
+    <id>amarisoft_ue_1 amarisoft_ue_2 amarisoft_ue_3 amarisoft_ue_4 amarisoft_ue_5 amarisoft_ue_6 amarisoft_ue_7 amarisoft_ue_8 amarisoft_ue_9 amarisoft_ue_10</id>
+    <iperf_bitrate_check>2</iperf_bitrate_check>
   </testCase>
 
   <testCase id="000100">
