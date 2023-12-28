@@ -873,122 +873,60 @@ class OaiCiTest():
 		else:
 			return (False, 'Could not analyze from server log')
 
-	def Iperf_Module(self, EPC, ue, RAN, idx, ue_num):
+	def Iperf_Module(self, EPC, ue, svr, RAN, idx, ue_num):
 		ueIP = ue.getIP()
-		if not ueIP:
-			return (False, f"UE {ue.getName()} has no IP address")
-		SSH = sshconnection.SSHConnection()
-		server_filename = f'iperf_server_{self.testCase_id}_{ue.getName()}.log'
-		client_filename = f'iperf_client_{self.testCase_id}_{ue.getName()}.log'
-		if (re.match('OAI-Rel14-Docker', EPC.Type, re.IGNORECASE)) or (re.match('OAICN5G', EPC.Type, re.IGNORECASE)):
-			#retrieve trf-gen container IP address
-			SSH.open(EPC.IPAddress, EPC.UserName, EPC.Password)
-			SSH.command('docker inspect --format="TRF_IP_ADDR = {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-trf-gen', '\$', 5)
-			result = re.search('TRF_IP_ADDR = (?P<trf_ip_addr>[0-9\.]+)', SSH.getBefore())
-			if result is None:
-				raise Exception("could not corver prod-trf-gen IP address")
-			cn_target_ip = result.group('trf_ip_addr')
-			SSH.close()
-			cn_iperf_prefix = "docker exec  prod-trf-gen" # -w /iperf-2.0.13  necessary?
-		elif (re.match('OC-OAI-CN5G', EPC.Type, re.IGNORECASE)):
-			cn_target_ip = "172.21.6.102"
-		else: # lteboix, sabox
-			cn_target_ip = "192.172.0.1"
-			cn_iperf_prefix = ""
-
+		svrIP = svr.getIP()
+		runServer = True
+		if (re.match('OC-OAI-CN5G', EPC.Type, re.IGNORECASE)):
+			runServer = False
 		iperf_opt = self.iperf_args
 		udpIperf = re.search('-u', iperf_opt) is not None
-		udpSwitch = '-u' if udpIperf else ''
+		bidirIperf = re.search('--bidir', iperf_opt) is not None
+		if not ueIP:
+			return (False, f"UE {ue.getName()} has no IP address")
+		server_filename = f'iperf_server_{self.testCase_id}_{ue.getName()}.log'
+		client_filename = f'iperf_client_{self.testCase_id}_{ue.getName()}.log'
+		#if (re.match('OAI-Rel14-Docker', EPC.Type, re.IGNORECASE)) or (re.match('OAICN5G', EPC.Type, re.IGNORECASE)):
+		#	with cls_cmd.getConnection(ue.getHost()) as cmd:
+				#retrieve trf-gen container IP address
+				#cmd.run('docker inspect --format="TRF_IP_ADDR = {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-trf-gen', '\$', 5)
+				#result = re.search('TRF_IP_ADDR = (?P<trf_ip_addr>[0-9\.]+)', cmd.getBefore())
+				#if result is None:
+				#	raise Exception("could not corver prod-trf-gen IP address")
+				#cn_target_ip = result.group('trf_ip_addr')
+				#cn_iperf_prefix = "docker exec  prod-trf-gen" # -w /iperf-2.0.13  necessary?
 		if udpIperf:
 			iperf_opt = self.Iperf_ComputeModifiedBW(idx, ue_num)
 			logging.info(f'iperf options modified from "{self.iperf_args}" to "{iperf_opt}" for {ue.getName()}')
 		iperf_time = int(self.Iperf_ComputeTime())
 		port = f'-p {5001+idx}'
 		# hack: the ADB UEs don't have iperf in $PATH, so we need to hardcode for the moment
-		iperf_ue = '/data/local/tmp/iperf' if re.search('adb', ue.getName()) else 'iperf'
-
+		iperf_ue = '/data/local/tmp/iperf3' if re.search('adb', ue.getName()) else 'iperf3'
 		ue_header = f'UE {ue.getName()} ({ueIP})'
 
-		if self.iperf_direction == "DL":
-			logging.debug("Iperf in DL requested")
-			cmd = cls_cmd.getConnection(ue.getHost())
-			cmd.run(f'rm {server_filename}')
-			cmd.run(f'{ue.getCmdPrefix()} {iperf_ue} -s -B {ueIP} {udpSwitch} -i 1 -t {iperf_time * 1.5} {port} &> /tmp/{server_filename} &')
-			cmd.close()
-
-			cmd = cls_cmd.getConnection(EPC.IPAddress)
-			cmd.run(f'rm {EPC.SourceCodePath}/{client_filename}')
-			cmd.run(f'{cn_iperf_prefix} iperf -c {ueIP} {iperf_opt} {port} &> {EPC.SourceCodePath}/{client_filename}', timeout=iperf_time * 1.5)
-			cmd.copyin(f'{EPC.SourceCodePath}/{client_filename}', client_filename)
-			cmd.close()
-
-			cmd = cls_cmd.getConnection(ue.getHost())
-			cmd.copyin(f'/tmp/{server_filename}', server_filename)
-			cmd.close()
-
-			if udpIperf:
-				status, msg = self.Iperf_analyzeV2Server(iperf_opt, server_filename, 1)
-			else:
-				cmd = cls_cmd.getConnection(EPC.IPAddress)
-				status, msg = self.Iperf_analyzeV2TCPOutput(cmd, f"{EPC.SourceCodePath}/{client_filename}")
-				cmd.close()
-
-		elif self.iperf_direction == "UL":
-			logging.debug("Iperf in UL requested")
-			cmd = cls_cmd.getConnection(EPC.IPAddress)
-			cmd.run(f'rm {EPC.SourceCodePath}/{server_filename}')
-			cmd.run(f'{cn_iperf_prefix} iperf -s {udpSwitch} -t {iperf_time * 1.5} {port} &> {EPC.SourceCodePath}/{server_filename} &')
-			cmd.close()
-
-			cmd = cls_cmd.getConnection(ue.getHost())
-			cmd.run(f'rm /tmp/{client_filename}')
-			cmd.run(f'{ue.getCmdPrefix()} {iperf_ue} -B {ueIP} -c {cn_target_ip} {iperf_opt} {port} &> /tmp/{client_filename}', timeout=iperf_time*1.5)
-			cmd.copyin(f'/tmp/{client_filename}', client_filename)
-			cmd.close()
-
-			cmd = cls_cmd.getConnection(EPC.IPAddress)
-			cmd.copyin(f'{EPC.SourceCodePath}/{server_filename}', server_filename)
-			cmd.close()
-
-			if udpIperf:
-				status, msg = self.Iperf_analyzeV2Server(iperf_opt, server_filename, 1)
-			else:
-				cmd = cls_cmd.getConnection(ue.getHost())
-				status, msg = self.Iperf_analyzeV2TCPOutput(cmd, f"/tmp/{client_filename}")
-				cmd.close()
-
-		elif self.iperf_direction=="BIDIR":
-			logging.debug("Bi-directional iperf requested")
-			cmd = cls_cmd.getConnection(EPC.IPAddress)
-			cmd.run(f'rm {EPC.SourceCodePath}/{server_filename}')
-			cmd.run(f'{cn_iperf_prefix} iperf3 -s -i 1 -1 {port} &> {EPC.SourceCodePath}/{server_filename} &')
-			cmd.close()
-
-			cmd = cls_cmd.getConnection(ue.getHost())
-			cmd.run(f'rm /tmp/{client_filename}')
-			cmd.run(f'iperf3 -B {ueIP} -c {cn_target_ip} {iperf_opt} {port} &> /tmp/{client_filename}', timeout=iperf_time*1.5)
-			cmd.copyin(f'/tmp/{client_filename}', client_filename)
-			cmd.close()
-
-			cmd = cls_cmd.getConnection(EPC.IPAddress)
-			cmd.copyin(f'{EPC.SourceCodePath}/{server_filename}', server_filename)
-			cmd.close()
-
-			status, msg = self.Iperf_analyzeV2BIDIR(server_filename, client_filename)
-
-		elif self.iperf_direction == "IPERF3":
-			cmd = cls_cmd.getConnection(ue.getHost())
-			cmd.run(f'rm /tmp/{server_filename}', reportNonZero=False)
+		with cls_cmd.getConnection(ue.getHost()) as cmd_ue, cls_cmd.getConnection(EPC.IPAddress) as cmd_svr:
+			if runServer:
+				cmd_svr.run(f'rm /tmp/{server_filename}', reportNonZero=False)
+				port = f'{5002+idx}'
+				cmd_svr.run(f'{svr.getCmdPrefix()} iperf3 -s -B {svrIP} -p {port} -1 &> /tmp/{server_filename} &', timeout=iperf_time*1.5)
+			cmd_ue.run(f'rm /tmp/{client_filename}', reportNonZero=False)
 			port = f'{5002+idx}'
-			cmd.run(f'{ue.getCmdPrefix()} iperf3 -B {ueIP} -c {cn_target_ip} -p {port} {iperf_opt} --get-server-output &> /tmp/{server_filename}', timeout=iperf_time*1.5)
-			cmd.copyin(f'/tmp/{server_filename}', server_filename)
-			cmd.close()
-			if udpIperf:
-				status, msg = self.Iperf_analyzeV2Server(iperf_opt, server_filename, 1)
+			cmd_ue.run(f'{ue.getCmdPrefix()} {iperf_ue} -B {ueIP} -c {svrIP} -p {port} {iperf_opt} &> /tmp/{client_filename}', timeout=iperf_time*1.5)
+			if svr.getHost() == 'localhost':
+				time.sleep(1)
+				cmd_ue.run(f'cp /tmp/{client_filename} {client_filename}')
+				cmd_svr.run(f'cp /tmp/{server_filename} {server_filename}')
 			else:
-				status, msg = self.Iperf_analyzeV3TCPJson(client_filename, ue.getIP(), ue.getName())
-		else :
-			raise Exception("Incorrect or missing IPERF direction in XML")
+				cmd_ue.copyin(f'/tmp/{client_filename}', client_filename)
+				if runServer:
+					cmd_svr.copyin(f'/tmp/{server_filename}', server_filename)
+
+		if udpIperf:
+			status, msg = self.Iperf_analyzeV2Server(iperf_opt, client_filename, 1)
+		elif bidirIperf:
+			status, msg = self.Iperf_analyzeV2BIDIR(server_filename, client_filename)
+		else:
+			status, msg = self.Iperf_analyzeV3TCPJson(client_filename, ueIP, ue.getName())
 
 		logging.info(f'\u001B[1;37;45m iperf result for {ue_header}\u001B[0m')
 		for l in msg.split('\n'):
@@ -1010,9 +948,10 @@ class OaiCiTest():
 		logging.debug(f'Iperf: iperf_args "{self.iperf_args}" iperf_direction "{self.iperf_direction}" iperf_packetloss_threshold "{self.iperf_packetloss_threshold}" iperf_bitrate_threshold "{self.iperf_bitrate_threshold}" iperf_profile "{self.iperf_profile}" iperf_options "{self.iperf_options}"')
 
 		ues = [cls_module_ue.Module_UE(n.strip()) for n in self.ue_ids]
+		svr = cls_module_ue.Module_UE(self.svr_id)
 		logging.debug(ues)
 		with concurrent.futures.ThreadPoolExecutor() as executor:
-			futures = [executor.submit(self.Iperf_Module, EPC, ue, RAN, i, len(ues)) for i, ue in enumerate(ues)]
+			futures = [executor.submit(self.Iperf_Module, EPC, ue, svr, RAN, i, len(ues)) for i, ue in enumerate(ues)]
 			results = [f.result() for f in futures]
 			# each result in results is a tuple, first member goes to successes, second to messages
 			successes, messages = map(list, zip(*results))
@@ -1423,7 +1362,7 @@ class OaiCiTest():
 		time.sleep(self.idle_sleep_time)
 		HTML.CreateHtmlTestRow(str(self.idle_sleep_time) + ' sec', 'OK', CONST.ALL_PROCESSES_OK)
 
-	def X2_Status(self, idx, fileName):
+	def X2_Status(self, idx, fileName, EPC):
 		cmd = "curl --silent http://" + EPC.IPAddress + ":9999/stats | jq '.' > " + fileName
 		message = cmd + '\n'
 		logging.debug(cmd)
