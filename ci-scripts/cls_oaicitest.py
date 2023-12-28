@@ -45,6 +45,7 @@ import signal
 import statistics as stat
 from multiprocessing import SimpleQueue, Lock
 import concurrent.futures
+import json
 
 #import our libs
 import helpreadme as HELP
@@ -87,6 +88,7 @@ class OaiCiTest():
 		self.iperf_profile = ''
 		self.iperf_options = ''
 		self.iperf_direction = ''
+		self.iperf_bitrate_check = ''
 		self.nbMaxUEtoAttach = -1
 		self.UEDevices = []
 		self.UEDevicesStatus = []
@@ -655,7 +657,27 @@ class OaiCiTest():
 
 		return (False, "could not analyze log file")
 
-	def Iperf_analyzeV2Output(self, iperf_real_options, EPC, SSH):
+	def Iperf_analyzeV3TCPJson(self, filename, UEIpAddr, device):
+		with open(filename) as f:
+			filename = json.load(f)
+			sender_bitrate = round(filename['end']['streams'][0]['sender']['bits_per_second']/1000000,2)
+			receiver_bitrate = round(filename['end']['streams'][0]['receiver']['bits_per_second']/1000000,2)
+		msg = 'TCP Statistics:\n'
+		if sender_bitrate is None or receiver_bitrate is None:
+			return (False, 'Could not compute Iperf bandwidth!')
+		else:
+			msg += f'Sender Bitrate: {sender_bitrate}\n'
+			msg += f'Receiver Bitrate: {receiver_bitrate}\n'
+
+		if (int(receiver_bitrate) < int(self.iperf_bitrate_check)):
+			msg += f"Iperf FAILED! Required bitrate: {self.iperf_bitrate_check} Mbps\n"
+			return (False, msg)
+		else:
+			msg += f"Iperf OK! Target bitrate: {self.iperf_bitrate_check} Mbps\n"
+			return (True, msg)
+		return 0
+
+	def Iperf_analyzeV2Output(self, lock, UE_IPAddress, device_id, statusQueue, iperf_real_options,EPC,SSH):
 
 		result = re.search('-u', str(iperf_real_options))
 		if result is None:
@@ -964,10 +986,7 @@ class OaiCiTest():
 			if udpIperf:
 				status, msg = self.Iperf_analyzeV2Server(iperf_opt, server_filename, 1)
 			else:
-				cmd = cls_cmd.getConnection(EPC.IPAddress)
-				status, msg = self.Iperf_analyzeV2TCPOutput(cmd, f'/tmp/{server_filename}')
-				cmd.close()
-
+				status, msg = self.Iperf_analyzeV3TCPJson(client_filename, ue.getIP(), ue.getName())
 		else :
 			raise Exception("Incorrect or missing IPERF direction in XML")
 
