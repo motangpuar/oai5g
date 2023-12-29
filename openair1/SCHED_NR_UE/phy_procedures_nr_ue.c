@@ -1027,8 +1027,37 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
   // do procedures for C-RNTI
   int ret_pdsch = 0;
 
+  int slot_fep_bitmap[14] = {0};
   const uint32_t rxdataF_sz = ue->frame_parms.samples_per_slot_wCP;
   __attribute__ ((aligned(32))) c16_t rxdataF[ue->frame_parms.nb_antennas_rx][rxdataF_sz];
+
+  // do procedures for CSI-IM
+  if ((ue->csiim_vars[gNB_id]) && (ue->csiim_vars[gNB_id]->active == 1)) {
+    for(int symb_idx = 0; symb_idx < 4; symb_idx++) {
+      int symb = ue->csiim_vars[gNB_id]->csiim_config_pdu.l_csiim[symb_idx];
+      if (slot_fep_bitmap[symb] == 0) {
+        nr_slot_fep(ue, proc, symb, rxdataF);
+        slot_fep_bitmap[symb] = 1;
+      }
+    }
+    nr_ue_csi_im_procedures(ue, proc, rxdataF);
+    ue->csiim_vars[gNB_id]->active = 0;
+  }
+
+  // do procedures for CSI-RS
+  if ((ue->csirs_vars[gNB_id]) && (ue->csirs_vars[gNB_id]->active == 1)) {
+    for(int symb = 0; symb < NR_SYMBOLS_PER_SLOT; symb++) {
+      if(is_csi_rs_in_symbol(ue->csirs_vars[gNB_id]->csirs_config_pdu,symb)) {
+        if (slot_fep_bitmap[symb] == 0) {
+          nr_slot_fep(ue, proc, symb, rxdataF);
+          slot_fep_bitmap[symb] = 1;
+        }
+      }
+    }
+    nr_ue_csi_rs_procedures(ue, proc, rxdataF);
+    ue->csirs_vars[gNB_id]->active = 0;
+  }
+
   if (dlsch[0].active) {
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_UE_SLOT_FEP_PDSCH, VCD_FUNCTION_IN);
     fapi_nr_dl_config_dlsch_pdu_rel15_t *dlsch_config = &dlsch[0].dlsch_config;
@@ -1036,13 +1065,12 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
     uint16_t start_symb_sch = dlsch_config->start_symbol;
 
     LOG_D(PHY," ------ --> PDSCH ChannelComp/LLR Frame.slot %d.%d ------  \n", frame_rx%1024, nr_slot_rx);
-    //to update from pdsch config
 
-    for (uint16_t m=start_symb_sch;m<(nb_symb_sch+start_symb_sch) ; m++){
-      nr_slot_fep(ue,
-                  proc,
-                  m,  //to be updated from higher layer
-                  rxdataF);
+    for (int m = start_symb_sch; m < (nb_symb_sch + start_symb_sch) ; m++) {
+      if (slot_fep_bitmap[m] == 0) {
+        nr_slot_fep(ue, proc, m, rxdataF);
+        slot_fep_bitmap[m] = 2;
+      }
     }
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_UE_SLOT_FEP_PDSCH, VCD_FUNCTION_OUT);
 
@@ -1119,36 +1147,6 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDSCH_PROC, VCD_FUNCTION_OUT);
     for (int i=0; i<nb_codewords; i++)
       free(llr[i]);
-  }
-
-  // do procedures for CSI-IM
-  if ((ue->csiim_vars[gNB_id]) && (ue->csiim_vars[gNB_id]->active == 1)) {
-    int l_csiim[4] = {-1, -1, -1, -1};
-    for(int symb_idx = 0; symb_idx < 4; symb_idx++) {
-      bool nr_slot_fep_done = false;
-      for (int symb_idx2 = 0; symb_idx2 < symb_idx; symb_idx2++) {
-        if (l_csiim[symb_idx2] == ue->csiim_vars[gNB_id]->csiim_config_pdu.l_csiim[symb_idx]) {
-          nr_slot_fep_done = true;
-        }
-      }
-      l_csiim[symb_idx] = ue->csiim_vars[gNB_id]->csiim_config_pdu.l_csiim[symb_idx];
-      if(nr_slot_fep_done == false) {
-        nr_slot_fep(ue, proc, ue->csiim_vars[gNB_id]->csiim_config_pdu.l_csiim[symb_idx], rxdataF);
-      }
-    }
-    nr_ue_csi_im_procedures(ue, proc, rxdataF);
-    ue->csiim_vars[gNB_id]->active = 0;
-  }
-
-  // do procedures for CSI-RS
-  if ((ue->csirs_vars[gNB_id]) && (ue->csirs_vars[gNB_id]->active == 1)) {
-    for(int symb = 0; symb < NR_SYMBOLS_PER_SLOT; symb++) {
-      if(is_csi_rs_in_symbol(ue->csirs_vars[gNB_id]->csirs_config_pdu,symb)) {
-        nr_slot_fep(ue, proc, symb, rxdataF);
-      }
-    }
-    nr_ue_csi_rs_procedures(ue, proc, rxdataF);
-    ue->csirs_vars[gNB_id]->active = 0;
   }
 
   start_meas(&meas);
