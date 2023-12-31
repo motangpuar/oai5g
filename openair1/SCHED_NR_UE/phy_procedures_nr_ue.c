@@ -492,7 +492,8 @@ static int nr_ue_pdsch_procedures(PHY_VARS_NR_UE *ue,
                                   const UE_nr_rxtx_proc_t *proc,
                                   NR_UE_DLSCH_t dlsch[2],
                                   int16_t *llr[2],
-                                  c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP])
+                                  c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP],
+                                  uint32_t csi_REs[NR_SYMBOLS_PER_SLOT])
 {
   int frame_rx = proc->frame_rx;
   int nr_slot_rx = proc->nr_slot_rx;
@@ -500,7 +501,7 @@ static int nr_ue_pdsch_procedures(PHY_VARS_NR_UE *ue,
   int first_symbol_flag=0;
 
   // We handle only one CW now
-  if (!(NR_MAX_NB_LAYERS>4)) {
+  if (!(NR_MAX_NB_LAYERS > 4)) {
     NR_UE_DLSCH_t *dlsch0 = &dlsch[0];
     int harq_pid = dlsch0->dlsch_config.harq_process_nbr;
     NR_DL_UE_HARQ_t *dlsch0_harq = &ue->dl_harq_processes[0][harq_pid];
@@ -616,7 +617,8 @@ static int nr_ue_pdsch_procedures(PHY_VARS_NR_UE *ue,
                       ue->frame_parms.nb_antennas_rx,
                       rxdataF_comp,
                       ptrs_phase_per_slot,
-                      ptrs_re_per_slot)
+                      ptrs_re_per_slot,
+                      csi_REs[m])
           < 0)
         return -1;
 
@@ -646,7 +648,11 @@ static void send_dl_done_to_tx_thread(notifiedFIFO_t *nf, int rx_slot)
   }
 }
 
-static bool nr_ue_dlsch_procedures(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, NR_UE_DLSCH_t dlsch[2], int16_t *llr[2])
+static bool nr_ue_dlsch_procedures(PHY_VARS_NR_UE *ue,
+                                   const UE_nr_rxtx_proc_t *proc,
+                                   NR_UE_DLSCH_t dlsch[2],
+                                   int16_t* llr[2],
+                                   uint32_t csi_REs[NR_SYMBOLS_PER_SLOT])
 {
   if (dlsch[0].active == false) {
     LOG_E(PHY, "DLSCH should be active when calling this function\n");
@@ -673,10 +679,10 @@ static bool nr_ue_dlsch_procedures(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *
 
   uint8_t nb_re_dmrs;
   if (dmrs_type==NFAPI_NR_DMRS_TYPE1) {
-    nb_re_dmrs = 6*dlsch[0].dlsch_config.n_dmrs_cdm_groups;
+    nb_re_dmrs = 6 * dlsch[0].dlsch_config.n_dmrs_cdm_groups;
   }
   else {
-    nb_re_dmrs = 4*dlsch[0].dlsch_config.n_dmrs_cdm_groups;
+    nb_re_dmrs = 4 * dlsch[0].dlsch_config.n_dmrs_cdm_groups;
   }
 
   LOG_D(PHY,"AbsSubframe %d.%d Start LDPC Decoder for CW0 [harq_pid %d] ? %d \n", frame_rx%1024, nr_slot_rx, harq_pid, is_cw0_active);
@@ -780,6 +786,7 @@ static bool nr_ue_dlsch_procedures(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *
       int ptrsSymbPerSlot = get_ptrs_symbols_in_slot(ptrsSymbPos, dlsch_config->start_symbol, dlsch_config->number_symbols);
       unav_res = n_ptrs * ptrsSymbPerSlot;
     }
+    unav_res += compute_csi_unav_res(dlsch_config->start_symbol, dlsch_config->start_symbol + dlsch_config->number_symbols, csi_REs);
     dl_harq1->G = nr_get_G(dlsch_config->number_rbs,
                            nb_symb_sch,
                            nb_re_dmrs,
@@ -1027,7 +1034,8 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
   // do procedures for C-RNTI
   int ret_pdsch = 0;
 
-  int slot_fep_bitmap[14] = {0};
+  int slot_fep_bitmap[NR_SYMBOLS_PER_SLOT] = {0};
+  uint32_t csi_REs[NR_SYMBOLS_PER_SLOT] = {0};
   const uint32_t rxdataF_sz = ue->frame_parms.samples_per_slot_wCP;
   __attribute__ ((aligned(32))) c16_t rxdataF[ue->frame_parms.nb_antennas_rx][rxdataF_sz];
 
@@ -1040,7 +1048,7 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
         slot_fep_bitmap[symb] = 1;
       }
     }
-    nr_ue_csi_im_procedures(ue, proc, rxdataF);
+    nr_ue_csi_im_procedures(ue, proc, rxdataF, csi_REs);
     ue->csiim_vars[gNB_id]->active = 0;
   }
 
@@ -1054,7 +1062,7 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
         }
       }
     }
-    nr_ue_csi_rs_procedures(ue, proc, rxdataF);
+    nr_ue_csi_rs_procedures(ue, proc, rxdataF, csi_REs);
     ue->csirs_vars[gNB_id]->active = 0;
   }
 
@@ -1069,7 +1077,7 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
     for (int m = start_symb_sch; m < (nb_symb_sch + start_symb_sch) ; m++) {
       if (slot_fep_bitmap[m] == 0) {
         nr_slot_fep(ue, proc, m, rxdataF);
-        slot_fep_bitmap[m] = 2;
+        slot_fep_bitmap[m] = 1;
       }
     }
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_UE_SLOT_FEP_PDSCH, VCD_FUNCTION_OUT);
@@ -1094,6 +1102,7 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
       int ptrsSymbPerSlot = get_ptrs_symbols_in_slot(ptrsSymbPos, dlsch_config->start_symbol, dlsch_config->number_symbols);
       unav_res = n_ptrs * ptrsSymbPerSlot;
     }
+    unav_res += compute_csi_unav_res(dlsch_config->start_symbol, dlsch_config->start_symbol + dlsch_config->number_symbols, csi_REs);
     NR_DL_UE_HARQ_t *dlsch0_harq = &ue->dl_harq_processes[0][dlsch_config->harq_process_nbr];
     dlsch0_harq->G = nr_get_G(dlsch_config->number_rbs,
                               dlsch_config->number_symbols,
@@ -1109,11 +1118,7 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
       llr[i] = (int16_t *)malloc16_clear(rx_llr_buf_sz * sizeof(int16_t));
 
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDSCH_PROC_C, VCD_FUNCTION_IN);
-    ret_pdsch = nr_ue_pdsch_procedures(ue,
-                                       proc,
-                                       dlsch,
-                                       llr,
-                                       rxdataF);
+    ret_pdsch = nr_ue_pdsch_procedures(ue, proc, dlsch, llr, rxdataF, csi_REs);
 
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDSCH_PROC_C, VCD_FUNCTION_OUT);
 
@@ -1125,7 +1130,7 @@ void pdsch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_phy_
     start_meas(&ue->dlsch_procedures_stat);
 
     if (ret_pdsch >= 0)
-      nr_ue_dlsch_procedures(ue, proc, dlsch, llr);
+      nr_ue_dlsch_procedures(ue, proc, dlsch, llr, csi_REs);
     else {
       LOG_E(NR_PHY, "Demodulation impossible, internal error\n");
       send_dl_done_to_tx_thread(

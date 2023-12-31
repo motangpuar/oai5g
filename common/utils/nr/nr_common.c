@@ -780,6 +780,17 @@ uint32_t get_ssb_offset_to_pointA(uint32_t absoluteFrequencySSB,
   return ssb_offset_point_a;
 }
 
+int compute_csi_unav_res(int start, int end, uint32_t *csi_REs)
+{
+  int unav_csi_res = 0;
+  for (int i = start; i < end; i++) {
+    for (int j = 0; j < 12; j++) {
+      unav_csi_res += ((csi_REs[i] >> j) & 0x01);
+    }
+  }
+  return unav_csi_res;
+}
+
 int get_delay_idx(int delay, int max_delay_comp)
 {
   int delay_idx = max_delay_comp + delay;

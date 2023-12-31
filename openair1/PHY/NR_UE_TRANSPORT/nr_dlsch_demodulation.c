@@ -154,7 +154,8 @@ static void nr_dlsch_extract_rbs(uint32_t rxdataF_sz,
                                  uint8_t Nl,
                                  NR_DL_FRAME_PARMS *frame_parms,
                                  uint16_t dlDmrsSymbPos,
-                                 int chest_time_type);
+                                 int chest_time_type,
+                                 uint32_t csi_REs_symb);
 
 static void nr_dlsch_channel_level_median(uint32_t rx_size_symbol, int32_t dl_ch_estimates_ext[][rx_size_symbol], int32_t *median, int n_tx, int n_rx, int length);
 
@@ -249,7 +250,8 @@ int nr_rx_pdsch(PHY_VARS_NR_UE *ue,
                 int nbRx,
                 int32_t rxdataF_comp[][nbRx][rx_size_symbol * NR_SYMBOLS_PER_SLOT],
                 c16_t ptrs_phase_per_slot[][NR_SYMBOLS_PER_SLOT],
-                int32_t ptrs_re_per_slot[][NR_SYMBOLS_PER_SLOT])
+                int32_t ptrs_re_per_slot[][NR_SYMBOLS_PER_SLOT],
+                uint32_t csi_REs_symb)
 {
   const int nl = dlsch[0].Nl;
   const int matrixSz = ue->frame_parms.nb_antennas_rx * nl;
@@ -388,7 +390,8 @@ int nr_rx_pdsch(PHY_VARS_NR_UE *ue,
                          nl,
                          frame_parms,
                          dlsch[0].dlsch_config.dlDmrsSymbPos,
-                         ue->chest_time);
+                         ue->chest_time,
+                         csi_REs_symb);
     if (meas_enabled) {
       stop_meas(&meas);
       LOG_D(PHY,
@@ -1215,7 +1218,8 @@ static void nr_dlsch_extract_rbs(uint32_t rxdataF_sz,
                                  uint8_t Nl,
                                  NR_DL_FRAME_PARMS *frame_parms,
                                  uint16_t dlDmrsSymbPos,
-                                 int chest_time_type)
+                                 int chest_time_type,
+                                 uint32_t csi_REs_symb)
 {
   if (config_type == NFAPI_NR_DMRS_TYPE1) {
     AssertFatal(n_dmrs_cdm_groups == 1 || n_dmrs_cdm_groups == 2,
@@ -1242,7 +1246,7 @@ static void nr_dlsch_extract_rbs(uint32_t rxdataF_sz,
       int32_t *dl_ch0 = &dl_ch_estimates[(l * frame_parms->nb_antennas_rx) + aarx][validDmrsEst * frame_parms->ofdm_symbol_size];
       int32_t *dl_ch0_ext = dl_ch_estimates_ext[(l * frame_parms->nb_antennas_rx) + aarx];
 
-      if (pilots == 0) { //data symbol only
+      if (pilots == 0 && csi_REs_symb == 0) { //data symbol only
         if (l == 0) {
           if (start_re + nb_rb_pdsch * NR_NB_SC_PER_RB <= frame_parms->ofdm_symbol_size) {
             memcpy(rxF_ext, &rxF[start_re], nb_rb_pdsch * NR_NB_SC_PER_RB * sizeof(int32_t));
@@ -1255,65 +1259,32 @@ static void nr_dlsch_extract_rbs(uint32_t rxdataF_sz,
         }
         memcpy(dl_ch0_ext, dl_ch0, nb_rb_pdsch * NR_NB_SC_PER_RB * sizeof(int32_t));
       }
-      else if (config_type == NFAPI_NR_DMRS_TYPE1){
-        if (n_dmrs_cdm_groups == 1) { //data is multiplexed
-          if (l == 0) {
-            unsigned short k = start_re;
-            for (unsigned short j = 0; j < 6*nb_rb_pdsch; j += 3) {
-              rxF_ext[j]   = rxF[k+1];
-              rxF_ext[j+1] = rxF[k+3];
-              rxF_ext[j+2] = rxF[k+5];
-              k += 6;
-              if (k >= frame_parms->ofdm_symbol_size)
-                k -= frame_parms->ofdm_symbol_size;
+      else {
+        int j = 0;
+        int k = start_re;
+        int max_cdm = (config_type == NFAPI_NR_DMRS_TYPE1) ? 2 : 3;
+        int shift = (config_type == NFAPI_NR_DMRS_TYPE1) ? 0 : 1;
+        for (int rb = 0; rb < nb_rb_pdsch; rb++) {
+          for (int re = 0; re < 12; re++) {
+            if (((re >> shift) % max_cdm) < n_dmrs_cdm_groups) {
+              // DMRS RE
+              AssertFatal(((csi_REs_symb >> re) & 0x01) == 0, "DMRS RE overlapping with CSI RE, it shouldn't happen\n");
             }
-          }
-          for (unsigned short j = 0; j < 6*nb_rb_pdsch; j += 3) {
-            dl_ch0_ext[j]   = dl_ch0[1];
-            dl_ch0_ext[j+1] = dl_ch0[3];
-            dl_ch0_ext[j+2] = dl_ch0[5];
-            dl_ch0 += 6;
-          }
-        }
-      }
-      else {//NFAPI_NR_DMRS_TYPE2
-        if (n_dmrs_cdm_groups == 1) { //data is multiplexed
-          if (l == 0) {
-            unsigned short k = start_re;
-            for (unsigned short j = 0; j < 8*nb_rb_pdsch; j += 4) {
-              rxF_ext[j]   = rxF[k+2];
-              rxF_ext[j+1] = rxF[k+3];
-              rxF_ext[j+2] = rxF[k+4];
-              rxF_ext[j+3] = rxF[k+5];
-              k += 6;
-              if (k >= frame_parms->ofdm_symbol_size)
-                k -= frame_parms->ofdm_symbol_size;
+            else {
+              // DATA RE
+              if (((csi_REs_symb >> re) & 0x01) == 0) {
+                // Process RE only if not overlapping with CSI
+                if (l == 0)
+                  rxF_ext[j] = rxF[k];
+                dl_ch0_ext[j] = dl_ch0[re];
+                j++;
+              }
             }
+            k++;
+            if (k >= frame_parms->ofdm_symbol_size)
+              k -= frame_parms->ofdm_symbol_size;
           }
-          for (unsigned short j = 0; j < 8*nb_rb_pdsch; j += 4) {
-            dl_ch0_ext[j]   = dl_ch0[2];
-            dl_ch0_ext[j+1] = dl_ch0[3];
-            dl_ch0_ext[j+2] = dl_ch0[4];
-            dl_ch0_ext[j+3] = dl_ch0[5];
-            dl_ch0 += 6;
-          }
-        }
-        else if (n_dmrs_cdm_groups == 2) { //data is multiplexed
-          if (l == 0) {
-            unsigned short k = start_re;
-            for (unsigned short j = 0; j < 4*nb_rb_pdsch; j += 2) {
-              rxF_ext[j]   = rxF[k+4];
-              rxF_ext[j+1] = rxF[k+5];
-              k += 6;
-              if (k >= frame_parms->ofdm_symbol_size)
-                k -= frame_parms->ofdm_symbol_size;
-            }
-          }
-          for (unsigned short j = 0; j < 4*nb_rb_pdsch; j += 2) {
-            dl_ch0_ext[j]   = dl_ch0[4];
-            dl_ch0_ext[j+1] = dl_ch0[5];
-            dl_ch0 += 6;
-          }
+          dl_ch0 += 12;
         }
       }
     }

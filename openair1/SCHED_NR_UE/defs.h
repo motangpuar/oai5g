@@ -157,13 +157,15 @@ int nr_ue_pdcch_procedures(PHY_VARS_NR_UE *ue,
                            int n_ss,
                            c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP]);
 
-int nr_ue_csi_im_procedures(PHY_VARS_NR_UE *ue,
-                            const UE_nr_rxtx_proc_t *proc,
-                            c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP]);
+void nr_ue_csi_im_procedures(PHY_VARS_NR_UE *ue,
+                             const UE_nr_rxtx_proc_t *proc,
+                             c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP],
+                             uint32_t *csi_REs);
 
 void nr_ue_csi_rs_procedures(PHY_VARS_NR_UE *ue,
                              const UE_nr_rxtx_proc_t *proc,
-                             c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP]);
+                             c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP],
+                             uint32_t *csi_REs);
 
 #endif
 /** @}*/
