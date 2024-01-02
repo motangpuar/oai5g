@@ -127,13 +127,9 @@ void gNB_app_register_xn(uint32_t gnb_id_num)
     LOG_I(XNAP, "GNB_ID: %d \n", gnb_id);
     uint64_t id;
     char *name = NULL;
-    xnap_served_cell_info_t info;
-    read_xn_cell_info (&id, &name, &info);
-    //read_xn_cell_info (&id, &name, &XNAP_REGISTER_GNB_REQ(msg).setup_req);
-    //XNAP_REGISTER_GNB_REQ(msg).setup_req = Read_setup_req_Xn (&id, &name, &info, &XNAP_REGISTER_GNB_REQ(msg).setup_req);
-    Read_setup_req_Xn (&id, &name, &info, &XNAP_REGISTER_GNB_REQ(msg).setup_req);
-    XNAP_REGISTER_GNB_REQ(msg).net_config = Read_IPconfig_Xn ();
-    //F1AP_DU_REGISTER_REQ(msg).net_config = read_DU_IP_config(&RC.nrmac[0]->eth_params_n);
+    read_xn_setup(&id, &name, &XNAP_REGISTER_GNB_REQ(msg).setup_req);
+    XNAP_REGISTER_GNB_REQ(msg).net_config = Read_IPconfig_Xn();
+    XNAP_REGISTER_GNB_REQ(msg).gNB_name = name;
     itti_send_msg_to_task(TASK_XNAP, GNB_MODULE_ID_TO_INSTANCE(gnb_id), msg);
   }
 }

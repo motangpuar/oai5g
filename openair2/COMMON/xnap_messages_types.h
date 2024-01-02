@@ -95,6 +95,11 @@ typedef struct xnap_tdd_info_t {
   xnap_transmission_bandwidth_t tbw;
 } xnap_tdd_info_t;
 
+typedef struct xnap_snssai_s {
+  uint8_t sst;
+  uint8_t sd;
+} xnap_snssai_t;
+
 typedef struct xnap_served_cell_info_t {
   // NR CGI
   xnap_plmn_t plmn;
@@ -120,9 +125,8 @@ typedef struct xnap_setup_req_s {
   uint32_t tai_support;
   xnap_plmn_t plmn_support;
   // Number of slide support items
-  uint16_t num_ssi;
-  uint8_t sst;
-  uint8_t sd;
+  uint16_t num_snssai;
+  xnap_snssai_t snssai[2];
   xnap_amf_regioninfo_t amf_region_info;
   uint8_t num_cells_available;
   xnap_served_cell_info_t info;

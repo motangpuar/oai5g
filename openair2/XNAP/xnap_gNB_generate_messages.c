@@ -112,15 +112,14 @@ int xnap_gNB_generate_xn_setup_request(sctp_assoc_t assoc_id, xnap_setup_req_t *
                           req->info.plmn.mnc_digit_length,
                           &e_BroadcastPLMNinTAISupport_ItemIE->plmn_id);
 
-        {
-          for (int k = 0; k < 1; k++) {
-            e_S_NSSAI_ItemIE = (XNAP_S_NSSAI_t *)calloc(1, sizeof(XNAP_S_NSSAI_t));
-            e_S_NSSAI_ItemIE->sst.size = 1; // OCTET STRING(SIZE(1))
-            e_S_NSSAI_ItemIE->sst.buf = calloc(e_S_NSSAI_ItemIE->sst.size, sizeof(OCTET_STRING_t));
-            e_S_NSSAI_ItemIE->sst.buf[0] = 1;
-
-            asn1cSeqAdd(&e_BroadcastPLMNinTAISupport_ItemIE->tAISliceSupport_List.list, e_S_NSSAI_ItemIE);
+        for (int k = 0; k < 1; k++) {
+          e_S_NSSAI_ItemIE = (XNAP_S_NSSAI_t *)calloc(1, sizeof(XNAP_S_NSSAI_t));
+          INT8_TO_OCTET_STRING(req->snssai[k].sst, &e_S_NSSAI_ItemIE->sst);
+          if (req->snssai[k].sd != 0xffffff && req->snssai[k].sd != 0) {
+            e_S_NSSAI_ItemIE->sd = calloc(3, sizeof(OCTET_STRING_t));
+            INT24_TO_OCTET_STRING(req->snssai[k].sd, e_S_NSSAI_ItemIE->sd);
           }
+          asn1cSeqAdd(&e_BroadcastPLMNinTAISupport_ItemIE->tAISliceSupport_List.list, e_S_NSSAI_ItemIE);
         }
         asn1cSeqAdd(&TAISupport_ItemIEs->broadcastPLMNs.list, e_BroadcastPLMNinTAISupport_ItemIE);
       }
@@ -310,7 +309,6 @@ int xnap_gNB_generate_xn_setup_request(sctp_assoc_t assoc_id, xnap_setup_req_t *
             servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRSCS = XNAP_NRSCS_scs120;
             break;
         }
-
         switch (tdd->tbw.nrb) {
           case 11:
             servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb11;
@@ -371,7 +369,7 @@ int xnap_gNB_generate_xn_setup_request(sctp_assoc_t assoc_id, xnap_setup_req_t *
     e_GlobalAMF_Region_Information_ItemIEs->amf_region_id.size = 1;
     e_GlobalAMF_Region_Information_ItemIEs->amf_region_id.buf =
         calloc(1, e_GlobalAMF_Region_Information_ItemIEs->amf_region_id.size);
-    e_GlobalAMF_Region_Information_ItemIEs->amf_region_id.buf[0] = 80;
+    e_GlobalAMF_Region_Information_ItemIEs->amf_region_id.buf[0] = 80; // TODO: Hardcoded for now
     e_GlobalAMF_Region_Information_ItemIEs->amf_region_id.bits_unused = 0;
 
     asn1cSeqAdd(&ie->value.choice.AMF_Region_Information.list, e_GlobalAMF_Region_Information_ItemIEs);
@@ -608,28 +606,28 @@ int xnap_gNB_generate_xn_setup_response(sctp_assoc_t assoc_id, xnap_setup_resp_t
       }
 
       switch (fdd->ul_tbw.nrb) {
-        case 11:
+        case 0:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb11;
           break;
-        case 18:
+        case 1:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb18;
           break;
-        case 24:
+        case 2:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb24;
           break;
-        case 78:
+        case 11:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb78;
           break;
-        case 106:
+        case 14:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb106;
           break;
-        case 162:
+        case 21:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb162;
           break;
-        case 217:
+        case 24:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb217;
           break;
-        case 273:
+        case 28:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->ulNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb273;
           break;
         default:
@@ -651,32 +649,32 @@ int xnap_gNB_generate_xn_setup_response(sctp_assoc_t assoc_id, xnap_setup_resp_t
           break;
       }
       switch (fdd->dl_tbw.nrb) {
-        case 11:
+        case 0:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb11;
           break;
-        case 18:
+        case 1:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb18;
           break;
-        case 24:
+        case 2:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb24;
           break;
-        case 78:
+        case 11:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb78;
           break;
-        case 106:
+        case 14:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb106;
           break;
-        case 162:
+        case 21:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb162;
           break;
-        case 217:
+        case 24:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb217;
           break;
-        case 273:
+        case 28:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.fdd->dlNRTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb273;
           break;
         default:
-          AssertFatal(0, "Failed: Check value for N_RB_DL/N_RB_UL");
+          AssertFatal(0, "Failed: Check value for N_RB_DL/N_RB_UL"); // TODO: Add all values or function to convert
           break;
       }
     } else if (resp->info.mode == XNAP_MODE_TDD) { // TDD
@@ -690,6 +688,7 @@ int xnap_gNB_generate_xn_setup_response(sctp_assoc_t assoc_id, xnap_setup_resp_t
         asn1cSeqAdd(&servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrFrequencyInfo.frequencyBand_List.list,
                     nrfreqbanditem);
       }
+      printf("nrnrb %d \n", tdd->tbw.nrb);
       switch (tdd->tbw.scs) {
         case 15:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRSCS = XNAP_NRSCS_scs15;
@@ -705,32 +704,32 @@ int xnap_gNB_generate_xn_setup_response(sctp_assoc_t assoc_id, xnap_setup_resp_t
           break;
       }
       switch (tdd->tbw.nrb) {
-        case 11:
+        case 0:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb11;
           break;
-        case 18:
+        case 1:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb18;
           break;
-        case 24:
+        case 2:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb24;
           break;
-        case 78:
+        case 11:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb78;
           break;
-        case 106:
+        case 14:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb106;
           break;
-        case 162:
+        case 21:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb162;
           break;
-        case 217:
+        case 24:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb217;
           break;
-        case 273:
+        case 28:
           servedCellMember->served_cell_info_NR.nrModeInfo.choice.tdd->nrTransmissonBandwidth.nRNRB = XNAP_NRNRB_nrb273;
           break;
         default:
-          AssertFatal(0, "Failed: Check value for N_RB_DL/N_RB_UL");
+          AssertFatal(0, "Failed: Check value for N_RB_DL/N_RB_UL"); // TODO: Add all values or function to convert.
           break;
       }
     }

@@ -74,7 +74,6 @@ static void xnap_gNB_handle_sctp_association_resp(instance_t instance, sctp_new_
   xnap_gNB_instance_t *instance_xn = xnap_gNB_get_instance(instance); // managementproc;
   DevAssert(sctp_new_association_resp != NULL);
   DevAssert(instance_xn != NULL);
-  printf("reached ass resp %d \n", sctp_new_association_resp->assoc_id);
   /*Return if connection to gNB failed- to be modified if needed. (Exit on error in X2AP)*/
   if (sctp_new_association_resp->sctp_state == SCTP_STATE_UNREACHABLE) {
     LOG_E(XNAP,
@@ -106,8 +105,6 @@ static void xnap_gNB_handle_sctp_association_resp(instance_t instance, sctp_new_
   xnap_gnb_data_p->out_streams = sctp_new_association_resp->out_streams;
   xnap_dump_trees(instance);
   xnap_insert_gnb(instance, xnap_gnb_data_p);
-  // RB_INSERT(xnap_gnb_tree, &instance_xn->xnap_gnbs, xnap_gnb_data_p);
-  // instance_xn->num_gnbs++;
   xnap_dump_trees(instance);
   xnap_gNB_generate_xn_setup_request(sctp_new_association_resp->assoc_id, &instance_xn->setup_req);
 }
@@ -141,9 +138,7 @@ static void xnap_gNB_send_sctp_assoc_req(instance_t instance, xnap_net_config_t 
   MessageDef *message = NULL;
   sctp_new_association_req_t *sctp_new_association_req = NULL;
   DevAssert(nc != NULL);
-  printf("blahblahblah \n");
   message = itti_alloc_new_message(TASK_XNAP, 0, SCTP_NEW_ASSOCIATION_REQ);
-  printf("ghjfghjjdfhj\n");
   sctp_new_association_req = &message->ittiMsg.sctp_new_association_req;
   sctp_new_association_req->port = nc->gnb_port_for_XNC;
   sctp_new_association_req->ppid = XNAP_SCTP_PPID;
@@ -155,7 +150,6 @@ static void xnap_gNB_send_sctp_assoc_req(instance_t instance, xnap_net_config_t 
          sizeof(nc->target_gnb_xn_ip_address[index]));
   memcpy(&sctp_new_association_req->local_address, &nc->gnb_xn_ip_address, sizeof(nc->gnb_xn_ip_address));
   sctp_new_association_req->ulp_cnx_id = index;
-  // instance_p->xn_target_gnb_pending_nb++;
   itti_send_msg_to_task(TASK_SCTP, instance, message);
 }
 
@@ -185,20 +179,13 @@ static void xnap_gNB_handle_sctp_init_msg_multi_cnf(instance_t instance, sctp_in
 
 static void xnap_gNB_handle_sctp_association_ind(instance_t instance, sctp_new_association_ind_t *sctp_new_association_ind)
 {
-  // f1ap_cudu_inst_t *f1ap_cu_data = getCxt(instance);
   xnap_gNB_instance_t *instance_p = xnap_gNB_get_instance(instance);
   DevAssert(instance_p != NULL);
   xnap_gNB_data_t *xnap_gnb_data_p;
   DevAssert(sctp_new_association_ind != NULL);
-  // we don't need the assoc_id, subsequent messages (the first being Xn Setup
-  // Request), will deliver the assoc_id
-  // f1ap_cu_data->sctp_in_streams  = sctp_new_association_ind->in_streams;
-  // f1ap_cu_data->sctp_out_streams = sctp_new_association_ind->out_streams;
   LOG_W(XNAP, "SCTP Association IND Received.\n");
   xnap_dump_trees(instance);
   xnap_gnb_data_p = xnap_get_gNB(instance, sctp_new_association_ind->assoc_id);
-
-  //  DevAssert(xnap_gnb_data_p != NULL);
   if (xnap_gnb_data_p == NULL) {
     LOG_W(XNAP, "xnap_gnb_data_p does not exist\n");
     /* TODO: Create new gNB descriptor-not yet associated? */
@@ -206,13 +193,10 @@ static void xnap_gNB_handle_sctp_association_ind(instance_t instance, sctp_new_a
     AssertFatal(xnap_gnb_data_p != NULL, "out of memory\n");
     xnap_gnb_data_p->assoc_id = sctp_new_association_ind->assoc_id;
     xnap_gnb_data_p->state = XNAP_GNB_STATE_WAITING;
-    printf("reached here1\n");
     xnap_gnb_data_p->in_streams = sctp_new_association_ind->in_streams;
     xnap_gnb_data_p->out_streams = sctp_new_association_ind->out_streams;
     xnap_dump_trees(instance);
     xnap_insert_gnb(instance, xnap_gnb_data_p);
-    // RB_INSERT(xnap_gnb_tree, &instance_xn->xnap_gnbs, xnap_gnb_data_p);
-    // instance_xn->num_gnbs++;
     xnap_dump_trees(instance);
   } else {
     xnap_gnb_data_p->in_streams = sctp_new_association_ind->in_streams;
@@ -227,7 +211,6 @@ void *xnap_task(void *arg)
   MessageDef *received_msg = NULL;
   int result;
   LOG_D(XNAP, "Starting XNAP layer\n");
-  // xnap_gNB_prepare_internal_data(); // management procedures
   itti_mark_task_ready(TASK_XNAP);
 
   while (1) {
