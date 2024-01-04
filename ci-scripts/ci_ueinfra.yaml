@@ -53,6 +53,20 @@ oc-cn5g:
   Host: avra
   NetworkScript: echo "inet 172.21.6.102"
 
+porcepix-cn4g:
+  Host: porcepix
+  NetworkScript: docker exec prod-trf-gen ip a show dev eth0
+  CmdPrefix: docker exec prod-trf-gen
+
+nano-cn4g:
+  Host: nano
+  NetworkScript: docker exec prod-trf-gen ip a show dev eth0
+  CmdPrefix: docker exec prod-trf-gen
+
+ltebox-nano:
+  Host: nano
+  NetworkScript: ip a show dev tun1
+
 sabox-nepes:
   Host: nepes
   NetworkScript: ip a show dev tun1
