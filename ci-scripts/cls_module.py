@@ -41,7 +41,7 @@ import cls_cmd
 
 class Module_UE:
 
-	def __init__(self, module_name, filename="ci_ueinfra.yaml"):
+	def __init__(self, module_name, filename="ci_infra.yaml"):
 		with open(filename, 'r') as f:
 			all_ues = yaml.load(f, Loader=yaml.FullLoader)
 			m = all_ues.get(module_name)
@@ -64,7 +64,7 @@ class Module_UE:
 			self.trace = m.get('trace') == True
 			self.logStore = m.get('LogStore')
 			self.cmd_prefix = m.get('CmdPrefix')
-			logging.info(f'initialized UE {self.module_name}@{self.host} from {filename}')
+			logging.info(f'initialized {self.module_name}@{self.host} from {filename}')
 
 	def __str__(self):
 		return f"{self.module_name}@{self.host} [IP: {self.getIP()}]"
