@@ -1378,44 +1378,6 @@ class Containerize():
 			self.UndeployGenObject(HTML, RAN, UE)
 			self.exitStatus = 1
 
-	def IperfFromContainer(self, HTML, RAN, UE):
-		myCmd = cls_cmd.LocalCmd()
-		self.exitStatus = 0
-
-		ymlPath = self.yamlPath[0].split('/')
-		logPath = '../cmake_targets/log/' + ymlPath[1]
-		cmd = f'mkdir -p {logPath}'
-		myCmd.run(cmd, silent=True)
-
-		# Start the server process
-		cmd = f'docker exec -d {self.svrContName} /bin/bash -c "nohup iperf {self.svrOptions} > /tmp/iperf_server.log 2>&1"'
-		myCmd.run(cmd)
-		time.sleep(3)
-
-		# Start the client process
-		cmd = f'docker exec {self.cliContName} /bin/bash -c "iperf {self.cliOptions}" 2>&1 | tee {logPath}/iperf_client_{HTML.testCase_id}.log'
-		clientStatus = myCmd.run(cmd, timeout=100)
-
-		# Stop the server process
-		cmd = f'docker exec {self.svrContName} /bin/bash -c "pkill iperf"'
-		myCmd.run(cmd)
-		time.sleep(3)
-		serverStatusFilename = f'{logPath}/iperf_server_{HTML.testCase_id}.log'
-		cmd = f'docker cp {self.svrContName}:/tmp/iperf_server.log {serverStatusFilename}'
-		myCmd.run(cmd, timeout=60)
-		myCmd.close()
-
-		# clientStatus was retrieved above. The serverStatus was
-		# written in the background, then copied to the local machine
-		with open(serverStatusFilename, 'r') as f:
-			serverStatus = f.read()
-		(iperfStatus, msg) = AnalyzeIperf(self.cliOptions, clientStatus.stdout, serverStatus)
-		if iperfStatus:
-			logging.info('\u001B[1m Iperf Test PASS\u001B[0m')
-		else:
-			logging.error('\u001B[1;37;41m Iperf Test FAIL\u001B[0m')
-		self.IperfExit(HTML, RAN, UE, iperfStatus, msg)
-
 	def IperfExit(self, HTML, RAN, UE, status, message):
 		html_cell = f'UE\n{message}'
 		if status:

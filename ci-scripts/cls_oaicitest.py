@@ -886,15 +886,6 @@ class OaiCiTest():
 			return (False, f"UE {ue.getName()} has no IP address")
 		server_filename = f'iperf_server_{self.testCase_id}_{ue.getName()}.log'
 		client_filename = f'iperf_client_{self.testCase_id}_{ue.getName()}.log'
-		#if (re.match('OAI-Rel14-Docker', EPC.Type, re.IGNORECASE)) or (re.match('OAICN5G', EPC.Type, re.IGNORECASE)):
-		#	with cls_cmd.getConnection(ue.getHost()) as cmd:
-				#retrieve trf-gen container IP address
-				#cmd.run('docker inspect --format="TRF_IP_ADDR = {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" prod-trf-gen', '\$', 5)
-				#result = re.search('TRF_IP_ADDR = (?P<trf_ip_addr>[0-9\.]+)', cmd.getBefore())
-				#if result is None:
-				#	raise Exception("could not corver prod-trf-gen IP address")
-				#cn_target_ip = result.group('trf_ip_addr')
-				#cn_iperf_prefix = "docker exec  prod-trf-gen" # -w /iperf-2.0.13  necessary?
 		if udpIperf:
 			iperf_opt = self.Iperf_ComputeModifiedBW(idx, ue_num)
 			logging.info(f'iperf options modified from "{self.iperf_args}" to "{iperf_opt}" for {ue.getName()}')
