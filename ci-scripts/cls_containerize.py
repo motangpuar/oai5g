@@ -971,47 +971,45 @@ class Containerize():
 		if lIpAddr == '' or lUserName == '' or lPassWord == '' or lSourcePath == '':
 			HELP.GenericHelp(CONST.Version)
 			sys.exit('Insufficient Parameter')
-		logging.debug('\u001B[1m Undeploying OAI Object from server: ' + lIpAddr + '\u001B[0m')
-		mySSH = SSH.SSHConnection()
-		mySSH.open(lIpAddr, lUserName, lPassWord)
-
-		mySSH.command('cd ' + lSourcePath + '/' + self.yamlPath[self.eNB_instance], '\$', 5)
-
+		logging.debug(f'\u001B[1m Undeploying OAI Object from server: {lIpAddr}\u001B[0m')
+		mySSH = cls_cmd.getConnection(lIpAddr)
+		yamlDir = f'{lSourcePath}/{self.yamlPath[self.eNB_instance]}'
+		mySSH.run(f'cd {yamlDir}')
 		svcName = self.services[self.eNB_instance]
 		forceDown = False
 		if svcName != '':
 			logging.warning(f'service name given, but will stop all services in ci-docker-compose.yml!')
 			svcName = ''
 
-		mySSH.command(f'docker-compose -f ci-docker-compose.yml config --services', '\$', 5)
+		mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml config --services')
 		# first line has command, last line has next command prompt
-		allServices = mySSH.getBefore().split('\r\n')[1:-1]
+		allServices = mySSH.getBefore().split('\n')[:]
 		services = []
 		for s in allServices:
-			mySSH.command(f'docker-compose -f ci-docker-compose.yml ps --all -- {s}', '\$', 5, silent=False)
-			running = mySSH.getBefore().split('\r\n')[2:-1]
+			mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml ps --all -- {s}')
+			running = mySSH.getBefore().split('\r\n')[:]
 			logging.debug(f'running services: {running}')
 			if len(running) > 0: # something is running for that service
 				services.append(s)
 		logging.info(f'stopping services {services}')
 
-		mySSH.command(f'docker-compose -f ci-docker-compose.yml stop -t3', '\$', 30)
-		time.sleep(5)  # give some time to running containers to stop
-		for svcName in services:
+		mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml stop -t3')
+		copyin_res = 0
+		for svcName in allServices:
 			# head -n -1 suppresses the final "X exited with status code Y"
 			filename = f'{svcName}-{HTML.testCase_id}.log'
-			mySSH.command(f'docker-compose -f ci-docker-compose.yml logs --no-log-prefix -- {svcName} &> {lSourcePath}/cmake_targets/log/{filename}', '\$', 120)
+			mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml logs --no-log-prefix -- {svcName} &> {lSourcePath}/cmake_targets/log/{filename}')
+			copyin_res = mySSH.copyin(f'{lSourcePath}/cmake_targets/log/{filename}', f'{filename}')
+		# when nv-cubb container is available, copy L1 pcap, OAI Aerial pipeline
+		if 'nv-cubb' in allServices:
+                        mySSH.run(f'cp /home/oaicicd/share/nvipc.pcap {lSourcePath}/cmake_targets/gnb_nvipc.pcap')
 
-		mySSH.command('docker-compose -f ci-docker-compose.yml down -v', '\$', 5)
-		mySSH.close()
+		mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml down -v')
 
 		# Analyzing log file!
 		files = ','.join([f'{s}-{HTML.testCase_id}' for s in services])
 		if len(services) > 1:
 			files = '{' + files + '}'
-		copyin_res = 0
-		if len(services) > 0:
-			copyin_res = mySSH.copyin(lIpAddr, lUserName, lPassWord, f'{lSourcePath}/cmake_targets/log/{files}.log', '.')
 		if copyin_res == -1:
 			HTML.htmleNBFailureMsg='Could not copy logfile to analyze it!'
 			HTML.CreateHtmlTestRow('N/A', 'KO', CONST.ENB_PROCESS_NOLOGFILE_TO_ANALYZE)
@@ -1019,7 +1017,7 @@ class Containerize():
 		# use function for UE log analysis, when oai-nr-ue container is used
 		elif 'oai-nr-ue' in services or 'lte_ue0' in services:
 			self.exitStatus == 0
-			logging.debug('\u001B[1m Analyzing UE logfile ' + filename + ' \u001B[0m')
+			logging.debug(f'Analyzing UE logfile {filename}')
 			logStatus = cls_oaicitest.OaiCiTest().AnalyzeLogFile_UE(f'{filename}', HTML, RAN)
 			if (logStatus < 0):
 				fullStatus = False
@@ -1038,11 +1036,12 @@ class Containerize():
 					HTML.CreateHtmlTestRow(RAN.runtime_stats, 'OK', CONST.ALL_PROCESSES_OK)
 			# all the xNB run logs shall be on the server 0 for logCollecting
 			if self.eNB_serverId[self.eNB_instance] != '0':
-				mySSH.copyout(self.eNBIPAddress, self.eNBUserName, self.eNBPassword, f'./{files}.log', f'{self.eNBSourceCodePath}/cmake_targets/')
+				mySSH.copyout(f'./{files}.log', f'{self.eNBSourceCodePath}/cmake_targets/')
 		if self.exitStatus == 0:
 			logging.info('\u001B[1m Undeploying OAI Object Pass\u001B[0m')
 		else:
 			logging.error('\u001B[1m Undeploying OAI Object Failed\u001B[0m')
+		mySSH.close()
 
 	def DeployGenObject(self, HTML, RAN, UE):
 		self.exitStatus = 0
