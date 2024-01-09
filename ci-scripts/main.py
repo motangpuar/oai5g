@@ -389,8 +389,9 @@ def GetParametersFromXML(action):
 		if (string_field is not None):
 			CONTAINERS.cliOptions = string_field
 
-	elif action == 'Run_LDPCTest' or action == 'Run_NRulsimTest' or action == 'Run_LDPCt1Test':
+	elif action == 'Run_LDPCTest' or action == 'Run_NRulsimTest' or action == 'Run_T2Test':
 		ldpc.runargs = test.findtext('physim_run_args')
+		ldpc.runsim = test.findtext('physim_run')
 
 	elif action == 'LicenceAndFormattingCheck':
 		pass

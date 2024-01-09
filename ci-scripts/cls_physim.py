@@ -33,6 +33,7 @@ import logging
 import sshconnection
 #to update the HTML object
 import cls_oai_html
+import cls_cmd
 from multiprocessing import SimpleQueue
 #for log folder maintenance
 import os
@@ -246,18 +247,17 @@ class PhySim:
 		lHTML=self.__CheckResults_LDPCTest(htmlObj,constObj,testcase_id)
 		return lHTML
 
-	def Run_LDPCt1Test(self,htmlObj,constObj,testcase_id):
-		self.__workSpacePath = self.eNBSourceCodePath+'/cmake_targets/'
+	def Run_T2Test(self,htmlObj,constObj,testcase_id):
+		self.__workSpacePath = f'{self.eNBSourceCodePath}/cmake_targets/'
 		#create run logs folder locally
-		os.system('mkdir -p ./'+self.__runLogPath)
+		os.system(f'mkdir -p ./{self.__runLogPath}')
 		#log file is tc_<testcase_id>.log remotely
-		self.__runLogFile='physim_'+str(testcase_id)+'.log'
+		self.__runLogFile=f'physim_{str(testcase_id)}.log'
 		#open a session for test run
-		mySSH = sshconnection.SSHConnection()
-		mySSH.open(self.eNBIpAddr, self.eNBUserName, self.eNBPassWord)
-		mySSH.command('cd '+self.__workSpacePath,'\$',5)
+		mySSH = cls_cmd.getConnection(self.eNBIpAddr)
+		mySSH.run(f'cd {self.__workSpacePath}')
 		#run and redirect the results to a log file
-		mySSH.command(f'sudo {self.__workSpacePath}ran_build/build/nr_ulsim {self.runargs} > {self.__runLogFile} 2>&1', '\$', 30)
+		mySSH.run(f'sudo {self.__workSpacePath}ran_build/build/{self.runsim} {self.runargs} > {self.__workSpacePath}/{self.__runLogFile} 2>&1')
 		mySSH.close()
 		#return updated HTML to main
 		lHTML = cls_oai_html.HTMLManagement()
