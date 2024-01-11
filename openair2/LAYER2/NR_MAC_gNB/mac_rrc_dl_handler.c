@@ -253,8 +253,11 @@ static void set_nssaiConfig(const int srb_len,
     if (dl->slices) {
       nssai_t *default_nssai = &dl->slices->s[0]->nssai;
       sched_ctrl->dl_lc_nssai[lcid] = *default_nssai;
-      LOG_I(NR_MAC, "Setting NSSAI sst: %d, sd: %d for SRB: %ld\n", default_nssai->sst, default_nssai->sd, srb->srb_id);
+    } else {
+      nssai_t nssai = {.sst = 0, .sd = 0};
+      sched_ctrl->dl_lc_nssai[lcid] = nssai;
     }
+    LOG_I(NR_MAC, "Setting NSSAI sst: %d, sd: %d for SRB: %ld\n", sched_ctrl->dl_lc_nssai[lcid].sst, sched_ctrl->dl_lc_nssai[lcid].sd, srb->srb_id);
   }
 
   for (int i = 0; i < drb_len; i++) {

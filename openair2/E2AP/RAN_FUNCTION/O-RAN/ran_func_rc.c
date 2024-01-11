@@ -228,6 +228,7 @@ static int add_mod_dl_slice(int mod_id,
                             char* label,
                             int64_t pct_reserved)
 {
+  nr_pp_impl_param_dl_t *dl = &RC.nrmac[mod_id]->pre_processor_dl;
   void *params = NULL;
   char *slice_algo = NULL;
   if (current_algo == NVS_SLICING) {
@@ -236,12 +237,12 @@ static int add_mod_dl_slice(int mod_id,
     // use SLICE_SM_NVS_V0_CAPACITY by default
     slice_algo = strdup("NVS_CAPACITY");
     ((nvs_nr_slice_param_t *)params)->type = NVS_RES;
-    ((nvs_nr_slice_param_t *)params)->pct_reserved = pct_reserved/100.0;
+    float remain_pct = 1-((nvs_nr_slice_param_t *)dl->slices->s[0]->algo_data)->pct_reserved;
+    ((nvs_nr_slice_param_t *)params)->pct_reserved = pct_reserved/100.0*remain_pct;
   } else {
     assert(0 != 0 && "Unknow current_algo");
   }
 
-  nr_pp_impl_param_dl_t *dl = &RC.nrmac[mod_id]->pre_processor_dl;
   void *algo = &dl->dl_algo;
   char *l = NULL;
   if (label)

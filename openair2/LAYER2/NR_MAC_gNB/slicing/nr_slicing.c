@@ -96,30 +96,38 @@ void nr_slicing_add_UE(nr_slice_info_t *si, NR_UE_info_t *new_ue)
   reset_nr_list(&new_ue->dl_id);
   for (int i = 0; i < si->num; ++i) {
     reset_nr_list(&new_ue->UE_sched_ctrl.sliceInfo[i].lcid);
-    bool matched_ue = false;
     for (int l = 0; l < sched_ctrl->dl_lc_num; ++l) {
       lcid = sched_ctrl->dl_lc_ids[l];
-      LOG_D(NR_MAC, "l %d, lcid %ld, sst %d, sd %d\n", l, lcid, sched_ctrl->dl_lc_nssai[lcid].sst, sched_ctrl->dl_lc_nssai[lcid].sd);
       if (nssai_matches(sched_ctrl->dl_lc_nssai[lcid], si->s[i]->nssai.sst, &si->s[i]->nssai.sd)) {
+
         add_nr_list(&new_ue->UE_sched_ctrl.sliceInfo[i].lcid, lcid);
-        matched_ue = true;
-      }
-    }
-    if (matched_ue) {
-      add_nr_list(&new_ue->dl_id, si->s[i]->id);
-      int num_UEs = si->s[i]->num_UEs;
-      if (si->s[i]->UE_list[num_UEs] == NULL) {
-        si->s[i]->UE_list[num_UEs] = new_ue;
-        si->s[i]->num_UEs += 1;
+        LOG_D(NR_MAC, "add lcid %ld to slice idx %d\n", lcid, i);
+
+        if (!check_nr_list(&new_ue->dl_id, si->s[i]->id)) {
+          add_nr_list(&new_ue->dl_id, si->s[i]->id);
+          LOG_D(NR_MAC, "add dl id %d to new UE rnti %x\n", si->s[i]->id, new_ue->rnti);
+        }
+
+        UE_iterator(si->s[i]->UE_list, UE) {
+          if (UE->rnti == new_ue->rnti)
+            break;
+        }
+        if (UE == NULL) {
+          int num_UEs = si->s[i]->num_UEs;
+          if (si->s[i]->UE_list[num_UEs] == NULL) {
+            si->s[i]->UE_list[num_UEs] = new_ue;
+            si->s[i]->num_UEs += 1;
+            LOG_W(NR_MAC, "Matched slice, Add UE rnti 0x%04x to slice idx %d, sst %d, sd %d\n",
+                  new_ue->rnti, i, si->s[i]->nssai.sst, si->s[i]->nssai.sd);
+          } else {
+            LOG_E(NR_MAC, "cannot add new UE rnti 0x%04x to slice idx %d, num_UEs %d\n",
+                  new_ue->rnti, i, si->s[i]->num_UEs);
+          }
+        }
       } else {
-        LOG_E(NR_MAC, "cannot add new UE rnti 0x%04x to slice idx %d, num_UEs %d\n", new_ue->rnti, i, si->s[i]->num_UEs);
+        LOG_D(NR_MAC, "cannot find matched slice (lcid %ld <sst %d sd %d>, slice idx %d <sst %d sd %d>), do nothing for UE rnti 0x%04x\n",
+              lcid, sched_ctrl->dl_lc_nssai[lcid].sst, sched_ctrl->dl_lc_nssai[lcid].sd, i, si->s[i]->nssai.sst, si->s[i]->nssai.sd, new_ue->rnti);
       }
-      LOG_W(NR_MAC,
-            "Add UE rnti 0x%04x to slice idx %d, sst %d, sd %d\n",
-            new_ue->rnti,
-            i,
-            si->s[i]->nssai.sst,
-            si->s[i]->nssai.sd);
     }
   }
 }
@@ -563,16 +571,16 @@ nr_pp_impl_param_dl_t nvs_nr_dl_init(module_id_t mod_id)
   nvs_nr_slice_param_t *dlp = malloc(sizeof(nvs_nr_slice_param_t));
   DevAssert(dlp);
   dlp->type = NVS_RES;
-  dlp->pct_reserved = 1.0f;
+  // we reserved 5% resource for RRC connection while UE is connecting before created slice or
+  // PDU setup while UE is trying to connect after created slice
+  dlp->pct_reserved = 0.05f;
   nr_dl_sched_algo_t *algo = &RC.nrmac[mod_id]->pre_processor_dl.dl_algo;
   algo->data = NULL;
-  nssai_t nssai = {.sst = 1, .sd = 0};
-  const int rc = addmod_nvs_nr_slice_dl(si, 0, nssai, strdup("default"), algo, dlp);
+  // default slice: sst = 1, sd = 0x000000, id = 999, label = default
+  nssai_t nssai = {.sst = 0, .sd = 0};
+  const int rc = addmod_nvs_nr_slice_dl(si, 99, nssai, strdup("default"), algo, dlp);
+  LOG_W(NR_MAC, "Add default DL slice id 99, label default, sst %d, sd %d, slice sched algo NVS_CAPACITY, pct_reserved %.2f, ue sched algo %s\n", nssai.sst, nssai.sd, dlp->pct_reserved, algo->name);
   DevAssert(0 == rc);
-  NR_UEs_t *UE_info = &RC.nrmac[mod_id]->UE_info;
-  UE_iterator(UE_info->list, UE) {
-    nr_slicing_add_UE(si, UE);
-  }
 
 
   nr_pp_impl_param_dl_t nvs;
