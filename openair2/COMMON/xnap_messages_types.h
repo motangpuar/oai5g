@@ -28,10 +28,7 @@
 #define XNAP_MESSAGES_TYPES_H_
 
 #include "s1ap_messages_types.h"
-#include "ngap_messages_types.h"
-#include "NR_PhysCellId.h"
-#include "asn_codecs_prim.h"
-// Defines to access message fields.
+#include "f1ap_messages_types.h"
 
 #define XNAP_REGISTER_GNB_REQ(mSGpTR) (mSGpTR)->ittiMsg.xnap_register_gnb_req
 #define XNAP_SETUP_REQ(mSGpTR) (mSGpTR)->ittiMsg.xnap_setup_req
@@ -50,47 +47,7 @@ typedef struct xnap_net_ip_address_s {
   char ipv6_address[46];
 } xnap_net_ip_address_t;
 
-<<<<<<< HEAD
 typedef struct xnap_sctp_s {
-=======
-typedef struct xnap_register_gnb_req_s {
-  uint32_t gNB_id;
-  char *gNB_name;
-  /* Tracking area code */
-  uint16_t tac;
-
-  /* Mobile Country Code
-   * Mobile Network Code
-   */
-  uint16_t mcc;
-  uint16_t mnc;
-  uint8_t mnc_digit_length;
-  int16_t eutra_band;
-  int32_t nr_band;
-  int32_t nrARFCN;
-  uint32_t downlink_frequency;
-  int32_t uplink_frequency_offset;
-  uint32_t Nid_cell;
-  int16_t N_RB_DL;
-  frame_type_t frame_type;
-  uint32_t fdd_earfcn_DL;
-  uint32_t fdd_earfcn_UL;
-  uint32_t subframeAssignment;
-  uint32_t specialSubframe;
-  uint16_t tdd_nRARFCN;
-  uint16_t tdd_Transmission_Bandwidth;
-
-  /* The local gNB IP address to bind */
-  gnb_ip_address_t gnb_xn_ip_address;
-
-  /* Nb of GNB to connect to */
-  uint8_t nb_xn;
-
-  /* List of target gNB to connect to for Xn*/
-  gnb_ip_address_t target_gnb_xn_ip_address[XNAP_MAX_NB_GNB_IP_ADDRESS];
-
-  /* Number of SCTP streams used for associations */
->>>>>>> b05e275c38 (xnap-targetgnb)
   uint16_t sctp_in_streams;
   uint16_t sctp_out_streams;
 } xnap_sctp_t;
@@ -116,7 +73,6 @@ typedef struct xnap_amf_regioninfo_s {
   uint8_t amf_region_id;
 } xnap_amf_regioninfo_t;
 
-<<<<<<< HEAD
 typedef enum xnap_mode_t { XNAP_MODE_TDD = 0, XNAP_MODE_FDD = 1 } xnap_mode_t;
 
 typedef struct xnap_nr_frequency_info_t {
@@ -212,78 +168,112 @@ typedef struct xnap_setup_failure_s {
   uint16_t time_to_wait;
   uint16_t criticality_diagnostics;
 } xnap_setup_failure_t;
-=======
-typedef struct xnap_lastvisitedcell_info_s {
-  uint16_t mcc;
-  uint16_t mnc;
-  uint8_t mnc_len;
-  NR_PhysCellId_t target_physCellId;
-  cell_type_t cell_type;
-  uint64_t time_UE_StayedInCell;
-} xnap_lastvisitedcell_info_t;
+
+typedef struct xnap_guami_s {
+  xnap_plmn_t plmn_id;
+  uint8_t amf_region_id;
+  uint8_t amf_set_id;
+  uint8_t amf_pointer;
+} xnap_guami_t;
 
 typedef struct xnap_allocation_retention_priority_s {
-  ngap_priority_level_t priorityLevel;
-  ngap_pre_emp_capability_t pre_emp_capability;
-  ngap_pre_emp_vulnerability_t pre_emp_vulnerability;
+  uint16_t priority_level;
+  preemption_capability_t preemption_capability;
+  preemption_vulnerability_t preemption_vulnerability;
 } xnap_allocation_retention_priority_t;
 
-typedef struct xnap_pdusession_level_qos_parameter_s {
-  uint8_t qfi;
-  long non_dynamic_fiveQI;
-  long dynamic_priorityLevelQoS;
-  long dynamic_packetDelayBudget;
-  long dynamic_packetErrorRate_scalar;
-  long dynamic_packetErrorRate_exponent;
-  ngap_allocation_retention_priority_t allocation_retention_priority;
-} xnap_pdusession_level_qos_parameter_t;
+typedef struct xnap_qos_characteristics_s {
+  union {
+    struct {
+      long fiveqi;
+      long qos_priority_level;
+    } non_dynamic;
+    struct {
+      long fiveqi; // -1 -> optional
+      long qos_priority_level;
+      long packet_delay_budget;
+      struct {
+        long per_scalar;
+        long per_exponent;
+      } packet_error_rate;
+    } dynamic;
+  };
+  fiveQI_type_t qos_type;
+} xnap_qos_characteristics_t;
 
-typedef struct xnap_pdusession_s {
-  /* Unique pdusession_id for the UE. */
+typedef struct xnap_qos_tobe_setup_item_s {
+  uint8_t qfi;
+  xnap_qos_characteristics_t qos_params;
+  xnap_allocation_retention_priority_t allocation_retention_priority;
+} xnap_qos_tobe_setup_item_t;
+
+typedef struct xnap_qos_tobe_setup_list_s {
+  uint8_t num_qos;
+  xnap_qos_tobe_setup_item_t qos[2]; //QOSFLOW_MAX_VALUE= 64 Put this?
+} xnap_qos_tobe_setup_list_t;
+
+typedef struct xnap_pdusession_tobe_setup_item_s {
   uint8_t pdusession_id;
-  transport_layer_addr_t gNB_addr;
-  /* UPF Tunnel endpoint identifier */
-  uint32_t gtp_teid;
-  /* Quality of service for this pdusession */
-  xnap_pdusession_level_qos_parameter_t qos[QOSFLOW_MAX_VALUE];
-} xnap_pdusession_t;
+  xnap_snssai_t snssai;
+  xnap_net_ip_address_t up_ngu_tnl_ip_upf;
+  teid_t up_ngu_tnl_teid_upf;
+  uint32_t pdu_session_type; //enumerated-pdu_session_type_t- ngap_messages_types.h
+  xnap_qos_tobe_setup_list_t qos_list;
+} xnap_pdusession_tobe_setup_item_t;
+
+typedef struct xnap_pdusession_tobe_setup_list_s {
+  uint8_t num_pdu;
+  xnap_pdusession_tobe_setup_item_t pdu[NGAP_MAX_PDUSESSION]; //Is the limit ok?
+} xnap_pdusession_tobe_setup_list_t;
+
+typedef struct xnap_ngran_cgi_t {
+  xnap_plmn_t plmn_id;
+  uint32_t cgi;
+} xnap_ngran_cgi_t;
+
+typedef struct xnap_security_capabilities_s {
+  uint16_t encryption_algorithms;
+  uint16_t integrity_algorithms;
+} xnap_security_capabilities_t;
+
+typedef struct xnap_ambr_s {
+  uint64_t br_ul;
+  uint64_t br_dl;
+} xnap_ambr_t;
+
+typedef struct xnap_uehistory_info_s {
+  xnap_ngran_cgi_t last_visited_cgi;
+  cell_type_t cell_type; //enumerated -s1ap_messages_types.h
+  uint64_t time_UE_StayedInCell;
+} xnap_uehistory_info_t; //38.413- 9.3.1.97
+
+typedef struct xnap_ue_context_info_s {
+  uint64_t ngc_ue_sig_ref;// 0-2^40-1
+  xnap_net_ip_address_t tnl_ip_source;
+  uint32_t tnl_port_source;
+  xnap_security_capabilities_t security_capabilities;
+  uint8_t as_security_key_ranstar[32];//bitstring 256, why array? 
+  uint32_t as_security_ncc;
+  xnap_ambr_t ue_ambr;
+  uint8_t rrc_buffer[8192 /* arbitrary, big enough */];
+  xnap_uehistory_info_t uehistory_info;//most recent info added at top(upto 16). how many needed?
+  int rrc_buffer_size;//rrc msg type needed?
+} xnap_ue_context_info_t;
 
 typedef struct xnap_handover_req_s {
-  /* RRC->XNAP in source eNB */
-  int rnti;
-
-  /* XNAP->RRC in target eNB */
-  int xn_id;
-
-  NR_PhysCellId_t target_physCellId;
-
-  xnap_guami_t ue_guami;
-
-  /*UE-ContextInformation */
-
-  /* ? amf UE id  */
-  ASN__PRIMITIVE_TYPE_t ue_ngap_id;
-  security_capabilities_t security_capabilities;
-  uint8_t kenb[32]; // keNB or keNB*
-
-  /*next_hop_chaining_coun */
-  long int kenb_ncc;
-
-  /* UE aggregate maximum bitrate */
-  ambr_t ue_ambr;
-
-  uint8_t nb_pdu_resources_tobe_setup;
-
-  /* list of pdu session to be setup by RRC layers */
-  xnap_pdusession_t pdu_param[NGAP_MAX_PDUSESSION];
-
-  xnap_lastvisitedcell_info_t lastvisitedcell_info;
-
-  uint8_t rrc_buffer[8192 /* arbitrary, big enough */];
-  int rrc_buffer_size;
-
-  int target_assoc_id;
+  uint32_t ng_node_ue_xnap_id;
+  xnap_Cause_t cause_type;
+  xnap_ngran_cgi_t target_cgi;
+  xnap_guami_t guami; 
+  xnap_ue_context_info_t ue_context;
 } xnap_handover_req_t;
 
->>>>>>> b05e275c38 (xnap-targetgnb)
+typedef struct xnap_handover_req_ack_s {
+  uint32_t ng_node_ue_xnap_id;
+  xnap_Cause_t cause_type;
+  xnap_ngran_cgi_t target_cgi;
+  xnap_guami_t guami;
+  xnap_ue_context_info_t ue_context;
+} xnap_handover_req_ack_t;
+
 #endif /* XNAP_MESSAGES_TYPES_H_ */
