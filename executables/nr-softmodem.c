@@ -145,11 +145,6 @@ int rx_input_level_dBm;
 
 int otg_enabled;
 
-//int number_of_cards = 1;
-
-
-//static NR_DL_FRAME_PARMS      *frame_parms[MAX_NUM_CCs];
-//static nfapi_nr_config_request_t *config[MAX_NUM_CCs];
 uint32_t timing_advance = 0;
 uint64_t num_missed_slots=0; // counter for the number of missed slots
 
