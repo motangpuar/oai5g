@@ -1,16 +1,27 @@
+[[_TOC_]]
+
 # Contribution policies and code review
 
 ## General
 
-OpenAirInterface employs both human review and automated CI tests.
+OpenAirInterface employs both human review and automated CI tests to judge
+whether a code contribution is ready to be merged.
 
-TBC:
-- [ ] from slides
-- one commit per logical change, and cut your 
+The contributor has to sign a contributor license agreement (CLA) as described
+in [`CONTRIBUTING.md`](../CONTRIBUTING.md). After creating an account on the
+Eurecom Gitlab, the contributor can open a merge request: he becomes the
+"author" of such code contribution. A senior OAI member will review this work,
+and make suggestions for possible improvements. Each week, we discuss the
+progress of the merge requests in a [weekly external developer
+call](https://gitlab.eurecom.fr/oai/openairinterface5g/-/wikis/OpenAirDevMeetings),
+and discuss which merge requests can be merged.
+
+The CI consists in various Jenkins pipelines that run on each merge request.
+See [`TESTBenches.md`](./TESTBenches.md) for more details about the CI setup.
 
 There is the official [Gitlab Help](https://docs.gitlab.com/) that can help you
 with any questions regarding Gitlab. We recommend reading the [Git
-Book](https://git-scm.com/book/en/v2) to know how to use Git.
+Book](https://git-scm.com/book/en/v2) to use Git properly.
 
 ## Basic coding rules
 
@@ -34,15 +45,76 @@ A number of high-level comments:
 
 If in doubt, check out code that has been recently written (e.g., use the merge
 requests page to check for code that has recently been added) and follow that
-style. Checking surrounding code is usually not the best idea, as OAI is full
-of bad code.
+style. Checking surrounding code is usually not the best idea, as OAI also has
+bad code that we do not want to perpuate.
 
 There is an old [OAI coding guidelines
 document](https://gitlab.eurecom.fr/oai/openairinterface5g/-/wikis/documents/openair_coding_guidelines_v0.3.pdf)
 that might be useful; if this document and `.clang-format` contradict,
 `.clang-format` takes precedence!
 
-## Code contribution and Merge Requests
+## Main Workflow and Versioning
+
+### Workflow
+
+You should be familiar with git branching, merging, and rebasing.
+
+The target branch for every contribution, and the general development branch,
+is `develop`. Typically every week, we collect multiple merge requests in an
+"integration branch" that gets tested by the CI individually. If everything is
+fine, we merge to develop and tag it `YYYY-wXX` with `YYYY` the current year,
+and `XX` the week number.
+
+Note that the above includes a lot of merging, making the Git history difficult
+to understand. To not needlessly increase the complexity, please keep your
+branch history linear (i.e., no merges). Also, to facilitate review of your
+changes, please make one logical change per commit. The Linux kernel has some
+[documentation on what that
+means](https://www.kernel.org/doc/html/latest/process/submitting-patches.html#separate-your-changes).
+Each commit should be able to compile, and ideally be able to run an End-to-End
+test of gNB/UE using RFsim.
+
+The workflow of the integration branch has its weaknesses; we might revise this
+in the future towards a workflow using rebase to integrate work of different
+people, in order to simplify the history, and allow the usage of tools such as
+`git bisect` to search for bugs.
+
+### How to manage your own branch
+
+To start working before submitting your own changes, please make sure you have
+the latest develop, and check out a new branch. Make commits as appropriate.
+```bash
+$ git fetch origin
+$ git checkout develop
+$ git checkout -b my-new-feature # name as appropriate
+$ git add -p # add changes for change set 1
+$ git commit -m "My changeset 1"
+$ git add -p # add changes for change set 2
+$ git commit -m "My changeset 2"
+```
+
+If you development takes longer, make sure to synchronize regularly with
+`origin/develop` using `git rebase`:
+```bash
+$ git fetch origin
+$ git rebase -i origin/develop
+```
+
+If you do logical changes, you will not have to resolve the same conflicts over
+and over again, but once. Note that if you jumped over multiple develop tags,
+you can also rebase in intermediate steps:
+```
+$ git rebase -i 2023.w38
+$ git rebase -i 2023.w41
+$ git rebase -i develop
+```
+
+Once you rebased, push the changes to the remote
+```
+$ git push origin my-new-feature --force-with-lease # force with lease let's you only overwrite what you also have locally in origin/develop
+```
+
+## Merge Requests
 
 A merge request can be submitted as soon as the code is considered stable and
 reviewable. The idea is to start the review early enough so that the code
@@ -55,15 +127,17 @@ warning the OAI team, so that the review work can start as early as possible
 and run in parallel to the contribution finalization. Failing to do so, there
 is a risk that the integration of the work remains unmerged. Also, note that
 big contributions should be cut into small commits each containing a logical
-change, as described in the "General" section above.
+change, as described in the "General" section above. Finally, as a rule of
+thumb, the smaller the merge request, the easier it will be to review and
+merge.
 
-Note that the author asks for inclusion of code, so _it should make the review
+Note that the _author_ asks for inclusion of code, so _it should make the review
 easy_; in particular, if writing code incurs extra work to make a simpler code
 review (e.g., rewriting entire commits or their order), this extra work is
 justified. This counts *in particular* for big merge requests.
 
-When opening a merge requests, the author should add at least one of these
-labels when opening the merge request:
+When opening a merge requests, the author should select `develop` as the target
+branch, and add at least one of these labels when opening the merge request:
 
 - ~documentation: don't perform any testing stages, for documentation
 - ~BUILD-ONLY: execute only build stages, for code improvements without impact
@@ -94,7 +168,7 @@ on the sidebar on the right. Following options:
 - %OK_TO_BE_MERGED: the OAI team plans to merge this, *do not push any changes
   at this point*
 
-## Review form
+## Review Form
 
 The following is a check list that might be used by a reviewer to check that
 code contribution fulfils minimum standard w.r.t. formatting, data types,
