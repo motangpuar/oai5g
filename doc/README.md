@@ -21,6 +21,8 @@
 - [BUILD.md](./BUILD.md): how to build the sources
 - [cross-compile.md](./cross-compile.md): how to cross-compile OAI for ARM
 - [clang-format.md](./clang-format.md): how to format the code
+- [code-style-contrib.md](./code-style-contrib.md): overall working practices,
+  code style, and review process
 - [environment-variables.md](./environment-variables.md): the environment variables used by OAI
 
 There is some general information in the [OpenAirInterface Gitlab Wiki](https://gitlab.eurecom.fr/oai/openairinterface5g/-/wikis/home)

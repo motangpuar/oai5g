@@ -1,0 +1,124 @@
+# Contribution policies and code review
+
+## General
+
+OpenAirInterface employs both human review and automated CI tests.
+
+TBC:
+- [ ] from slides
+- one commit per logical change, and cut your 
+
+There is the official [Gitlab Help](https://docs.gitlab.com/) that can help you
+with any questions regarding Gitlab. We recommend reading the [Git
+Book](https://git-scm.com/book/en/v2) to know how to use Git.
+
+## Basic coding rules
+
+You should respect the `.clang-format` file in the root of the repository. The
+`clang-format` tool will pick up this file when being applied to code in the
+repository. Please also refer to the [corresponding
+documentation](./clang-format.md).
+
+A number of high-level comments:
+
+- Indentation is two spaces, no tabs; try to limit the number of indentations.
+- Line length is 132, not more than one statement per line; no whitespace at
+  the end of lines
+- The opening brace after a function is on a new line; after control flow
+  statements (`if`, `while`, `switch`, ...), it is on the same line
+- Pointer or reference operators (`*`, `&`) are right-aligned
+- No commented code
+- Use strong typing (no `void *`, use complex data types such as `c16_t` over
+  `uint32_t` in L1, ...)
+- No magic numbers
+
+If in doubt, check out code that has been recently written (e.g., use the merge
+requests page to check for code that has recently been added) and follow that
+style. Checking surrounding code is usually not the best idea, as OAI is full
+of bad code.
+
+There is an old [OAI coding guidelines
+document](https://gitlab.eurecom.fr/oai/openairinterface5g/-/wikis/documents/openair_coding_guidelines_v0.3.pdf)
+that might be useful; if this document and `.clang-format` contradict,
+`.clang-format` takes precedence!
+
+## Code contribution and Merge Requests
+
+A merge request can be submitted as soon as the code is considered stable and
+reviewable. The idea is to start the review early enough so that the code
+author can incorporate fixes while the reviewer is giving feedback. Note that a
+refusal of code changes is a valid outcome of a merge request (subject to
+proper justification).
+
+When preparing a contribution that is large, the developer is responsible for
+warning the OAI team, so that the review work can start as early as possible
+and run in parallel to the contribution finalization. Failing to do so, there
+is a risk that the integration of the work remains unmerged. Also, note that
+big contributions should be cut into small commits each containing a logical
+change, as described in the "General" section above.
+
+Note that the author asks for inclusion of code, so _it should make the review
+easy_; in particular, if writing code incurs extra work to make a simpler code
+review (e.g., rewriting entire commits or their order), this extra work is
+justified. This counts *in particular* for big merge requests.
+
+When opening a merge requests, the author should add at least one of these
+labels when opening the merge request:
+
+- ~documentation: don't perform any testing stages, for documentation
+- ~BUILD-ONLY: execute only build stages, for code improvements without impact
+  on 4G or 5G code
+- ~4G-LTE: perform 4G tests
+- ~5G-NR: perform 5G tests
+
+Failure to add a label will prevent the CI from running. You can add both
+~4G-LTE and ~5G-NR together; if in doubt which is the right label, do that. The
+CI posts the results in the the merge request page. Both the merge request
+authors and reviewers are responsible for manual inspection and pre-filtering
+of the CI results. An overview of the CI tests is in
+[`TESTBenches.md`](./TESTBenches.md).
+
+To communicate the review progress both between author and reviewer, as well as
+to the outside world, we (ab-)use the milestones feature of Gitlab to track the
+current progress. The milestone can be set while opening the merge request, and
+on the sidebar on the right. Following options:
+
+- _no milestone_: not ready for review yet (please limit the time in which your
+  code is in that phase)
+- %REVIEW_CAN_START: the reviewer can start the review
+- %REVIEW_IN_PROGRESS: the reviewer is currently doing review, and might
+  request changes to the code that the author should include (or refute with
+  justification)
+- %REVIEW_COMPLETED_AND_APPROVED: the reviewer is happy with code changes
+  (*open comments still have to be addressed!*)
+- %OK_TO_BE_MERGED: the OAI team plans to merge this, *do not push any changes
+  at this point*
+
+## Review form
+
+The following is a check list that might be used by a reviewer to check that
+code contribution fulfils minimum standard w.r.t. formatting, data types,
+assertions, etc. The reviewer might copy/paste this form into a merge request,
+or simply check that all have been filled.
+
+All points should be marked to complete a review.
+
+```md
+### Review by @username
+
+- [ ] `.clang-format` respected
+- [ ] No merges, i.e., the branch has a linear history; every commit compiles (and ideally runs in RFsim)
+- [ ] For L1: uses complex data types. In general: prefers strong/adapted types/typedefs over `void`/generic `int`, or otherwise primitive types.
+- [ ] Documentation updated (doxygen summary of functions; in `doc/`, or the corresponding folder; `FEATURE_SET.md`)
+- [ ] Uses assertions were appropriate
+- [ ] No commented/dead code (or such code has been removed), no function duplication
+- [ ] No magic numbers: use defines, enums, and variables to make the meaning of a number clear.
+- [ ] The changes don't have patch noise (no unnecessary whitespace changes unrelevant to the changed code; reformatting is ok)
+- [ ] No unnecessary/excessive logs introduced. Prefer LOG_D for frequent logs
+
+Additional remarks, if applicable:
+```
+
+Additional optional questions in case they apply:
+- Has a new tool/dependency been introduced? Needs to be discussed if to be added.
+- Is a new CI test necessary? Can it be done in simulators?
