@@ -1389,21 +1389,21 @@ static int nr_rrc_ue_decode_dcch(NR_UE_RRC_INST_t *rrc,
   return 0;
 }
 
-void nr_ue_meas_filtering(NR_UE_RRC_INST_t *rrc, uint8_t is_neighboring_cell, uint16_t Nid_cell, uint8_t meas_type, int rsrp_dBm)
+void nr_ue_meas_filtering(NR_UE_RRC_INST_t *rrc, bool is_neighboring_cell, uint16_t Nid_cell, bool csi_meas, int rsrp_dBm)
 {
   l3_measurements_t *l3_measurements = &rrc->l3_measurements;
 
   meas_t *meas_cell = NULL;
-  if (is_neighboring_cell == 0) {
-    meas_cell = &l3_measurements->active_cell;
-  } else {
+  if (is_neighboring_cell) {
     meas_cell = &l3_measurements->neighboring_cell[0];
+  } else {
+    meas_cell = &l3_measurements->active_cell;
   }
 
   meas_cell->Nid_cell = Nid_cell;
 
   double a = l3_measurements->filter_coeff_rsrp;
-  if (meas_type == 0) {
+  if (!csi_meas) {
     if (meas_cell->ss_rsrp_dBm_initialized == true) {
       meas_cell->ss_rsrp_dBm = (1.0 - a) * meas_cell->ss_rsrp_dBm + a * rsrp_dBm;
     } else {
@@ -1582,15 +1582,15 @@ void *rrc_nrue(void *notUsed)
   case NR_RRC_MAC_MEAS_DATA_IND:
 
     LOG_D(NR_RRC, "[%s][Nid_cell %i] Received %s measurements: RSRP = %i (dBm)\n",
-          NR_RRC_MAC_MEAS_DATA_IND(msg_p).is_neighboring_cell == 0 ? "Active cell" : "Neighboring cell",
+          NR_RRC_MAC_MEAS_DATA_IND(msg_p).is_neighboring_cell? "Neighboring cell" : "Active cell",
           NR_RRC_MAC_MEAS_DATA_IND(msg_p).Nid_cell,
-          NR_RRC_MAC_MEAS_DATA_IND(msg_p).meas_type == 0 ? "SS" : "CSI",
+          NR_RRC_MAC_MEAS_DATA_IND(msg_p).is_csi_meas ? "CSI meas" : "SSB meas",
           NR_RRC_MAC_MEAS_DATA_IND(msg_p).rsrp_dBm - 157);
 
     nr_ue_meas_filtering(rrc,
                          NR_RRC_MAC_MEAS_DATA_IND(msg_p).is_neighboring_cell,
                          NR_RRC_MAC_MEAS_DATA_IND(msg_p).Nid_cell,
-                         NR_RRC_MAC_MEAS_DATA_IND(msg_p).meas_type,
+                         NR_RRC_MAC_MEAS_DATA_IND(msg_p).is_csi_meas,
                          NR_RRC_MAC_MEAS_DATA_IND(msg_p).rsrp_dBm - 157);
 
     nr_ue_ckeck_meas_report(rrc, NR_RRC_MAC_MEAS_DATA_IND(msg_p).gnb_index);

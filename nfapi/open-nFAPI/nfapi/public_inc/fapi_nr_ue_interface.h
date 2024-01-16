@@ -59,8 +59,8 @@ typedef enum {
 typedef struct {
   uint32_t gNB_index;
   uint16_t Nid_cell;
-  uint8_t meas_type;            // (0) SS, (1) CSI
-  uint8_t is_neighboring_cell;  // (0) false, (1) true
+  nfapi_nr_meas_type_e meas_type;
+  bool is_neighboring_cell;
   uint8_t rsrp_dBm;
   uint8_t rank_indicator;
   uint8_t i1;

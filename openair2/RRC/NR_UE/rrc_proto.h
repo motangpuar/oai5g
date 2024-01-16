@@ -64,10 +64,10 @@ void nr_rrc_cellgroup_configuration(rrcPerNB_t *rrcNB, NR_UE_RRC_INST_t *rrc, NR
    \param module_id  module id
    \param gNB_index  gNB index
    \param Nid_cell  Nid_cell
-   \param meas_type  (0) SS, (1) CSI
+   \param meas_type
    \param is_neighboring_cell  (0) false, (1) true
    \param rsrp_dBm   reference signal received power*/
-int8_t nr_mac_rrc_meas_ind_ue(module_id_t module_id, uint32_t gNB_index, uint16_t Nid_cell, uint8_t meas_type, uint8_t is_neighboring_cell, uint8_t rsrp_dBm);
+int8_t nr_mac_rrc_meas_ind_ue(module_id_t module_id, uint32_t gNB_index, uint16_t Nid_cell, bool csi_meas, bool is_neighboring_cell, uint8_t rsrp_dBm);
 
 /**\brief interface between MAC and RRC thru SRB0 (RLC TM/no PDCP)
    \param module_id  module id

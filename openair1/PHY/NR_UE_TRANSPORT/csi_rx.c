@@ -1023,9 +1023,9 @@ void nr_ue_csi_rs_procedures(PHY_VARS_NR_UE *ue,
   // Send CSI measurements to MAC
   fapi_nr_l1_measurements_t l1_measurements;
   l1_measurements.gNB_index = gNB_id;
-  l1_measurements.meas_type = 1;
+  l1_measurements.meas_type = NFAPI_NR_CSI_MEAS;
   l1_measurements.Nid_cell = frame_parms->Nid_cell;
-  l1_measurements.is_neighboring_cell = 0;
+  l1_measurements.is_neighboring_cell = false;
   if (rsrp_dBm < -140) {
     l1_measurements.rsrp_dBm = 16;
   } else if (rsrp_dBm > -44) {

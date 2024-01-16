@@ -39,12 +39,12 @@
 
 typedef uint32_t channel_t;
 
-int8_t nr_mac_rrc_meas_ind_ue(module_id_t module_id, uint32_t gNB_index, uint16_t Nid_cell, uint8_t meas_type, uint8_t is_neighboring_cell, uint8_t rsrp_dBm)
+int8_t nr_mac_rrc_meas_ind_ue(module_id_t module_id, uint32_t gNB_index, uint16_t Nid_cell, bool csi_meas, bool is_neighboring_cell, uint8_t rsrp_dBm)
 {
   MessageDef *message_p = itti_alloc_new_message(TASK_MAC_UE, 0, NR_RRC_MAC_MEAS_DATA_IND);
   NR_RRC_MAC_MEAS_DATA_IND(message_p).gnb_index = gNB_index;
   NR_RRC_MAC_MEAS_DATA_IND(message_p).Nid_cell = Nid_cell;
-  NR_RRC_MAC_MEAS_DATA_IND(message_p).meas_type = meas_type;
+  NR_RRC_MAC_MEAS_DATA_IND(message_p).is_csi_meas = csi_meas;
   NR_RRC_MAC_MEAS_DATA_IND(message_p).is_neighboring_cell = is_neighboring_cell;
   NR_RRC_MAC_MEAS_DATA_IND(message_p).rsrp_dBm = rsrp_dBm;
   itti_send_msg_to_task(TASK_RRC_NRUE, GNB_MODULE_ID_TO_INSTANCE(module_id), message_p);

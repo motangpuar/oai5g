@@ -237,9 +237,9 @@ void nr_ue_ssb_rsrp_measurements(PHY_VARS_NR_UE *ue,
   // Send SS measurements to MAC
   fapi_nr_l1_measurements_t l1_measurements;
   l1_measurements.gNB_index = proc->gNB_id;
-  l1_measurements.meas_type = 0;
+  l1_measurements.meas_type = NFAPI_NR_SS_MEAS;
   l1_measurements.Nid_cell = ue->frame_parms.Nid_cell;
-  l1_measurements.is_neighboring_cell = 0;
+  l1_measurements.is_neighboring_cell = false;
   if (ue->measurements.ssb_rsrp_dBm[ssb_index] < -140) {
     l1_measurements.rsrp_dBm = 16;
   } else if (ue->measurements.ssb_rsrp_dBm[ssb_index] > -44) {
@@ -424,9 +424,9 @@ void *nr_ue_meas_neighboring_cell(void *param)
     // Send SS measurements to MAC
     fapi_nr_l1_measurements_t l1_measurements;
     l1_measurements.gNB_index = proc->gNB_id;
-    l1_measurements.meas_type = 0;
+    l1_measurements.meas_type = NFAPI_NR_SS_MEAS;
     l1_measurements.Nid_cell = nr_neighboring_cell->Nid_cell;
-    l1_measurements.is_neighboring_cell = 1;
+    l1_measurements.is_neighboring_cell = true;
     if (neighboring_cell_info->ssb_rsrp_dBm < -140) {
       l1_measurements.rsrp_dBm = 16;
     } else if (neighboring_cell_info->ssb_rsrp_dBm > -44) {

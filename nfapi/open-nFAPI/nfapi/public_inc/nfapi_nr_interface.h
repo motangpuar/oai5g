@@ -315,6 +315,11 @@ typedef enum {
 } nfapi_nr_pdsch_mapping_type_e;
 
 typedef enum {
+  NFAPI_NR_CSI_MEAS,
+  NFAPI_NR_SS_MEAS
+} nfapi_nr_meas_type_e;
+
+typedef enum {
   NFAPI_NR_PDSCH_RBG_CONFIG_TYPE1=0,
   NFAPI_NR_PDSCH_RBG_CONFIG_TYPE2
 } nfapi_nr_pdsch_rbg_config_type_e;

@@ -1272,10 +1272,11 @@ int8_t nr_ue_process_l1_measurements(NR_UE_MAC_INST_t *mac, frame_t frame, int s
 {
   LOG_D(NR_MAC, "(%d.%d) Received CSI-RS measurements\n", frame, slot);
   memcpy(&mac->l1_measurements, l1_measurements, sizeof(*l1_measurements));
+  bool csi_meas = l1_measurements->meas_type == NFAPI_NR_CSI_MEAS;
   nr_mac_rrc_meas_ind_ue(mac->ue_id,
                          l1_measurements->gNB_index,
                          l1_measurements->Nid_cell,
-                         l1_measurements->meas_type,
+                         csi_meas,
                          l1_measurements->is_neighboring_cell,
                          l1_measurements->rsrp_dBm);
   return 0;
