@@ -79,10 +79,13 @@ in the future towards a workflow using rebase to integrate work of different
 people, in order to simplify the history, and allow the usage of tools such as
 `git bisect` to search for bugs.
 
+After some time, we make a stable release. For this, we simply merge develop
+into master, and give a semantic versioning number, e.g., `v1.1`.
+
 ### How to manage your own branch
 
-To start working before submitting your own changes, please make sure you have
-the latest develop, and check out a new branch. Make commits as appropriate.
+Before starting to work, please make sure you have the latest `develop` branch.
+Then, check out a new branch. Make commits as appropriate.
 ```bash
 $ git fetch origin
 $ git checkout develop
@@ -93,7 +96,7 @@ $ git add -p # add changes for change set 2
 $ git commit -m "My changeset 2"
 ```
 
-If you development takes longer, make sure to synchronize regularly with
+If your development takes longer, make sure to synchronize regularly with
 `origin/develop` using `git rebase`:
 ```bash
 $ git fetch origin
@@ -131,10 +134,10 @@ change, as described in the "General" section above. Finally, as a rule of
 thumb, the smaller the merge request, the easier it will be to review and
 merge.
 
-Note that the _author_ asks for inclusion of code, so _it should make the review
-easy_; in particular, if writing code incurs extra work to make a simpler code
-review (e.g., rewriting entire commits or their order), this extra work is
-justified. This counts *in particular* for big merge requests.
+Note that the _author_ asks for inclusion of code, so _they should make the
+review easy_; in particular, if facilitating review incurs extra work to make a
+simpler code review (e.g., rewriting entire commits or their order), this extra
+work is justified. This particularly applies for big merge requests.
 
 When opening a merge requests, the author should select `develop` as the target
 branch, and add at least one of these labels when opening the merge request:
@@ -146,16 +149,16 @@ branch, and add at least one of these labels when opening the merge request:
 - ~5G-NR: perform 5G tests
 
 Failure to add a label will prevent the CI from running. You can add both
-~4G-LTE and ~5G-NR together; if in doubt which is the right label, do that. The
-CI posts the results in the the merge request page. Both the merge request
-authors and reviewers are responsible for manual inspection and pre-filtering
-of the CI results. An overview of the CI tests is in
+~4G-LTE and ~5G-NR together; if in doubt about the right label, add both. The
+CI posts the results in the the comments section of the merge request. Both
+merge request authors and reviewers are responsible for manual inspection and
+pre-filtering of the CI results. An overview of the CI tests is in
 [`TESTBenches.md`](./TESTBenches.md).
 
 To communicate the review progress both between author and reviewer, as well as
 to the outside world, we (ab-)use the milestones feature of Gitlab to track the
-current progress. The milestone can be set while opening the merge request, and
-on the sidebar on the right. Following options:
+current progress. The milestone can be set when opening the merge request, and
+during its lifetime in the sidebar on the right. Following options:
 
 - _no milestone_: not ready for review yet (please limit the time in which your
   code is in that phase)
@@ -165,8 +168,8 @@ on the sidebar on the right. Following options:
   justification)
 - %REVIEW_COMPLETED_AND_APPROVED: the reviewer is happy with code changes
   (*open comments still have to be addressed!*)
-- %OK_TO_BE_MERGED: the OAI team plans to merge this, *do not push any changes
-  at this point*
+- %OK_TO_BE_MERGED: the OAI team plans to merge this; *do not push any changes
+  anymore at this point*.
 
 ## Review Form
 
