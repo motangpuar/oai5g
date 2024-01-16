@@ -731,7 +731,7 @@ typedef struct PHY_VARS_gNB_s {
   rt_L1_profiling_t rt_L1_profiling; 
 #if defined(TASK_MANAGER_DECODING) || defined(TASK_MANAGER_CODING) || defined(TASK_MANAGER_DEMODULATION) || defined(TASK_MANAGER_RU) || !defined(TASK_MANAGER_SIM) 
   task_manager_t man;
-  tpool_t threadPool;
+  task_manager_t man_rx_tx_ru;
 #else
   tpool_t threadPool;
 #endif
@@ -809,6 +809,7 @@ typedef struct processingData_L1 {
   int slot_rx;
   openair0_timestamp timestamp_tx;
   PHY_VARS_gNB *gNB;
+  notifiedFIFO_elt_t *elt;
 } processingData_L1_t;
 
 typedef enum {
@@ -834,6 +835,7 @@ typedef struct processingData_L1tx {
   int num_ul_pdcch;
   /* a reference to the sched_response, to release it when not needed anymore */
   int sched_response_id;
+  notifiedFIFO_elt_t *elt;
 } processingData_L1tx_t;
 
 typedef struct processingData_L1rx {

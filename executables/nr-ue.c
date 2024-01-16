@@ -484,6 +484,11 @@ static void UE_synch(void *arg) {
       break;
 
   }
+
+   if (syncD->elt->reponseFifo) 
+       pushNotifiedFIFO(syncD->elt->reponseFifo, syncD->elt);
+   else
+     delNotifiedFIFO_elt(syncD->elt);
 }
 
 static void RU_write(nr_rxtx_thread_data_t *rxtxD) {
@@ -602,6 +607,11 @@ void processSlotTX(void *arg) {
   }
 
   RU_write(rxtxD);
+
+  if (rxtxD->elt->reponseFifo) 
+     pushNotifiedFIFO(rxtxD->elt->reponseFifo, rxtxD->elt);
+  else
+    delNotifiedFIFO_elt(rxtxD->elt);
 }
 
 static void UE_dl_preprocessing(PHY_VARS_NR_UE *UE, const UE_nr_rxtx_proc_t *proc, int *tx_wait_for_dlsch, nr_phy_data_t *phy_data)
@@ -656,6 +666,8 @@ void UE_dl_processing(void *arg) {
   nr_phy_data_t *phy_data = &rxtxD->phy_data;
 
   pdsch_processing(UE, proc, phy_data);
+
+  free(rxtxD);
 }
 
 void dummyWrite(PHY_VARS_NR_UE *UE,openair0_timestamp timestamp, int writeBlockSize) {
@@ -797,7 +809,7 @@ void *UE_thread(void *arg)
   while (!oai_exit) {
 
     if (syncRunning) {
-      notifiedFIFO_elt_t *res=tryPullTpool(&nf,&(get_nrUE_params()->Tpool));
+      notifiedFIFO_elt_t *res = pollNotifiedFIFO(&nf);
 
       if (res) {
         syncRunning=false;
@@ -835,7 +847,10 @@ void *UE_thread(void *arg)
       syncData_t *syncMsg = (syncData_t *)NotifiedFifoData(Msg);
       syncMsg->UE = UE;
       memset(&syncMsg->proc, 0, sizeof(syncMsg->proc));
-      pushTpool(&(get_nrUE_params()->Tpool), Msg);
+      syncMsg->elt = Msg;
+      task_t t = {.func = UE_synch, .args = syncMsg};
+      async_task_manager(&(get_nrUE_params()->man), t);
+
       trashed_frames = 0;
       syncRunning = true;
       continue;
@@ -943,11 +958,13 @@ void *UE_thread(void *arg)
       nr_ue_rrc_timer_trigger(UE->Mod_id, curMsg.proc.frame_tx, curMsg.proc.gNB_id);
 
     // RX slot processing. We launch and forget.
-    notifiedFIFO_elt_t *newRx = newNotifiedFIFO_elt(sizeof(nr_rxtx_thread_data_t), curMsg.proc.nr_slot_rx, NULL, UE_dl_processing);
-    nr_rxtx_thread_data_t *curMsgRx = (nr_rxtx_thread_data_t *)NotifiedFifoData(newRx);
+    // Memory ownership is transferred to the function UE_dl_processing
+    nr_rxtx_thread_data_t *curMsgRx = calloc(1, sizeof(nr_rxtx_thread_data_t));
+    assert(curMsgRx != NULL && "Memory exhausted");
     *curMsgRx = (nr_rxtx_thread_data_t){.proc = curMsg.proc, .UE = UE};
     UE_dl_preprocessing(UE, &curMsgRx->proc, tx_wait_for_dlsch, &curMsgRx->phy_data);
-    pushTpool(&(get_nrUE_params()->Tpool), newRx);
+    t = (task_t){.func = UE_dl_processing, .args = curMsgRx};
+    async_task_manager(&(get_nrUE_params()->man), t);
 
     // Start TX slot processing here. It runs in parallel with RX slot processing
     // in current code, DURATION_RX_TO_TX constant is the limit to get UL data to encode from a RX slot
@@ -959,12 +976,12 @@ void *UE_thread(void *arg)
     curMsgTx->UE = UE;
     curMsgTx->tx_wait_for_dlsch = tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx];
     tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx] = 0;
-    pushTpool(&(get_nrUE_params()->Tpool), newTx);
+    curMsgTx->elt = newElt;
+    task_t t = {.func = processSlotTX, .args= curMsgTx};
+    async_task_manager(&(get_nrUE_params()->man), t);
 
     // Wait for TX slot processing to finish
-    // Should be removed when bugs, race conditions, will be fixed
-    notifiedFIFO_elt_t *res;
-    res = pullTpool(&txFifo, &(get_nrUE_params()->Tpool));
+    notifiedFIFO_elt_t* res = pullNotifiedFIFO(&txFifo);
     if (res == NULL)
       LOG_E(PHY, "Tpool has been aborted\n");
     else
