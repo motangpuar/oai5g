@@ -444,35 +444,27 @@ static bool add_mod_rc_slice(int mod_id, size_t slices_len, ran_param_list_t* ls
     UE_iterator(UE_info->list, UE) {
       rnti_t rnti = UE->rnti;
       NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
-      bool matched_ue = 0;
       long lcid = 0;
       for (int l = 0; l < sched_ctrl->dl_lc_num; ++l) {
         lcid = sched_ctrl->dl_lc_ids[l];
         LOG_D(NR_MAC, "l %d, lcid %ld, sst %d, sd %d\n", l, lcid, sched_ctrl->dl_lc_nssai[lcid].sst, sched_ctrl->dl_lc_nssai[lcid].sd);
         if (nssai_matches(sched_ctrl->dl_lc_nssai[lcid], RC_sst, &RC_sd)) {
-          matched_ue = 1; // assume UE only associates to one slice
-          break;
+          rrc_gNB_ue_context_t* rrc_ue_context_list = rrc_gNB_get_ue_context_by_rnti_any_du(RC.nrrrc[mod_id], rnti);
+          uint16_t UE_mcc = rrc_ue_context_list->ue_context.ue_guami.mcc;
+          uint16_t UE_mnc = rrc_ue_context_list->ue_context.ue_guami.mnc;
+
+          uint8_t UE_sst = sched_ctrl->dl_lc_nssai[lcid].sst;
+          uint32_t UE_sd = sched_ctrl->dl_lc_nssai[lcid].sd;
+          LOG_D(NR_MAC, "UE: mcc %d mnc %d, sst %d sd %d, RC: mcc %d mnc %d, sst %d sd %d\n",
+                UE_mcc, UE_mnc, UE_sst, UE_sd, RC_mcc, RC_mnc, RC_sst, RC_sd);
+
+          if (UE_mcc == RC_mcc && UE_mnc == RC_mnc && UE_sst == RC_sst && UE_sd == RC_sd) {
+            dl->add_UE(dl->slices, UE);
+          } else {
+            LOG_W(NR_MAC, "cannot find specified PLMN (mcc %d mnc %d) NSSAI (sst %d sd %d) from the existing UE PLMN (mcc %d mnc %d) NSSAI (sst %d sd %d) \n",
+                  RC_mcc, RC_mnc, RC_sst, RC_sd, UE_mcc, UE_mnc, UE_sst, UE_sd);
+          }
         }
-      }
-
-      if (!matched_ue)
-        continue;
-
-      // TODO: need to fix nssai info in RRCSetupComplete
-      rrc_gNB_ue_context_t* rrc_ue_context_list = rrc_gNB_get_ue_context_by_rnti_any_du(RC.nrrrc[mod_id], rnti);
-      uint16_t UE_mcc = rrc_ue_context_list->ue_context.ue_guami.mcc;
-      uint16_t UE_mnc = rrc_ue_context_list->ue_context.ue_guami.mnc;
-
-      uint8_t UE_sst = sched_ctrl->dl_lc_nssai[lcid].sst;
-      uint32_t UE_sd = sched_ctrl->dl_lc_nssai[lcid].sd;
-      LOG_D(NR_MAC, "UE: mcc %d mnc %d, sst %d sd %d, RC: mcc %d mnc %d, sst %d sd %d\n",
-            UE_mcc, UE_mnc, UE_sst, UE_sd, RC_mcc, RC_mnc, RC_sst, RC_sd);
-
-      if (UE_mcc == RC_mcc && UE_mnc == RC_mnc && UE_sst == RC_sst && UE_sd == RC_sd) {
-          dl->add_UE(dl->slices, UE);
-      } else {
-        LOG_W(NR_MAC, "cannot find specified PLMN (mcc %d mnc %d) NSSAI (sst %d sd %d) from the existing UE PLMN (mcc %d mnc %d) NSSAI (sst %d sd %d) \n",
-              RC_mcc, RC_mnc, RC_sst, RC_sd, UE_mcc, UE_mnc, UE_sst, UE_sd);
       }
     }
 
