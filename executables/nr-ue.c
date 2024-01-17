@@ -963,7 +963,7 @@ void *UE_thread(void *arg)
     assert(curMsgRx != NULL && "Memory exhausted");
     *curMsgRx = (nr_rxtx_thread_data_t){.proc = curMsg.proc, .UE = UE};
     UE_dl_preprocessing(UE, &curMsgRx->proc, tx_wait_for_dlsch, &curMsgRx->phy_data);
-    t = (task_t){.func = UE_dl_processing, .args = curMsgRx};
+    task_t t = {.func = UE_dl_processing, .args = curMsgRx};
     async_task_manager(&(get_nrUE_params()->man), t);
 
     // Start TX slot processing here. It runs in parallel with RX slot processing
@@ -976,8 +976,8 @@ void *UE_thread(void *arg)
     curMsgTx->UE = UE;
     curMsgTx->tx_wait_for_dlsch = tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx];
     tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx] = 0;
-    curMsgTx->elt = newElt;
-    task_t t = {.func = processSlotTX, .args= curMsgTx};
+    curMsgTx->elt = newTx;
+    t = (task_t){.func = processSlotTX, .args= curMsgTx};
     async_task_manager(&(get_nrUE_params()->man), t);
 
     // Wait for TX slot processing to finish
