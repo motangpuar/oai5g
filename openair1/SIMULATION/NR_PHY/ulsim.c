@@ -554,11 +554,7 @@ int main(int argc, char *argv[])
   gNB->ofdm_offset_divisor = UINT_MAX;
   gNB->num_pusch_symbols_per_thread = 1;
 
-#ifdef TASK_MANAGER_SIM
   init_task_manager(&gNB->man, max(threadCnt, 1));
-#else
-  initFloatingCoresTpool(threadCnt, &gNB->threadPool, false, "gNB-tpool");
-#endif
 
   initNotifiedFIFO(&gNB->respDecode);
 
