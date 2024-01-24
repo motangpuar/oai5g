@@ -260,18 +260,7 @@ int nr_get_sf_periodicBSRTimer(uint8_t bucketSize);
 */
 int nr_get_sf_retxBSRTimer(uint8_t retxBSR_Timer);
 
-int8_t nr_ue_process_dci(NR_UE_MAC_INST_t *mac,
-                         int cc_id,
-                         frame_t frame,
-                         int slot,
-                         dci_pdu_rel15_t *dci,
-                         fapi_nr_dci_indication_pdu_t *dci_ind);
-int nr_ue_process_dci_indication_pdu(NR_UE_MAC_INST_t *mac,
-                                     int cc_id,
-                                     int gNB_index,
-                                     frame_t frame,
-                                     int slot,
-                                     fapi_nr_dci_indication_pdu_t *dci);
+nr_dci_format_t nr_ue_process_dci_indication_pdu(NR_UE_MAC_INST_t *mac, frame_t frame, int slot, fapi_nr_dci_indication_pdu_t *dci);
 int8_t nr_ue_process_csirs_measurements(NR_UE_MAC_INST_t *mac,
                                         frame_t frame,
                                         int slot,

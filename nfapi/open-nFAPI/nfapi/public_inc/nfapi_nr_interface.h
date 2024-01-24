@@ -240,9 +240,9 @@ typedef struct {
 } nfapi_nr_config_request_t;
 
 typedef enum {
-  NFAPI_NR_USS_FORMAT_0_0_AND_1_0,
-  NFAPI_NR_USS_FORMAT_0_1_AND_1_1,
-} nfapi_nr_uss_dci_formats_e;
+  NFAPI_NR_FORMAT_0_0_AND_1_0,
+  NFAPI_NR_FORMAT_0_1_AND_1_1,
+} nfapi_nr_dci_formats_e;
 
 typedef enum {
   NFAPI_NR_SEARCH_SPACE_TYPE_COMMON=0,
