@@ -220,6 +220,7 @@ sm_ag_if_ans_t write_subs_rc_sm(void const* src)
 }
 
 
+#if defined (NGRAN_GNB_DU)
 static int add_mod_dl_slice(int mod_id,
                             slice_algorithm_e current_algo,
                             int id,
@@ -273,15 +274,6 @@ static void set_new_dl_slice_algo(int mod_id, int algo)
   if (dl.dl_algo.data)
     dl.dl_algo.unset(&dl.dl_algo.data);
 }
-
-//static int find_dl_slice(nr_slice_info_t *si, uint32_t id)
-//{
-//  for (int i = 0; i < si->num; ++i) {
-//    if (si->s[i]->id == id)
-//      return i;
-//  }
-//  return -1;
-//}
 
 static char* copy_bytearr_to_str(const byte_array_t* ba)
 {
@@ -475,6 +467,7 @@ static bool add_mod_rc_slice(int mod_id, size_t slices_len, ran_param_list_t* ls
   LOG_D(NR_MAC, "All slices add/mod successfully!\n");
   return true;
 }
+#endif
 
 sm_ag_if_ans_t write_ctrl_rc_sm(void const* data)
 {
@@ -516,6 +509,7 @@ sm_ag_if_ans_t write_ctrl_rc_sm(void const* data)
         }
       }
     } else if (ctrl->hdr.frmt_1.ric_style_type == 2 && ctrl->hdr.frmt_1.ctrl_act_id == Slice_level_PRB_quotal_7_6_3_1) {
+#if defined (NGRAN_GNB_DU)
       /// ADD/MOD SLICE ///
       e2sm_rc_ctrl_msg_frmt_1_t const* msg = &ctrl->msg.frmt_1;
       assert(msg->sz_ran_param == 1 && "not support msg->sz_ran_param != 1");
@@ -531,6 +525,9 @@ sm_ag_if_ans_t write_ctrl_rc_sm(void const* data)
       } else {
         LOG_I(NR_MAC, "RRM_Policy_Ratio_List->ran_param_val.lst is NULL\n");
       }
+#else
+      LOG_W(NR_MAC, "NGRAN_GNB_DU is not defined, cannot support Slice_level_PRB_quotal_7_6_3_1\n");
+#endif
     }
   }
 
