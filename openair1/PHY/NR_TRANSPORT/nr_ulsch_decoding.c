@@ -232,18 +232,19 @@ int decode_offload(PHY_VARS_gNB *phy_vars_gNB,
 {
   NR_gNB_ULSCH_t *ulsch = &phy_vars_gNB->ulsch[ULSCH_id];
   NR_UL_gNB_HARQ_t *harq_process = ulsch->harq_process;
-  int16_t z_ol[64 * LDPC_MAX_CB_SIZE] __attribute__((aligned(32)));
-  int8_t l_ol[64 * LDPC_MAX_CB_SIZE] __attribute__((aligned(32)));
+  int16_t z_ol[LDPC_MAX_NUM_CB * LDPC_MAX_CB_SIZE] __attribute__((aligned(16)));
+  int8_t l_ol[LDPC_MAX_NUM_CB * LDPC_MAX_CB_SIZE] __attribute__((aligned(16)));
   const int kc = decParams->BG == 2 ? 52 : 68;
   uint32_t A = (harq_process->TBS) << 3;
   const int Kr = harq_process->K;
   const int Kr_bytes = Kr >> 3;
   int8_t decodeIterations = 0;
-  uint8_t *p_outDec;
   int r_offset = 0;
   int offset = 0;
+  // new data received, set processedSegments to 0
+  if (!decParams->setCombIn)
+    harq_process->processedSegments = 0;
 
-  p_outDec = calloc(64 * Kr_bytes, sizeof(int8_t));
   for (int r = 0; r < harq_process->C; r++) {
     decParams->E_cb[r] = nr_get_E(G, harq_process->C, decParams->Qm, pusch_pdu->nrOfLayers, r);
     memcpy(&z_ol[offset], ulsch_llr + r_offset, decParams->E_cb[r] * sizeof(short));
@@ -256,7 +257,9 @@ int decode_offload(PHY_VARS_gNB *phy_vars_gNB,
     r_offset += decParams->E_cb[r];
     offset += LDPC_MAX_CB_SIZE;
   }
-  decodeIterations = ldpc_interface_offload.LDPCdecoder(decParams, harq_pid, ULSCH_id, harq_process->C, (int8_t *)l_ol, (int8_t *)p_outDec, NULL, NULL);
+
+  int8_t *p_outDec = calloc(harq_process->C * Kr_bytes, sizeof(int8_t));
+  decodeIterations = ldpc_interface_offload.LDPCdecoder(decParams, harq_pid, ULSCH_id, harq_process->C, (int8_t *)l_ol, p_outDec, NULL, NULL);
 
   if (decodeIterations < 0) {
     LOG_E(PHY, "ulsch_decoding.c: Problem in LDPC decoder offload\n");
@@ -265,22 +268,22 @@ int decode_offload(PHY_VARS_gNB *phy_vars_gNB,
 
   int offset_b = 0;
   for (int r = 0; r < harq_process->C; r++) {
-    if (decParams->status_cb[r] == 0) {
+    if (decParams->status_cb[r] == 0 || harq_process->C == 1) {
       memcpy(harq_process->b + offset_b, &p_outDec[offset_b], Kr_bytes - (harq_process->F >> 3) - ((harq_process->C > 1) ? 3 : 0));
+      harq_process->processedSegments++;
     }
     offset_b += (Kr_bytes - (harq_process->F >> 3) - ((harq_process->C > 1) ? 3 : 0));
-    harq_process->processedSegments++;
   }
 
   bool crc_valid = false;
-  //When the number of code blocks is 1 (C = 1) and ulsch_harq->processedSegments = 1, we can assume a good TB because of the
-  //CRC check made by the LDPC for early termination, so, no need to perform CRC check twice for a single code block
-  if (decodeIterations < ulsch->max_ldpc_iterations) {
-    crc_valid = true;
-    if (harq_process->C > 1) {
-      crc_valid = check_crc(harq_process->b, lenWithCrc(1, A), crcType(1, A));
+  //CRC check made by the T2, no need to perform CRC check for a single code block twice
+  if (harq_process->processedSegments == harq_process->C) {
+    crc_valid = check_crc(harq_process->b, lenWithCrc(1, A), crcType(1, A));
+    if (harq_process->C == 1 && !crc_valid) {
+      harq_process->processedSegments--;
     }
   }
+
   if (crc_valid) {
     LOG_D(PHY, "ULSCH: Setting ACK for slot %d TBS %d\n", ulsch->slot, harq_process->TBS);
     ulsch->active = false;
@@ -304,6 +307,7 @@ int decode_offload(PHY_VARS_gNB *phy_vars_gNB,
   }
 
   ulsch->last_iteration_cnt = decodeIterations;
+  free(p_outDec);
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_gNB_ULSCH_DECODING,0);
   return 0;
 }
@@ -341,7 +345,6 @@ int nr_ulsch_decoding(PHY_VARS_gNB *phy_vars_gNB,
   const uint8_t n_layers = pusch_pdu->nrOfLayers;
   // ------------------------------------------------------------------
 
-  harq_process->processedSegments = 0;
   harq_process->TBS = pusch_pdu->pusch_data.tb_size;
 
   t_nrLDPC_dec_params decParams = {.check_crc = check_crc};
@@ -422,7 +425,7 @@ int nr_ulsch_decoding(PHY_VARS_gNB *phy_vars_gNB,
 
   if (phy_vars_gNB->ldpc_offload_flag)
     return decode_offload(phy_vars_gNB, ULSCH_id, ulsch_llr, pusch_pdu, &decParams, harq_pid, G);
-
+  harq_process->processedSegments = 0;
   uint32_t offset = 0, r_offset = 0;
   set_abort(&harq_process->abort_decode, false);
   for (int r = 0; r < harq_process->C; r++) {
