@@ -326,6 +326,14 @@ static int nr_process_mac_pdu(instance_t module_idP,
           }
         }
 
+        // Spin if not ready. This is a bad bad bad solution even in x86
+        const struct timespec ns = {0, 1024};
+        int cnt = 0;
+        while(UE_idx->CellGroup == NULL && cnt < 64){
+          nanosleep(&ns, NULL); 
+          cnt++;
+        }
+
         if (UE_idx->CellGroup) {
           LOG_D(NR_MAC, "Frame %d : ULSCH -> UL-DCCH %d (gNB %ld, %d bytes), rnti: 0x%04x \n", frameP, rx_lcid, module_idP, mac_len, crnti);
           UE->mac_stats.ul.total_sdu_bytes += mac_len;
