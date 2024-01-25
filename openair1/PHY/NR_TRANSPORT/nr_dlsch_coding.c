@@ -377,11 +377,9 @@ int nr_dlsch_encoding(PHY_VARS_gNB *gNB,
                       rel15->nrOfLayers);
     int r_offset = 0;
     for (int r = 0; r < impp.n_segments; r++) {
-      impp.E = nr_get_E(impp.G, impp.n_segments, impp.Qm, rel15->nrOfLayers, r);
-      uint8_t *f = impp.output + r_offset;
-      ldpc_interface_offload.LDPCencoder(&harq->c[r], &f, &impp);
-      r_offset += impp.E;
+      impp.E_cb[r] = nr_get_E(impp.G, impp.n_segments, impp.Qm, rel15->nrOfLayers, r);
     }
+    ldpc_interface_offload.LDPCencoder(harq->c, &impp.output, &impp);
   } else {
     notifiedFIFO_t nf;
     initNotifiedFIFO(&nf);

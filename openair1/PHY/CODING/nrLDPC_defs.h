@@ -60,6 +60,8 @@ typedef struct {
   /// Modulation order
   uint8_t Qm;
   uint32_t E;
+  uint32_t E_cb[64];
+  uint8_t status_cb[64];
   unsigned int G;
   // Redundancy version index
   uint8_t rv;
