@@ -85,6 +85,7 @@ Legacy unmaintained files:
 - The [shared object loader](../common/utils/DOC/loader.md)
 - The [threadpool](../common/utils/threadPool/thread-pool.md) used in L1
 - The [LDPC implementation](../openair1/PHY/CODING/DOC/LDPCImplementation.md) is a shared library
+- There is [channel simulation](../openair1/SIMULATION/TOOLS/DOC/rtusage.md) support that can be used in physical simulator and RFsimulator.
 
 ## SDRs
 
