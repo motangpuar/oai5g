@@ -85,7 +85,7 @@ class PhySim:
 		HTML.CreateHtmlTestRowQueue(self.runargs, 'OK', [info])
 		return HTML
 
-	def __CheckResults_LDPCt1Test(self,HTML,CONST,testcase_id):
+	def __CheckResults_LDPCt2Test(self,HTML,CONST,testcase_id):
 		thrs_NOK = 500
 		thrs_KO = 1000
 		mySSH = sshconnection.SSHConnection()
@@ -94,21 +94,32 @@ class PhySim:
 		mySSH.copyin(self.eNBIpAddr, self.eNBUserName, self.eNBPassWord, self.__workSpacePath+self.__runLogFile, '.')
 		mySSH.close()
 		#parse results looking for Decoding values
-		runResultsT1=[]
+		runResultsT2=[]
+		decTest = False
+		encTest = False
 		with open(self.__runLogFile) as g:
 			for line in g:
 				if 'decoding time' in line:
-					runResultsT1.append(line)
+					runResultsT2.append(line)
+					decTest = True
+					break
+				if 'encoding time' in line:
+					runResultsT2.append(line)
+					encTest = True
+					break
 
-		# In case the T1 board does work properly, there is no statistics
-		if len(runResultsT1) == 0:
+		# In case the T2 board does work properly, there is no statistics
+		if len(runResultsT2) == 0:
 			logging.error('no statistics')
 			HTML.CreateHtmlTestRowQueue(self.runargs, 'KO', ['no statistics'])
 			self.exitStatus = 1
 			os.system('mv '+self.__runLogFile+' '+ self.__runLogPath+'/.')
 			return HTML
 
-		info = runResultsT1[0][15:-13]
+		if decTest:
+			info = runResultsT2[0][15:-13]
+		if encTest:
+			info = runResultsT2[0][13:-13]
 		result = int(''.join(filter(str.isdigit, info)))/100
 		#once parsed move the local logfile to its folder for tidiness
 		os.system('mv '+self.__runLogFile+' '+ self.__runLogPath+'/.')
@@ -261,7 +272,7 @@ class PhySim:
 		mySSH.close()
 		#return updated HTML to main
 		lHTML = cls_oai_html.HTMLManagement()
-		lHTML=self.__CheckResults_LDPCt1Test(htmlObj,constObj,testcase_id)
+		lHTML=self.__CheckResults_LDPCt2Test(htmlObj,constObj,testcase_id)
 		return lHTML
 
 	def Run_NRulsimTest(self, htmlObj, constObj, testcase_id):
