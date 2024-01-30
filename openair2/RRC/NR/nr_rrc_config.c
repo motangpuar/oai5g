@@ -1162,6 +1162,7 @@ static void set_dl_mcs_table(int scs,
 }
 
 static struct NR_SetupRelease_PUSCH_Config *config_pusch(NR_PUSCH_Config_t *pusch_Config,
+							 const bool use_deltaMCS,
                                                          const NR_ServingCellConfigCommon_t *scc,
                                                          const NR_UE_NR_Capability_t *uecap)
 {
@@ -1218,9 +1219,12 @@ static struct NR_SetupRelease_PUSCH_Config *config_pusch(NR_PUSCH_Config_t *pusc
   asn1cSeqAdd(&pusch_Config->pusch_PowerControl->pathlossReferenceRSToAddModList->list, plrefRS);
   pusch_Config->pusch_PowerControl->pathlossReferenceRSToReleaseList = NULL;
   pusch_Config->pusch_PowerControl->twoPUSCH_PC_AdjustmentStates = NULL;
-  if (!pusch_Config->pusch_PowerControl->deltaMCS)
-    pusch_Config->pusch_PowerControl->deltaMCS = calloc(1, sizeof(*pusch_Config->pusch_PowerControl->deltaMCS));
-  *pusch_Config->pusch_PowerControl->deltaMCS = NR_PUSCH_PowerControl__deltaMCS_enabled;
+  if (use_deltaMCS) {
+    if (!pusch_Config->pusch_PowerControl->deltaMCS)
+      pusch_Config->pusch_PowerControl->deltaMCS = calloc(1, sizeof(*pusch_Config->pusch_PowerControl->deltaMCS));
+    *pusch_Config->pusch_PowerControl->deltaMCS = NR_PUSCH_PowerControl__deltaMCS_enabled;
+  }
+  else free(pusch_Config->pusch_PowerControl->deltaMCS);
   pusch_Config->pusch_PowerControl->sri_PUSCH_MappingToAddModList = NULL;
   pusch_Config->pusch_PowerControl->sri_PUSCH_MappingToReleaseList = NULL;
   pusch_Config->frequencyHopping = NULL;
@@ -1434,7 +1438,7 @@ static void config_uplinkBWP(NR_BWP_Uplink_t *ubwp,
     pusch_Config = clone_pusch_config(servingcellconfigdedicated->uplinkConfig->uplinkBWP_ToAddModList->list.array[bwp_loop]
                                          ->bwp_Dedicated->pusch_Config->choice.setup);
   }
-  ubwp->bwp_Dedicated->pusch_Config = config_pusch(pusch_Config, scc, configuration->force_256qam_off ? NULL : uecap);
+  ubwp->bwp_Dedicated->pusch_Config = config_pusch(pusch_Config, configuration->use_deltaMCS, scc, configuration->force_UL256qam_off ? NULL : uecap);
 
   long maxMIMO_Layers = servingcellconfigdedicated &&
                                 servingcellconfigdedicated->uplinkConfig
@@ -2218,7 +2222,7 @@ static NR_SpCellConfig_t *get_initial_SpCellConfig(int uid,
   config_pucch_resset1(pucch_Config, NULL);
   set_pucch_power_config(pucch_Config, configuration->do_CSIRS);
 
-  initialUplinkBWP->pusch_Config = config_pusch(NULL, scc, NULL);
+  initialUplinkBWP->pusch_Config = config_pusch(NULL, configuration->use_deltaMCS, scc, NULL);
 
   long maxMIMO_Layers = uplinkConfig && uplinkConfig->pusch_ServingCellConfig
                                 && uplinkConfig->pusch_ServingCellConfig->choice.setup->ext1
@@ -2546,7 +2550,7 @@ void update_cellGroupConfig(NR_CellGroupConfig_t *cellGroupConfig,
                    scc);
 
   NR_BWP_UplinkDedicated_t *ul_bwp_Dedicated = SpCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP;
-  set_ul_mcs_table(configuration->force_256qam_off ? NULL : uecap, scc, ul_bwp_Dedicated->pusch_Config->choice.setup);
+  set_ul_mcs_table(configuration->force_UL256qam_off ? NULL : uecap, scc, ul_bwp_Dedicated->pusch_Config->choice.setup);
 
   struct NR_ServingCellConfig__downlinkBWP_ToAddModList *DL_BWP_list =
       SpCellConfig->spCellConfigDedicated->downlinkBWP_ToAddModList;
@@ -2564,7 +2568,7 @@ void update_cellGroupConfig(NR_CellGroupConfig_t *cellGroupConfig,
       int bwp_size = NRRIV2BW(ul_bwp->bwp_Common->genericParameters.locationAndBandwidth, MAX_BWP_SIZE);
       if (ul_bwp->bwp_Dedicated->pusch_Config) {
         NR_PUSCH_Config_t *pusch_Config = ul_bwp->bwp_Dedicated->pusch_Config->choice.setup;
-        set_ul_mcs_table(configuration->force_256qam_off ? NULL : uecap, scc, pusch_Config);
+        set_ul_mcs_table(configuration->force_UL256qam_off ? NULL : uecap, scc, pusch_Config);
         if (pusch_Config->maxRank == NULL) {
           pusch_Config->maxRank = calloc(1, sizeof(*pusch_Config->maxRank));
         }
@@ -2761,7 +2765,7 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
     pusch_Config = clone_pusch_config(
         servingcellconfigdedicated->uplinkConfig->uplinkBWP_ToAddModList->list.array[0]->bwp_Dedicated->pusch_Config->choice.setup);
   }
-  initialUplinkBWP->pusch_Config = config_pusch(pusch_Config, servingcellconfigcommon, uecap);
+  initialUplinkBWP->pusch_Config = config_pusch(pusch_Config, configuration->use_deltaMCS,servingcellconfigcommon, uecap);
 
   long maxMIMO_Layers =
       servingcellconfigdedicated->uplinkConfig && servingcellconfigdedicated->uplinkConfig->pusch_ServingCellConfig
