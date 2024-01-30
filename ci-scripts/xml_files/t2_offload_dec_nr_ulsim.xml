@@ -20,8 +20,8 @@
 -->
 
 <testCaseList>
-	<htmlTabRef>test-t2-offload</htmlTabRef>
-	<htmlTabName>Test T2 Offload</htmlTabName>
+	<htmlTabRef>test-t2-offload-dec</htmlTabRef>
+	<htmlTabName>Test T2 Offload Decoder</htmlTabName>
 	<htmlTabIcon>tasks</htmlTabIcon>
 	<repeatCount>1</repeatCount>
 	<TestCaseRequestedList>000111 000112 000121 000122 000131 000132 000211 000212 000221 000222 000231 000232</TestCaseRequestedList>
@@ -30,14 +30,14 @@
 	<testCase id="000111">
 		<class>Run_T2Test</class>
                 <desc>Run nr_ulsim with CPU</desc>
-                <physim_run>nr_ulsim</physim_run>
+		<physim_run>nr_ulsim</physim_run>
 		<physim_run_args>-n100 -s30 -m5 -r106 -R106 -C10 -P</physim_run_args>
 	</testCase>
 
 	<testCase id="000112">
 		<class>Run_T2Test</class>
                 <desc>Run nr_ulsim with T2 LDPC offload</desc>
-                <physim_run>nr_ulsim</physim_run>
+		<physim_run>nr_ulsim</physim_run>
 		<physim_run_args>-n100 -s30 -m5 -r106 -R106 -o -P</physim_run_args>
 	</testCase>
 
