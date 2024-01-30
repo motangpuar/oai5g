@@ -818,8 +818,8 @@ elif re.match('^TesteNB$', mode, re.IGNORECASE) or re.match('^TestUE$', mode, re
 						HTML=ldpc.Run_LDPCTest(HTML,CONST,id)
 						if ldpc.exitStatus==1:
 							RAN.prematureExit = True
-					elif action == 'Run_LDPCt1Test':
-						HTML=ldpc.Run_LDPCt1Test(HTML,CONST,id)
+					elif action == 'Run_T2Test':
+						HTML=ldpc.Run_T2Test(HTML,CONST,id)
 						if ldpc.exitStatus==1:
 							RAN.prematureExit = True
 					elif action == 'Run_NRulsimTest':
