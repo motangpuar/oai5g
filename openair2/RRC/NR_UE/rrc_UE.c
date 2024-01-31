@@ -1281,7 +1281,8 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
   if (radioBearerConfig->srb_ToAddModList != NULL) {
     for (int cnt = 0; cnt < radioBearerConfig->srb_ToAddModList->list.count; cnt++) {
       struct NR_SRB_ToAddMod *srb = radioBearerConfig->srb_ToAddModList->list.array[cnt];
-      if (rrcNB->Srb[srb->srb_Identity] == RB_NOT_PRESENT)
+      if (rrcNB->Srb[srb->srb_Identity] == RB_NOT_PRESENT) {
+        rrcNB->Srb[srb->srb_Identity] = RB_ESTABLISHED;
         add_srb(false,
                 ue_rrc->ue_id,
                 radioBearerConfig->srb_ToAddModList->list.array[cnt],
@@ -1289,13 +1290,18 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
                 ue_rrc->integrityProtAlgorithm,
                 kRRCenc,
                 kRRCint);
+      }
       else {
         AssertFatal(srb->discardOnPDCP == NULL, "discardOnPDCP not yet implemented\n");
-        AssertFatal(srb->reestablishPDCP == NULL, "reestablishPDCP not yet implemented\n");
+        if (srb->reestablishPDCP) {
+          rrcNB->Srb[srb->srb_Identity] = RB_ESTABLISHED;
+          nr_pdcp_reestablishment(ue_rrc->ue_id, srb->srb_Identity, true);
+          // TODO configure the PDCP entity to apply the integrity protection algorithm
+          // TODO configure the PDCP entity to apply the ciphering algorithm
+        }
         if (srb->pdcp_Config && srb->pdcp_Config->t_Reordering)
           nr_pdcp_reconfigure_srb(ue_rrc->ue_id, srb->srb_Identity, *srb->pdcp_Config->t_Reordering);
       }
-      rrcNB->Srb[srb->srb_Identity] = RB_ESTABLISHED;
     }
   }
 
@@ -1314,8 +1320,13 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
     for (int cnt = 0; cnt < radioBearerConfig->drb_ToAddModList->list.count; cnt++) {
       struct NR_DRB_ToAddMod *drb = radioBearerConfig->drb_ToAddModList->list.array[cnt];
       int DRB_id = drb->drb_Identity;
-      if (rrcNB->status_DRBs[DRB_id - 1] == RB_ESTABLISHED) {
-        AssertFatal(drb->reestablishPDCP == NULL, "reestablishPDCP not yet implemented\n");
+      if (rrcNB->status_DRBs[DRB_id - 1] != RB_NOT_PRESENT) {
+        if (drb->reestablishPDCP) {
+          rrcNB->status_DRBs[DRB_id - 1] = RB_ESTABLISHED;
+          nr_pdcp_reestablishment(ue_rrc->ue_id, DRB_id, false);
+          // TODO configure the PDCP entity to apply the integrity protection algorithm
+          // TODO configure the PDCP entity to apply the ciphering algorithm
+        }
         AssertFatal(drb->recoverPDCP == NULL, "recoverPDCP not yet implemented\n");
         NR_SDAP_Config_t *sdap_Config = drb->cnAssociation ? drb->cnAssociation->choice.sdap_Config : NULL;
         if (drb->pdcp_Config || sdap_Config)
