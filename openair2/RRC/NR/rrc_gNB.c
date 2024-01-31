@@ -884,7 +884,43 @@ rrc_gNB_generate_dedicatedRRCReconfiguration_release(
   nr_rrc_transfer_protected_rrc_message(rrc, ue_p, DCCH, buffer, size);
 }
 
-//-----------------------------------------------------------------------------
+static void cuup_notify_reestablishment(gNB_RRC_INST *rrc, gNB_RRC_UE_t *ue_p)
+{
+  e1ap_bearer_mod_req_t req = {0};
+  if (!ue_associated_to_cuup(rrc, ue_p))
+    return;
+  req.numPDUSessionsMod = ue_p->nb_of_pdusessions;
+  req.gNB_cu_cp_ue_id = ue_p->rrc_ue_id;
+  req.gNB_cu_up_ue_id = ue_p->rrc_ue_id;
+  for (int i = 0; i < req.numPDUSessionsMod; i++) {
+    for (int drb_id = 1; drb_id <= MAX_DRBS_PER_UE; drb_id++) {
+      if (ue_p->established_drbs[drb_id - 1].status == DRB_INACTIVE)
+        continue;
+      rrc_pdu_session_param_t *pdu = find_pduSession_from_drbId(ue_p, drb_id);
+      if (pdu == NULL) {
+        LOG_E(RRC, "UE %d: E1 Bearer Context Modification: no PDU session for DRB ID %d\n", ue_p->rrc_ue_id, drb_id);
+        continue;
+      }
+      /* E1 Bearear Context Modification Request */
+      req.pduSessionMod[i].numDRB2Modify += 1;
+      req.pduSessionMod[i].sessionId = ue_p->pduSession[i].param.pdusession_id;
+      req.pduSessionMod[i].DRBnGRanModList[drb_id - 1].id = drb_id;
+      /* PDCP configuration */
+      bearer_context_pdcp_config_t *pdcp_config = &req.pduSessionMod[i].DRBnGRanModList[drb_id - 1].pdcp_config;
+      drb_t *rrc_drb = get_drb(ue_p, drb_id);
+      set_bearer_context_pdcp_config(pdcp_config, rrc_drb, rrc->configuration.um_on_default_drb);
+      pdcp_config->pDCP_Reestablishment = true;
+    }
+  }
+  /* Send E1 Bearer Context Modification Request (3GPP TS 38.463) */
+  sctp_assoc_t assoc_id = get_existing_cuup_for_ue(rrc, ue_p);
+  rrc->cucp_cuup.bearer_context_mod(assoc_id, &req);
+}
+
+/**
+ * @brief RRCReestablishment message
+ *        Direction: Network to UE
+ */
 static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context_pP,
                                                 const uint8_t *masterCellGroup_from_DU,
                                                 const rnti_t old_rnti,
@@ -927,13 +963,9 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
       nr_pdcp_reestablishment(ue_p->rrc_ue_id, srb_id, true);
     }
   }
-
-  // TODO: should send E1 UE Bearer Modification with PDCP Reestablishment flag
-  for (int drb_id = 1; drb_id <= MAX_DRBS_PER_UE; drb_id++) {
-    if (ue_p->established_drbs[drb_id - 1].status != DRB_INACTIVE)
-      nr_pdcp_reestablishment(ue_p->rrc_ue_id, drb_id, false);
-  }
-
+  /* PDCP Reestablishment over E1 */
+  cuup_notify_reestablishment(rrc, ue_p);
+  /* F1AP DL RRC Message Transfer */
   f1_ue_data_t ue_data = cu_get_f1_ue_data(ue_p->rrc_ue_id);
   RETURN_IF_INVALID_ASSOC_ID(ue_data);
   uint32_t old_gNB_DU_ue_id = old_rnti;
