@@ -163,7 +163,6 @@ int e1ap_send_ERROR_INDICATION(instance_t instance, E1AP_ErrorIndication_t *Erro
 /*
     E1 Setup: can be sent on both ways, to be refined
 */
-
 static void fill_SETUP_REQUEST(e1ap_setup_req_t *setup, E1AP_E1AP_PDU_t *pdu)
 {
   /* Create */
@@ -676,16 +675,16 @@ static int fill_BEARER_CONTEXT_SETUP_REQUEST(e1ap_bearer_setup_req_t *const bear
       ieC6_1_1->pDCP_Configuration.t_ReorderingTimer = roTimer;
       roTimer->t_Reordering = j->pdcp_config.reorderingTimer;
       ieC6_1_1->pDCP_Configuration.rLC_Mode = j->pdcp_config.rLC_Mode;
-
+      /* Cell Group config */
       for (cell_group_t *k = j->cellGroupList; k < j->cellGroupList + j->numCellGroups; k++) {
         asn1cSequenceAdd(ieC6_1_1->cell_Group_Information.list, E1AP_Cell_Group_Information_Item_t, ieC6_1_1_1);
         ieC6_1_1_1->cell_Group_ID = k->id;
       }
-
+      /* QoS Flows */
       for (qos_flow_to_setup_t *k = j->qosFlows; k < j->qosFlows + j->numQosFlow2Setup; k++) {
         asn1cSequenceAdd(ieC6_1_1->qos_flow_Information_To_Be_Setup, E1AP_QoS_Flow_QoS_Parameter_Item_t, ieC6_1_1_1);
         ieC6_1_1_1->qoS_Flow_Identifier = k->qfi;
-
+        /* QoS Characteristics */
         qos_characteristics_t *qos_char_in = &k->qos_params.qos_characteristics;
         if (qos_char_in->qos_type == non_dynamic) { // non Dynamic 5QI
           ieC6_1_1_1->qoSFlowLevelQoSParameters.qoS_Characteristics.present = E1AP_QoS_Characteristics_PR_non_Dynamic_5QI;
@@ -699,7 +698,7 @@ static int fill_BEARER_CONTEXT_SETUP_REQUEST(e1ap_bearer_setup_req_t *const bear
           dynamic_5QI->packetErrorRate.pER_Scalar = qos_char_in->dynamic.packet_error_rate.per_scalar;
           dynamic_5QI->packetErrorRate.pER_Exponent = qos_char_in->dynamic.packet_error_rate.per_exponent;
         }
-
+        /* QoS Retention Priority */
         ngran_allocation_retention_priority_t *rent_priority_in = &k->qos_params.alloc_reten_priority;
         ieC6_1_1_1->qoSFlowLevelQoSParameters.nGRANallocationRetentionPriority.priorityLevel = rent_priority_in->priority_level;
         ieC6_1_1_1->qoSFlowLevelQoSParameters.nGRANallocationRetentionPriority.pre_emptionCapability =
@@ -1312,6 +1311,9 @@ int e1apCUUP_send_BEARER_CONTEXT_MODIFICATION_FAILURE(instance_t instance)
   return -1;
 }
 
+/**
+ * @brief Process E1AP PDU and extract Bearer Context Modification Request
+ */
 static void extract_BEARER_CONTEXT_MODIFICATION_REQUEST(const E1AP_E1AP_PDU_t *pdu, e1ap_bearer_mod_req_t *bearerCxt)
 {
   const E1AP_BearerContextModificationRequest_t *in = &pdu->choice.initiatingMessage->value.choice.BearerContextModificationRequest;
@@ -1346,9 +1348,8 @@ static void extract_BEARER_CONTEXT_MODIFICATION_REQUEST(const E1AP_E1AP_PDU_t *p
         DevAssert(msgNGRAN_list->list.count == 1);
         DevAssert(msgNGRAN->id == E1AP_ProtocolIE_ID_id_PDU_Session_Resource_To_Modify_List);
         DevAssert(msgNGRAN->value.present =
-                    E1AP_NG_RAN_BearerContextModificationRequest__value_PR_PDU_Session_Resource_To_Modify_List);
-
-        /* PDU Sessions to modify */
+                      E1AP_NG_RAN_BearerContextModificationRequest__value_PR_PDU_Session_Resource_To_Modify_List);
+        /* PDU Session Resource To Modify List (see 9.3.3.11 of TS 38.463) */
         E1AP_PDU_Session_Resource_To_Modify_List_t *pdu2ModList = &msgNGRAN->value.choice.PDU_Session_Resource_To_Modify_List;
         bearerCxt->numPDUSessionsMod = pdu2ModList->list.count;
         for (int i = 0; i < pdu2ModList->list.count; i++) {
@@ -1396,6 +1397,10 @@ static void extract_BEARER_CONTEXT_MODIFICATION_REQUEST(const E1AP_E1AP_PDU_t *p
   }
 }
 
+/**
+ * @brief Extract Bearer Context Modification Request from E1AP PDU
+ *        and prepare Bearer Context Modification Response
+ */
 int e1apCUUP_handle_BEARER_CONTEXT_MODIFICATION_REQUEST(sctp_assoc_t assoc_id,
                                                         e1ap_upcp_inst_t *e1_inst,
                                                         const E1AP_E1AP_PDU_t *pdu)
@@ -1405,10 +1410,8 @@ int e1apCUUP_handle_BEARER_CONTEXT_MODIFICATION_REQUEST(sctp_assoc_t assoc_id,
   DevAssert(pdu->choice.initiatingMessage->procedureCode == E1AP_ProcedureCode_id_bearerContextModification);
   DevAssert(pdu->choice.initiatingMessage->criticality == E1AP_Criticality_reject);
   DevAssert(pdu->choice.initiatingMessage->value.present == E1AP_InitiatingMessage__value_PR_BearerContextModificationRequest);
-
   e1ap_bearer_mod_req_t bearerCxt = {0};
   extract_BEARER_CONTEXT_MODIFICATION_REQUEST(pdu, &bearerCxt);
-
   e1_bearer_context_modif(&bearerCxt);
   return 0;
 }
@@ -1492,7 +1495,6 @@ int e1apCUCP_handle_BEARER_CONTEXT_MODIFICATION_RESPONSE(sctp_assoc_t assoc_id,
   DevAssert(pdu->choice.successfulOutcome->procedureCode == E1AP_ProcedureCode_id_bearerContextModification);
   DevAssert(pdu->choice.successfulOutcome->criticality == E1AP_Criticality_reject);
   DevAssert(pdu->choice.successfulOutcome->value.present == E1AP_SuccessfulOutcome__value_PR_BearerContextModificationResponse);
-
   MessageDef *msg = itti_alloc_new_message(TASK_CUUP_E1, 0, E1AP_BEARER_CONTEXT_MODIFICATION_RESP);
   e1ap_bearer_modif_resp_t *modif = &E1AP_BEARER_CONTEXT_MODIFICATION_RESP(msg);
   extract_BEARER_CONTEXT_MODIFICATION_RESPONSE(pdu, modif);

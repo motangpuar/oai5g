@@ -223,6 +223,9 @@ void e1_bearer_context_setup(const e1ap_bearer_setup_req_t *req)
   get_e1_if()->bearer_setup_response(&resp);
 }
 
+/**
+ * @brief Fill Bearer Context Modification Response and send to callback
+ */
 void e1_bearer_context_modif(const e1ap_bearer_mod_req_t *req)
 {
   AssertFatal(req->numPDUSessionsMod > 0, "need at least one PDU session to modify\n");
@@ -235,6 +238,7 @@ void e1_bearer_context_modif(const e1ap_bearer_mod_req_t *req)
 
   instance_t f1inst = get_f1_gtp_instance();
 
+  /* PDU Session Resource To Modify List (see 9.3.3.11 of TS 38.463) */
   for (int i = 0; i < req->numPDUSessionsMod; i++) {
     DevAssert(req->pduSessionMod[i].sessionId > 0);
     LOG_I(E1AP,
@@ -244,6 +248,7 @@ void e1_bearer_context_modif(const e1ap_bearer_mod_req_t *req)
           req->pduSessionMod[i].numDRB2Modify);
     modif.pduSessionMod[i].id = req->pduSessionMod[i].sessionId;
     modif.pduSessionMod[i].numDRBModified = req->pduSessionMod[i].numDRB2Modify;
+    /* DRBs to modify */
     for (int j = 0; j < req->pduSessionMod[i].numDRB2Modify; j++) {
       const DRB_nGRAN_to_mod_t *to_modif = &req->pduSessionMod[i].DRBnGRanModList[j];
       DRB_nGRAN_modified_t *modified = &modif.pduSessionMod[i].DRBnGRanModList[j];

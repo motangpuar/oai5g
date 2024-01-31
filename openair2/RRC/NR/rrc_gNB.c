@@ -951,13 +951,11 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
                                                 const uint8_t *masterCellGroup_from_DU,
                                                 const rnti_t old_rnti,
                                                 const nr_rrc_du_container_t *du)
-//-----------------------------------------------------------------------------
 {
   module_id_t module_id = 0;
   gNB_RRC_INST *rrc = RC.nrrrc[module_id];
   int enable_ciphering = 0;
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
-
   uint8_t buffer[RRC_BUF_SIZE] = {0};
   uint8_t xid = rrc_gNB_get_next_transaction_identifier(module_id);
   ue_p->xids[xid] = RRC_REESTABLISH;
@@ -2367,6 +2365,7 @@ void *rrc_gnb_task(void *args_p) {
         break;
 
       /* Messages from PDCP */
+      /* From DU -> CU */
       case F1AP_UL_RRC_MESSAGE:
         PROTOCOL_CTXT_SET_BY_INSTANCE(&ctxt,
                                       instance,
