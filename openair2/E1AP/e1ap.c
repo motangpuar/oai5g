@@ -1002,8 +1002,7 @@ static void extract_BEARER_CONTEXT_SETUP_REQUEST(const E1AP_E1AP_PDU_t *pdu, e1a
               qos_flow->qfi = qos2Setup->qoS_Flow_Identifier;
 
               qos_characteristics_t *qos_char = &qos_flow->qos_params.qos_characteristics;
-              if (qos2Setup->qoSFlowLevelQoSParameters.qoS_Characteristics.present ==
-                  E1AP_QoS_Characteristics_PR_non_Dynamic_5QI) {
+              if (qos2Setup->qoSFlowLevelQoSParameters.qoS_Characteristics.present == E1AP_QoS_Characteristics_PR_non_Dynamic_5QI) {
                 qos_char->qos_type = non_dynamic;
                 qos_char->non_dynamic.fiveqi =
                     qos2Setup->qoSFlowLevelQoSParameters.qoS_Characteristics.choice.non_Dynamic_5QI->fiveQI;
@@ -1075,9 +1074,11 @@ void extract_BEARER_CONTEXT_SETUP_RESPONSE(const E1AP_E1AP_PDU_t *pdu, e1ap_bear
       case E1AP_ProtocolIE_ID_id_System_BearerContextSetupResponse:
         DevAssert(ie->criticality == E1AP_Criticality_reject);
         DevAssert(ie->value.present == E1AP_BearerContextSetupResponseIEs__value_PR_System_BearerContextSetupResponse);
-        DevAssert(ie->value.choice.System_BearerContextSetupResponse.present ==
-                    E1AP_System_BearerContextSetupResponse_PR_nG_RAN_BearerContextSetupResponse);
-        E1AP_ProtocolIE_Container_4932P22_t *msgNGRAN_list = (E1AP_ProtocolIE_Container_4932P22_t *) ie->value.choice.System_BearerContextSetupResponse.choice.nG_RAN_BearerContextSetupResponse;
+        DevAssert(ie->value.choice.System_BearerContextSetupResponse.present
+                  == E1AP_System_BearerContextSetupResponse_PR_nG_RAN_BearerContextSetupResponse);
+        E1AP_ProtocolIE_Container_4932P22_t *msgNGRAN_list =
+            (E1AP_ProtocolIE_Container_4932P22_t *)
+                ie->value.choice.System_BearerContextSetupResponse.choice.nG_RAN_BearerContextSetupResponse;
         DevAssert(msgNGRAN_list->list.count == 1);
         E1AP_NG_RAN_BearerContextSetupResponse_t *msgNGRAN = msgNGRAN_list->list.array[0];
         DevAssert(msgNGRAN->id == E1AP_ProtocolIE_ID_id_PDU_Session_Resource_Setup_List);
@@ -1093,10 +1094,10 @@ void extract_BEARER_CONTEXT_SETUP_RESPONSE(const E1AP_E1AP_PDU_t *pdu, e1ap_bear
 
           if (pdu_session->nG_DL_UP_TNL_Information.choice.gTPTunnel) {
             DevAssert(pdu_session->nG_DL_UP_TNL_Information.present == E1AP_UP_TNL_Information_PR_gTPTunnel);
-            BIT_STRING_TO_TRANSPORT_LAYER_ADDRESS_IPv4(&pdu_session->nG_DL_UP_TNL_Information.choice.gTPTunnel->transportLayerAddress,
-                                                       pduSetup->tlAddress);
-            OCTET_STRING_TO_INT32(&pdu_session->nG_DL_UP_TNL_Information.choice.gTPTunnel->gTP_TEID,
-                                  pduSetup->teId);
+            BIT_STRING_TO_TRANSPORT_LAYER_ADDRESS_IPv4(
+                &pdu_session->nG_DL_UP_TNL_Information.choice.gTPTunnel->transportLayerAddress,
+                pduSetup->tlAddress);
+            OCTET_STRING_TO_INT32(&pdu_session->nG_DL_UP_TNL_Information.choice.gTPTunnel->gTP_TEID, pduSetup->teId);
           }
 
           pduSetup->numDRBSetup = pdu_session->dRB_Setup_List_NG_RAN.list.count;
@@ -1114,10 +1115,8 @@ void extract_BEARER_CONTEXT_SETUP_RESPONSE(const E1AP_E1AP_PDU_t *pdu, e1ap_bear
               DevAssert(in_UL_UP_param->uP_TNL_Information.present == E1AP_UP_TNL_Information_PR_gTPTunnel);
               E1AP_GTPTunnel_t *gTPTunnel = in_UL_UP_param->uP_TNL_Information.choice.gTPTunnel;
               if (gTPTunnel) {
-                BIT_STRING_TO_TRANSPORT_LAYER_ADDRESS_IPv4(&gTPTunnel->transportLayerAddress,
-                                                           UL_UP_param->tlAddress);
-                OCTET_STRING_TO_INT32(&gTPTunnel->gTP_TEID,
-                                      UL_UP_param->teId);
+                BIT_STRING_TO_TRANSPORT_LAYER_ADDRESS_IPv4(&gTPTunnel->transportLayerAddress, UL_UP_param->tlAddress);
+                OCTET_STRING_TO_INT32(&gTPTunnel->gTP_TEID, UL_UP_param->teId);
               } else {
                 AssertFatal(false, "gTPTunnel information in required\n");
               }
@@ -1417,7 +1416,8 @@ int e1apCUUP_handle_BEARER_CONTEXT_MODIFICATION_REQUEST(sctp_assoc_t assoc_id,
 static void extract_BEARER_CONTEXT_MODIFICATION_RESPONSE(const E1AP_E1AP_PDU_t *pdu, e1ap_bearer_modif_resp_t *resp)
 {
   memset(resp, 0, sizeof(*resp));
-  const E1AP_BearerContextModificationResponse_t *in = &pdu->choice.successfulOutcome->value.choice.BearerContextModificationResponse;
+  const E1AP_BearerContextModificationResponse_t *in =
+      &pdu->choice.successfulOutcome->value.choice.BearerContextModificationResponse;
 
   for (int i = 0; i < in->protocolIEs.list.count; ++i) {
     E1AP_BearerContextModificationResponseIEs_t *ie = in->protocolIEs.list.array[i];
@@ -1437,7 +1437,8 @@ static void extract_BEARER_CONTEXT_MODIFICATION_RESPONSE(const E1AP_E1AP_PDU_t *
 
       case E1AP_ProtocolIE_ID_id_System_BearerContextModificationResponse:
         DevAssert(ie->criticality == E1AP_Criticality_ignore);
-        DevAssert(ie->value.present == E1AP_BearerContextModificationResponseIEs__value_PR_System_BearerContextModificationResponse);
+        DevAssert(ie->value.present
+                  == E1AP_BearerContextModificationResponseIEs__value_PR_System_BearerContextModificationResponse);
         DevAssert(ie->value.choice.System_BearerContextModificationResponse.present
                   == E1AP_System_BearerContextModificationResponse_PR_nG_RAN_BearerContextModificationResponse);
         E1AP_ProtocolIE_Container_4932P29_t *msgNGRAN_list =
@@ -1447,7 +1448,8 @@ static void extract_BEARER_CONTEXT_MODIFICATION_RESPONSE(const E1AP_E1AP_PDU_t *
         E1AP_NG_RAN_BearerContextModificationResponse_t *msgNGRAN = msgNGRAN_list->list.array[0];
         DevAssert(msgNGRAN->id == E1AP_ProtocolIE_ID_id_PDU_Session_Resource_Modified_List);
         DevAssert(msgNGRAN->criticality == E1AP_Criticality_reject);
-        DevAssert(msgNGRAN->value.present == E1AP_NG_RAN_BearerContextModificationResponse__value_PR_PDU_Session_Resource_Modified_List);
+        DevAssert(msgNGRAN->value.present
+                  == E1AP_NG_RAN_BearerContextModificationResponse__value_PR_PDU_Session_Resource_Modified_List);
         E1AP_PDU_Session_Resource_Modified_List_t *pduModifiedList = &msgNGRAN->value.choice.PDU_Session_Resource_Modified_List;
         resp->numPDUSessionsMod = pduModifiedList->list.count;
 

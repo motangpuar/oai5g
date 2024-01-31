@@ -37,7 +37,7 @@
 
 static void fill_DRB_configList_e1(NR_DRB_ToAddModList_t *DRB_configList, const pdu_session_to_setup_t *pdu)
 {
-  for (int i=0; i < pdu->numDRB2Setup; i++) {
+  for (int i = 0; i < pdu->numDRB2Setup; i++) {
     const DRB_nGRAN_to_setup_t *drb = pdu->DRBnGRanList + i;
     asn1cSequenceAdd(DRB_configList->list, struct NR_DRB_ToAddMod, ie);
     ie->drb_Identity = drb->id;
@@ -52,7 +52,7 @@ static void fill_DRB_configList_e1(NR_DRB_ToAddModList_t *DRB_configList, const 
     sdap_config->sdap_HeaderUL = drb->sdap_config.sDAP_Header_UL;
     sdap_config->defaultDRB    = drb->sdap_config.defaultDRB;
     asn1cCalloc(sdap_config->mappedQoS_FlowsToAdd, FlowsToAdd);
-    for (int j=0; j < drb->numQosFlow2Setup; j++) {
+    for (int j = 0; j < drb->numQosFlow2Setup; j++) {
       asn1cSequenceAdd(FlowsToAdd->list, NR_QFI_t, qfi);
       *qfi = drb->qosFlows[j].qfi;
     }
@@ -235,7 +235,7 @@ void e1_bearer_context_modif(const e1ap_bearer_mod_req_t *req)
 
   instance_t f1inst = get_f1_gtp_instance();
 
-  for (int i=0; i < req->numPDUSessionsMod; i++) {
+  for (int i = 0; i < req->numPDUSessionsMod; i++) {
     DevAssert(req->pduSessionMod[i].sessionId > 0);
     LOG_I(E1AP,
           "UE %d: updating PDU session ID %ld (%ld bearers)\n",
@@ -244,7 +244,7 @@ void e1_bearer_context_modif(const e1ap_bearer_mod_req_t *req)
           req->pduSessionMod[i].numDRB2Modify);
     modif.pduSessionMod[i].id = req->pduSessionMod[i].sessionId;
     modif.pduSessionMod[i].numDRBModified = req->pduSessionMod[i].numDRB2Modify;
-    for (int j=0; j < req->pduSessionMod[i].numDRB2Modify; j++) {
+    for (int j = 0; j < req->pduSessionMod[i].numDRB2Modify; j++) {
       const DRB_nGRAN_to_mod_t *to_modif = &req->pduSessionMod[i].DRBnGRanModList[j];
       DRB_nGRAN_modified_t *modified = &modif.pduSessionMod[i].DRBnGRanModList[j];
       modified->id = to_modif->id;
