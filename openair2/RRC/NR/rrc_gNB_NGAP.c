@@ -207,9 +207,6 @@ rrc_gNB_send_NGAP_NAS_FIRST_REQ(
   /* selected_plmn_identity: IE is 1-based, convert to 0-based (C array) */
   int selected_plmn_identity = rrcSetupComplete->selectedPLMN_Identity - 1;
   req->selected_plmn_identity = selected_plmn_identity;
-  req->ue_identity.guami.mcc = UE->ue_guami.mcc;
-  req->ue_identity.guami.mnc = UE->ue_guami.mnc;
-  req->ue_identity.guami.mnc_len = UE->ue_guami.mnc_len;
 
   if (rrcSetupComplete->registeredAMF != NULL) {
       NR_RegisteredAMF_t *r_amf = rrcSetupComplete->registeredAMF;
