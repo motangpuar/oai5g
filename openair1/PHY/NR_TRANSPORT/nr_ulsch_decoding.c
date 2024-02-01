@@ -232,8 +232,8 @@ int decode_offload(PHY_VARS_gNB *phy_vars_gNB,
 {
   NR_gNB_ULSCH_t *ulsch = &phy_vars_gNB->ulsch[ULSCH_id];
   NR_UL_gNB_HARQ_t *harq_process = ulsch->harq_process;
-  int16_t z_ol[LDPC_MAX_NUM_CB * LDPC_MAX_CB_SIZE] __attribute__((aligned(16)));
-  int8_t l_ol[LDPC_MAX_NUM_CB * LDPC_MAX_CB_SIZE] __attribute__((aligned(16)));
+  int16_t z_ol[NR_LDPC_MAX_NUM_CB * LDPC_MAX_CB_SIZE] __attribute__((aligned(16)));
+  int8_t l_ol[NR_LDPC_MAX_NUM_CB * LDPC_MAX_CB_SIZE] __attribute__((aligned(16)));
   const int kc = decParams->BG == 2 ? 52 : 68;
   uint32_t A = (harq_process->TBS) << 3;
   const int Kr = harq_process->K;
