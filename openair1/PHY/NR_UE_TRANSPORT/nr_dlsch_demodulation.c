@@ -1138,10 +1138,9 @@ void nr_dlsch_channel_level(uint32_t rx_size_symbol,
         dl_ch128+=3;
       }
 
-      avg[(aatx*frame_parms->nb_antennas_rx)+aarx] =(((int32_t*)&avg128D)[0] +
-                            ((int32_t*)&avg128D)[1] +
-                            ((int32_t*)&avg128D)[2] +
-                            ((int32_t*)&avg128D)[3])/y;
+      int32_t *avg32 = (int32_t*)&avg128D;
+      int64_t avg64 = ((int64_t)avg32[0] + (int64_t)avg32[1] + (int64_t)avg32[2] + (int64_t)avg32[3]) / y;
+      avg[(aatx*frame_parms->nb_antennas_rx)+aarx] = (int32_t) avg64;
       //  printf("Channel level : %d\n",avg[(aatx<<1)+aarx]);
     }
   }
