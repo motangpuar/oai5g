@@ -1036,14 +1036,18 @@ void nr_configure_pucch(nfapi_nr_pucch_pdu_t *pucch_pdu,
   pucch_pdu->beamforming.num_prgs = 0;
   pucch_pdu->beamforming.prg_size = 0; // pucch_pdu->prb_size;
   pucch_pdu->beamforming.dig_bf_interface = 0;
-  if (pucch_pdu->beamforming.prgs_list == NULL) {
-    pucch_pdu->beamforming.prgs_list = calloc(pucch_pdu->beamforming.num_prgs, sizeof(*pucch_pdu->beamforming.prgs_list));
+  if (pucch_pdu->beamforming.num_prgs > 0) {
+    if (pucch_pdu->beamforming.prgs_list == NULL) {
+      pucch_pdu->beamforming.prgs_list = calloc(pucch_pdu->beamforming.num_prgs, sizeof(*pucch_pdu->beamforming.prgs_list));
+    }
+    if (pucch_pdu->beamforming.dig_bf_interface > 0) {
+      if (pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list == NULL) {
+        pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list =
+            calloc(pucch_pdu->beamforming.dig_bf_interface, sizeof(*pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list));
+      }
+    }
+    pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = 0;
   }
-  if (pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list == NULL) {
-    pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list =
-        calloc(pucch_pdu->beamforming.dig_bf_interface, sizeof(*pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list));
-  }
-  pucch_pdu->beamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = 0;
 }
 
 void set_r_pucch_parms(int rsetindex,
