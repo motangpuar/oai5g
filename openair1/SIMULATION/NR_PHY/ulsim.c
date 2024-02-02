@@ -554,8 +554,12 @@ int main(int argc, char *argv[])
   gNB->ofdm_offset_divisor = UINT_MAX;
   gNB->num_pusch_symbols_per_thread = 1;
 
-  int lst_core_id[32] = {-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1};
-  assert(threadCnt < 33);
+  const int max_cid = 32;
+  int lst_core_id[max_cid];
+  for(int i = 0; i < max_cid; ++i){
+     lst_core_id[i] = -1;
+  }
+  assert(threadCnt < max_cid);
   init_task_manager(&gNB->man, lst_core_id, max(threadCnt, 1));
 
   initNotifiedFIFO(&gNB->respDecode);
