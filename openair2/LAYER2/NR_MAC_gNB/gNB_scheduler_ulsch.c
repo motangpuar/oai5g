@@ -70,7 +70,7 @@ static int compute_ph_factor(int mu, int tbs_bits, int rb, int n_layers, int n_s
   // 38.213 7.1.1
   // if the PUSCH transmission is over more than one layer delta_tf = 0
   float delta_tf = 0;
-  if(deltaMCS != NULL && n_layers == 1) {
+  if(deltaMCS != NULL) {
     const int n_re = (NR_NB_SC_PER_RB * n_symbols - n_dmrs) * rb;
     const float BPRE = (float) tbs_bits/n_re;  //TODO change for PUSCH with CSI
     const float f = pow(2, BPRE * 1.25);
