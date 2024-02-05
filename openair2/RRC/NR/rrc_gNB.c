@@ -97,6 +97,7 @@
 #include "openair2/F1AP/f1ap_common.h"
 #include "openair2/F1AP/f1ap_ids.h"
 #include "openair2/SDAP/nr_sdap/nr_sdap_entity.h"
+#include "openair2/E1AP/e1ap.h"
 #include "cucp_cuup_if.h"
 
 #include "BIT_STRING.h"
