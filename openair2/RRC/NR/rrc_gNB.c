@@ -100,6 +100,8 @@
 #include "cucp_cuup_if.h"
 #include "BIT_STRING.h"
 #include "assertions.h"
+#include <openair2/XNAP/xnap_gNB_management_procedures.h>
+#include <openair2/XNAP/xnap_gNB_defs.h>
 
 //#define XER_PRINT
 
@@ -2198,8 +2200,11 @@ void rrc_gNB_process_xn_setup_request(sctp_assoc_t assoc_id, xnap_setup_req_t *m
   MessageDef *msg = itti_alloc_new_message(TASK_RRC_GNB, 0, XNAP_SETUP_RESP);
   msg->ittiMsgHeader.originInstance = assoc_id;
   xnap_setup_resp_t *xnap_msg = &XNAP_SETUP_RESP(msg);
+  xnap_gNB_instance_t *instance_xn;
+  instance_t instance = 0;
+  instance_xn = xnap_get_gNB(instance, assoc_id);//TODO:Hardcoded instance.
   xnap_msg->gNB_id = m->gNB_id;
-  xnap_msg->info = m->info;//add all required
+  xnap_msg->info = instance_xn->setup_req.info;//add all required
   itti_send_msg_to_task(TASK_XNAP, 0, msg);
 }
 
