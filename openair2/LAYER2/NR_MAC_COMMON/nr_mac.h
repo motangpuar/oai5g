@@ -503,6 +503,7 @@ typedef struct{
 } CSI_Meas_bitlen_t;
 
 typedef struct nr_csi_report {
+  NR_CSI_ReportConfigId_t reportConfigId;
   NR_CSI_ReportConfig__reportQuantity_PR reportQuantity_type;
   long periodicity;
   uint16_t offset;
