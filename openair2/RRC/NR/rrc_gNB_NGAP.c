@@ -483,6 +483,14 @@ int rrc_gNB_process_NGAP_INITIAL_CONTEXT_SETUP_REQ(MessageDef *msg_p, instance_t
   PROTOCOL_CTXT_SET_BY_INSTANCE(&ctxt, instance, GNB_FLAG_YES, UE->rrc_ue_id, 0, 0);
   UE->amf_ue_ngap_id = req->amf_ue_ngap_id;
 
+  /* GUAMI */
+  UE->ue_guami.mcc = req->guami.mcc;
+  UE->ue_guami.mnc = req->guami.mnc;
+  UE->ue_guami.mnc_len = req->guami.mnc_len;
+  UE->ue_guami.amf_region_id = req->guami.amf_region_id;
+  UE->ue_guami.amf_set_id = req->guami.amf_set_id;
+  UE->ue_guami.amf_pointer = req->guami.amf_pointer;
+
   /* NAS PDU */
   // this is malloced pointers, we pass it for later free()
   UE->nas_pdu = req->nas_pdu;
