@@ -44,6 +44,8 @@ static void nr_pdcp_entity_recv_pdu(nr_pdcp_entity_t *entity,
   int              integrity_size;
   int              rx_deliv_sn;
   uint32_t         rx_deliv_hfn;
+  uint32_t         mac = 0;
+  uint32_t         header = 0;
 
   if (size < 1) {
     LOG_E(PDCP, "bad PDU received (size = %d)\n", size);
@@ -104,6 +106,21 @@ static void nr_pdcp_entity_recv_pdu(nr_pdcp_entity_t *entity,
 
   rcvd_count = (rcvd_hfn << entity->sn_size) | rcvd_sn;
 
+  /* the MAC-I/header/rcvd_count is needed by some RRC procedures, store it */
+  if (entity->has_integrity || entity->type == NR_PDCP_SRB) {
+    mac = (uint32_t)buffer[size-4]
+        | ((uint32_t)buffer[size-3] << 8)
+        | ((uint32_t)buffer[size-2] << 16)
+        | ((uint32_t)buffer[size-1] << 24);
+
+    /* higher byte of 'header' is its size, next 2 or 3 bytes are the header */
+    header = (uint32_t)header_size << 24;
+    if (header_size == 2)
+      header |= (buffer[0] << 16) | (buffer[1] << 8);
+    else
+      header |= (buffer[0] << 16) | (buffer[1] << 8) | buffer[2];
+  }
+
   if (entity->has_ciphering)
     entity->cipher(entity->security_context,
                    buffer+header_size, size-header_size,
@@ -134,7 +151,8 @@ static void nr_pdcp_entity_recv_pdu(nr_pdcp_entity_t *entity,
 
   sdu = nr_pdcp_new_sdu(rcvd_count,
                         (char *)buffer + header_size,
-                        size - header_size - integrity_size);
+                        size - header_size - integrity_size,
+                        mac, header);
   entity->rx_list = nr_pdcp_sdu_list_add(entity->rx_list, sdu);
   entity->rx_size += size-header_size;
 
@@ -150,7 +168,8 @@ static void nr_pdcp_entity_recv_pdu(nr_pdcp_entity_t *entity,
     while (entity->rx_list != NULL && count == entity->rx_list->count) {
       nr_pdcp_sdu_t *cur = entity->rx_list;
       entity->deliver_sdu(entity->deliver_sdu_data, entity,
-                          cur->buffer, cur->size);
+                          cur->buffer, cur->size,
+                          cur->mac, cur->header, cur->count);
       entity->rx_list = cur->next;
       entity->rx_size -= cur->size;
       entity->stats.txsdu_pkts++;
@@ -330,7 +349,8 @@ static void check_t_reordering(nr_pdcp_entity_t *entity)
   while (entity->rx_list != NULL && entity->rx_list->count < entity->rx_reord) {
     nr_pdcp_sdu_t *cur = entity->rx_list;
     entity->deliver_sdu(entity->deliver_sdu_data, entity,
-                        cur->buffer, cur->size);
+                        cur->buffer, cur->size,
+                        cur->mac, cur->header, cur->count);
     entity->rx_list = cur->next;
     entity->rx_size -= cur->size;
     entity->stats.txsdu_pkts++;
@@ -343,7 +363,8 @@ static void check_t_reordering(nr_pdcp_entity_t *entity)
   while (entity->rx_list != NULL && count == entity->rx_list->count) {
     nr_pdcp_sdu_t *cur = entity->rx_list;
     entity->deliver_sdu(entity->deliver_sdu_data, entity,
-                        cur->buffer, cur->size);
+                        cur->buffer, cur->size,
+                        cur->mac, cur->header, cur->count);
     entity->rx_list = cur->next;
     entity->rx_size -= cur->size;
     entity->stats.txsdu_pkts++;
@@ -373,7 +394,8 @@ static void deliver_all_sdus(nr_pdcp_entity_t *entity)
   while (entity->rx_list != NULL) {
     nr_pdcp_sdu_t *cur = entity->rx_list;
     entity->deliver_sdu(entity->deliver_sdu_data, entity,
-                        cur->buffer, cur->size);
+                        cur->buffer, cur->size,
+                        cur->mac, cur->header, cur->count);
     entity->rx_list = cur->next;
     entity->rx_size -= cur->size;
     entity->stats.txsdu_pkts++;
@@ -480,7 +502,8 @@ nr_pdcp_entity_t *new_nr_pdcp_entity(
     bool has_sdap_rx,
     bool has_sdap_tx,
     void (*deliver_sdu)(void *deliver_sdu_data, struct nr_pdcp_entity_t *entity,
-                        char *buf, int size),
+                        char *buf, int size,
+                        uint32_t mac, uint32_t header, uint32_t count),
     void *deliver_sdu_data,
     void (*deliver_pdu)(void *deliver_pdu_data, ue_id_t ue_id, int rb_id,
                         char *buf, int size, int sdu_id),
