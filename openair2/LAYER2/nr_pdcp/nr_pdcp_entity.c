@@ -234,12 +234,10 @@ static int nr_pdcp_entity_process_sdu(nr_pdcp_entity_t *entity,
     memset(buf + header_size + size, 0, 4);
   }
 
-  if (entity->has_ciphering && (entity->is_gnb || entity->security_mode_completed)) {
+  if (entity->has_ciphering) {
     entity->cipher(entity->security_context,
                    (unsigned char *)buf + header_size, size + integrity_size,
                    entity->rb_id, count, entity->is_gnb ? 1 : 0);
-  } else {
-    entity->security_mode_completed = true;
   }
 
   entity->tx_next++;
