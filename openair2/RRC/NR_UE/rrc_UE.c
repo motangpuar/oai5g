@@ -1181,6 +1181,9 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
 
   uint8_t kRRCenc[16] = {0};
   uint8_t kRRCint[16] = {0};
+  uint8_t kUPenc[16] = {0};
+  uint8_t kUPint[16] = {0};
+
   if (ue_rrc->as_security_activated) {
     if (radioBearerConfig->securityConfig != NULL) {
       // When the field is not included, continue to use the currently configured keyToUse
@@ -1197,6 +1200,8 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
     }
     nr_derive_key(RRC_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, kRRCenc);
     nr_derive_key(RRC_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, kRRCint);
+    nr_derive_key(UP_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, kUPenc);
+    nr_derive_key(UP_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, kUPint);
   }
 
   if (radioBearerConfig->srb_ToAddModList != NULL) {
@@ -1248,8 +1253,8 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
                 radioBearerConfig->drb_ToAddModList->list.array[cnt],
                 ue_rrc->cipheringAlgorithm,
                 ue_rrc->integrityProtAlgorithm,
-                kRRCenc,
-                kRRCint);
+                kUPenc,
+                kUPint);
       }
     }
   } // drb_ToAddModList //
