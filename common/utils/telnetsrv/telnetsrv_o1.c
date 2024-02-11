@@ -72,9 +72,8 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
   const gNB_MAC_INST *mac = RC.nrmac[0];
   AssertFatal(mac != NULL, "need MAC\n");
 
-  const gNB_RRC_INST *rrc = RC.nrrrc[0];
-  const gNB_RrcConfigurationReq *conf = &rrc->configuration;
-  AssertFatal(rrc != NULL, "need RRC\n");
+  const f1ap_setup_req_t *sr = mac->f1_config.setup_req;
+  const f1ap_served_cell_info_t *cell_info = &sr->cell[0].info;
 
   const NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
   const NR_FrequencyInfoDL_t *frequencyInfoDL = scc->downlinkConfigCommon->frequencyInfoDL;
@@ -159,15 +158,15 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
     prnt("      \"" ARFCNUL "\": %ld,\n", frequencyInfoUL->absoluteFrequencyPointA ? *frequencyInfoUL->absoluteFrequencyPointA : frequencyInfoDL->absoluteFrequencyPointA);
     prnt("      \"" BWUL "\": %ld,\n", bw_mhz);
     prnt("      \"" PCI "\": %ld,\n", *scc->physCellId);
-    prnt("      \"" TAC "\": %ld,\n", conf->tac);
-    prnt("      \"" MCC "\": \"%03d\",\n", conf->mcc[0]);
-    prnt("      \"" MNC "\": \"%0*d\",\n", conf->mnc_digit_length[0], conf->mnc[0]);
-    prnt("      \"" SD  "\": %d,\n", conf->sd);
-    prnt("      \"" SST "\": %d\n", conf->sst);
+    prnt("      \"" TAC "\": %ld,\n", *cell_info->tac);
+    prnt("      \"" MCC "\": \"%03d\",\n", cell_info->plmn.mcc);
+    prnt("      \"" MNC "\": \"%0*d\",\n", cell_info->plmn.mnc_digit_length, cell_info->plmn.mnc);
+    prnt("      \"" SD  "\": %d,\n", cell_info->sd);
+    prnt("      \"" SST "\": %d\n", cell_info->sst);
     prnt("    },\n");
     prnt("    \"device\": {\n");
-    prnt("      \"gnbId\": %d,\n", rrc->nr_cellid); // TODO something else, e.g., gnb_id?
-    prnt("      \"gnbName\": \"%s\",\n", rrc->node_name);
+    prnt("      \"gnbId\": %d,\n", sr->gNB_DU_id);
+    prnt("      \"gnbName\": \"%s\",\n", sr->gNB_DU_name);
     prnt("      \"vendor\": \"OpenAirInterface\"\n");
     prnt("    }\n");
     prnt("  },\n");
