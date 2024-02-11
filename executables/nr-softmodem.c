@@ -580,6 +580,7 @@ int stop_L1L2(module_id_t gnb_id)
   gNB_MAC_INST *mac = RC.nrmac[0];
   mac->f1_config.setup_resp = NULL;
   MessageDef *msg = itti_alloc_new_message (TASK_GNB_APP, 0, F1AP_LOST_CONNECTION);
+  msg->ittiMsgHeader.originInstance = -1;
   itti_send_msg_to_task (TASK_RRC_GNB, 0, msg);
 
   if (RC.nb_nr_L1_inst > 0)
