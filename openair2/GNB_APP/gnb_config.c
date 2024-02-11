@@ -1097,8 +1097,18 @@ static int read_du_cell_info(configmodule_interface_t *cfg,
               info->plmn.mnc_digit_length);
   info->nr_cellid = (uint64_t) * (GNBParamList.paramarray[0][GNB_NRCELLID_IDX].u64ptr);
 
-  LOG_W(GNB_APP, "no slices transported via F1 Setup Request!\n");
-  info->num_ssi = 0;
+  info->num_ssi = 1;
+  paramdef_t SNSSAIParams[] = GNBSNSSAIPARAMS_DESC;
+  checkedparam_t config_check_SNSSAIParams[] = SNSSAIPARAMS_CHECK;
+  for (int J = 0; J < sizeof(SNSSAIParams) / sizeof(paramdef_t); ++J)
+    SNSSAIParams[J].chkPptr = &(config_check_SNSSAIParams[J]);
+  paramlist_def_t SNSSAIParamList = {GNB_CONFIG_STRING_SNSSAI_LIST, NULL, 0};
+  char snssaistr[MAX_OPTNAME_SIZE * 2 + 8];
+  sprintf(snssaistr, "%s.[%i].%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, 0, GNB_CONFIG_STRING_PLMN_LIST, 0);
+  config_getlist(config_get_if(), &SNSSAIParamList, SNSSAIParams, sizeof(SNSSAIParams) / sizeof(paramdef_t), snssaistr);
+  AssertFatal(SNSSAIParamList.numelt == 1, "cannot handle no NSSAI or more than 1\n");
+  info->sst = *SNSSAIParamList.paramarray[0][GNB_SLICE_SERVICE_TYPE_IDX].uptr;
+  info->sd = *SNSSAIParamList.paramarray[0][GNB_SLICE_DIFFERENTIATOR_IDX].uptr;
 
   return 1;
 }
