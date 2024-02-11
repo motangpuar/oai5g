@@ -1103,7 +1103,7 @@ static int read_du_cell_info(configmodule_interface_t *cfg,
   return 1;
 }
 
-static f1ap_tdd_info_t read_tdd_config(const NR_ServingCellConfigCommon_t *scc)
+f1ap_tdd_info_t read_tdd_config(const NR_ServingCellConfigCommon_t *scc)
 {
   const NR_FrequencyInfoDL_t *dl = scc->downlinkConfigCommon->frequencyInfoDL;
   f1ap_tdd_info_t tdd = {

@@ -573,16 +573,7 @@ int stop_L1L2(module_id_t gnb_id)
     */
   }
 
-  /* these tasks need to pick up new configuration */
-  /*
-  terminate_task(TASK_RRC_GNB, gnb_id);
-  */
-  gNB_MAC_INST *mac = RC.nrmac[0];
-  mac->f1_config.setup_resp = NULL;
-  MessageDef *msg = itti_alloc_new_message (TASK_GNB_APP, 0, F1AP_LOST_CONNECTION);
-  msg->ittiMsgHeader.originInstance = -1;
-  itti_send_msg_to_task (TASK_RRC_GNB, 0, msg);
-
+  /* these tasks/layers need to pick up new configuration */
   if (RC.nb_nr_L1_inst > 0)
     stop_gNB(RC.nb_nr_L1_inst);
 
@@ -602,6 +593,7 @@ int stop_L1L2(module_id_t gnb_id)
   return 0;
 }
 
+extern f1ap_tdd_info_t read_tdd_config(const NR_ServingCellConfigCommon_t *scc);
 /*
  * Restart the nr-softmodem after it has been soft-stopped with stop_L1L2()
  */
@@ -635,24 +627,29 @@ int start_L1L2(module_id_t gnb_id)
   NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
   nr_mac_config_scc(mac, scc, &mac->radio_config);
 
-  /* send new F1 Setup Request to RRC */
-  NR_BCCH_BCH_Message_t *mib = mac->common_channels[0].mib;
-  NR_BCCH_DL_SCH_Message_t *sib1 = mac->common_channels[0].sib1;
-  f1ap_setup_req_t *old = mac->f1_config.setup_req;
-  const f1ap_served_cell_info_t *info = &old->cell[0].info;
-  f1ap_setup_req_t *req = RC_read_F1Setup(old->gNB_DU_id, old->gNB_DU_name, info, scc, mib, sib1);
-  AssertFatal(req != NULL, "could not read F1 Setup information\n");
-  RC.nrmac[0]->f1_config.setup_req = req;
-  nr_mac_send_f1_setup_req();
+  /* update existing config in F1 Setup request structures */
+  f1ap_setup_req_t *sr = mac->f1_config.setup_req;
+  DevAssert(sr->num_cells_available == 1);
+  f1ap_served_cell_info_t *info = &sr->cell[0].info;
+  DevAssert(info->mode == F1AP_MODE_TDD);
+  DevAssert(scc->tdd_UL_DL_ConfigurationCommon != NULL);
+  info->tdd = read_tdd_config(scc); /* updates radio config */
 
-  //wait_gNBs();
+  /* send gNB-DU configuration update to RRC */
+  f1ap_gnb_du_configuration_update_t update = {
+    .transaction_id = 1,
+    .num_cells_to_modify = 1,
+  };
+  update.cell_to_modify[0].old_nr_cellid = info->nr_cellid;
+  update.cell_to_modify[0].info = *info;
+  mac->mac_rrc.gnb_du_configuration_update(&update);
+
+  sleep(2);
+
   init_NR_RU(config_get_if(), NULL);
-  wait_f1_setup_response();
+
   start_NR_RU();
-  //ru->rf_map.carD = 0;
-  //ru->rf_map.chain = 0; /* CC_id + chain_offset;*/
   wait_RUs();
-  // TODO eNB->RU_list[ru_id]->common.rxdataF
   init_eNB_afterRU();
   printf("Sending sync to all threads\n");
   pthread_mutex_lock(&sync_mutex);
