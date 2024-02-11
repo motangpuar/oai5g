@@ -169,12 +169,11 @@ void rrc_gNB_process_f1_setup_req(f1ap_setup_req_t *req, sctp_assoc_t assoc_id)
   du->setup_req = calloc(1,sizeof(*du->setup_req));
   AssertFatal(du->setup_req != NULL, "out of memory\n");
   *du->setup_req = *req;
-  if (mib != NULL && sib1 != NULL) {
-    du->mib = mib->message.choice.mib;
-    mib->message.choice.mib = NULL;
-    ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_MessageType, mib);
-    du->sib1 = sib1;
-  }
+  DevAssert(mib != NULL);
+  du->mib = mib->message.choice.mib;
+  mib->message.choice.mib = NULL;
+  ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_MessageType, mib);
+  du->sib1 = sib1;
   RB_INSERT(rrc_du_tree, &rrc->dus, du);
   rrc->num_dus++;
 
