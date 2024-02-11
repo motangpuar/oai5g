@@ -248,7 +248,7 @@ void rrc_gNB_process_f1_du_configuration_update(f1ap_gnb_du_configuration_update
   // else reject
 
   nr_rrc_du_container_t *du = get_du_by_assoc_id(rrc, assoc_id);
-  AssertError(du == NULL, return, "no DU found for assoc_id %d\n", assoc_id);
+  AssertError(du != NULL, return, "no DU found for assoc_id %d\n", assoc_id);
 
   const f1ap_served_cell_info_t *info = &du->setup_req->cell[0].info;
   if(conf_up->num_cells_to_add > 0){
