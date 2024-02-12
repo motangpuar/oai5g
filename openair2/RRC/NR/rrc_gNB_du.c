@@ -48,25 +48,24 @@ static bool rrc_gNB_plmn_matches(const gNB_RRC_INST *rrc, const f1ap_served_cell
     && conf->mnc[0] == info->plmn.mnc;
 }
 
-static bool extract_sys_info(const f1ap_gnb_du_system_info_t *sys_info, NR_BCCH_BCH_Message_t **mib, NR_SIB1_t **sib1)
+static bool extract_sys_info(const f1ap_gnb_du_system_info_t *sys_info, NR_MIB_t **mib, NR_SIB1_t **sib1)
 {
   DevAssert(sys_info != NULL);
   DevAssert(mib != NULL);
   DevAssert(sib1 != NULL);
 
   asn_dec_rval_t dec_rval =
-      uper_decode_complete(NULL, &asn_DEF_NR_BCCH_BCH_Message, (void **)mib, sys_info->mib, sys_info->mib_length);
-  if (dec_rval.code != RC_OK || (*mib)->message.present != NR_BCCH_BCH_MessageType_PR_mib
-      || (*mib)->message.choice.messageClassExtension == NULL) {
-    LOG_E(RRC, "Failed to decode NR_BCCH_BCH_MESSAGE (%zu bits) of DU\n", dec_rval.consumed);
-    ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_Message, *mib);
+      uper_decode_complete(NULL, &asn_DEF_NR_MIB, (void **)mib, sys_info->mib, sys_info->mib_length);
+  if (dec_rval.code != RC_OK) {
+    LOG_E(RRC, "Failed to decode NR_MIB (%zu bits) of DU\n", dec_rval.consumed);
+    ASN_STRUCT_FREE(asn_DEF_NR_MIB, *mib);
     return false;
   }
 
   if (sys_info->sib1) {
     dec_rval = uper_decode_complete(NULL, &asn_DEF_NR_SIB1, (void **)sib1, sys_info->sib1, sys_info->sib1_length);
     if (dec_rval.code != RC_OK) {
-      ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_Message, *mib);
+      ASN_STRUCT_FREE(asn_DEF_NR_MIB, *mib);
       ASN_STRUCT_FREE(asn_DEF_NR_SIB1, *sib1);
       LOG_E(RRC, "Failed to decode NR_SIB1 (%zu bits), rejecting DU\n", dec_rval.consumed);
       return false;
@@ -74,7 +73,7 @@ static bool extract_sys_info(const f1ap_gnb_du_system_info_t *sys_info, NR_BCCH_
   }
 
   if (LOG_DEBUGFLAG(DEBUG_ASN1))
-    xer_fprint(stdout, &asn_DEF_NR_BCCH_BCH_Message, *mib);
+    xer_fprint(stdout, &asn_DEF_NR_MIB, *mib);
   if (LOG_DEBUGFLAG(DEBUG_ASN1))
     xer_fprint(stdout, &asn_DEF_NR_SIB1, *sib1);
 
@@ -144,7 +143,7 @@ void rrc_gNB_process_f1_setup_req(f1ap_setup_req_t *req, sctp_assoc_t assoc_id)
   }
 
   const f1ap_gnb_du_system_info_t *sys_info = req->cell[0].sys_info;
-  NR_BCCH_BCH_Message_t *mib = NULL;
+  NR_MIB_t *mib = NULL;
   NR_SIB1_t *sib1 = NULL;
 
   if (sys_info != NULL && sys_info->mib != NULL && !(sys_info->sib1 == NULL && get_softmodem_params()->sa)) {
@@ -171,9 +170,7 @@ void rrc_gNB_process_f1_setup_req(f1ap_setup_req_t *req, sctp_assoc_t assoc_id)
   *du->setup_req = *req;
   // MIB can be null and configured later via DU Configuration Update
   if (mib != NULL){
-    du->mib = mib->message.choice.mib;
-    mib->message.choice.mib = NULL;
-    ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_MessageType, mib);
+    du->mib = mib;
   }
   du->sib1 = sib1;
   RB_INSERT(rrc_du_tree, &rrc->dus, du);
@@ -284,14 +281,12 @@ void rrc_gNB_process_f1_du_configuration_update(f1ap_gnb_du_configuration_update
       if (sys_info->sib1 != NULL)
         ASN_STRUCT_FREE(asn_DEF_NR_SIB1, du->sib1);
 
-      NR_BCCH_BCH_Message_t *mib = NULL;
+      NR_MIB_t *mib = NULL;
       if (!extract_sys_info(sys_info, &mib, &du->sib1)) {
         LOG_W(RRC, "cannot update sys_info for DU %ld\n", du->setup_req->gNB_DU_id);
       } else {
         DevAssert(mib != NULL);
-        du->mib = mib->message.choice.mib;
-        mib->message.choice.mib = NULL;
-        ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_MessageType, mib);
+        du->mib = mib;
         LOG_I(RRC, "update system information of DU %ld\n", du->setup_req->gNB_DU_id);
       }
     }
