@@ -167,17 +167,17 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   scc->ssbSubcarrierSpacing                      = CALLOC(1,sizeof(NR_SubcarrierSpacing_t));
   scc->tdd_UL_DL_ConfigurationCommon             = CALLOC(1,sizeof(struct NR_TDD_UL_DL_ConfigCommon));
   scc->tdd_UL_DL_ConfigurationCommon->pattern2   = CALLOC(1,sizeof(struct NR_TDD_UL_DL_Pattern));
-  
+
   scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencySSB     = CALLOC(1,sizeof(NR_ARFCN_ValueNR_t));
-  
+
   dl_frequencyBandList              = CALLOC(1,sizeof(NR_FreqBandIndicatorNR_t));
   dl_scs_SpecificCarrierList        = CALLOC(1,sizeof(struct NR_SCS_SpecificCarrier));
 
-  asn1cSeqAdd(&scc->downlinkConfigCommon->frequencyInfoDL->frequencyBandList.list,dl_frequencyBandList);  
-  asn1cSeqAdd(&scc->downlinkConfigCommon->frequencyInfoDL->scs_SpecificCarrierList.list,dl_scs_SpecificCarrierList);		   		   
+  asn1cSeqAdd(&scc->downlinkConfigCommon->frequencyInfoDL->frequencyBandList.list,dl_frequencyBandList);
+  asn1cSeqAdd(&scc->downlinkConfigCommon->frequencyInfoDL->scs_SpecificCarrierList.list,dl_scs_SpecificCarrierList);
   //  scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters.cyclicPrefix    = CALLOC(1,sizeof(long));
   scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon                = CALLOC(1,sizeof(struct NR_SetupRelease_PDCCH_ConfigCommon));
-  scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon->present=NR_SetupRelease_PDCCH_ConfigCommon_PR_setup; 
+  scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon->present=NR_SetupRelease_PDCCH_ConfigCommon_PR_setup;
   scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon->choice.setup  = CALLOC(1,sizeof(struct NR_PDCCH_ConfigCommon));
   scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon->choice.setup->controlResourceSetZero    = CALLOC(1,sizeof(long));
   scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon->choice.setup->searchSpaceZero           = CALLOC(1,sizeof(long));
@@ -202,7 +202,7 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   //  scc->uplinkConfigCommon->frequencyInfoUL->additionalSpectrumEmission = CALLOC(1,sizeof(NR_AdditionalSpectrumEmission_t));
   scc->uplinkConfigCommon->frequencyInfoUL->p_Max                      = CALLOC(1,sizeof(NR_P_Max_t));
   //  scc->uplinkConfigCommon->frequencyInfoUL->frequencyShift7p5khz       = CALLOC(1,sizeof(long));
-  
+
   //  scc->uplinkConfigCommon->initialUplinkBWP->genericParameters.cyclicPrefix    = CALLOC(1,sizeof(long));
   scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon                 = CALLOC(1,sizeof(NR_SetupRelease_RACH_ConfigCommon_t));
   scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->present = NR_SetupRelease_RACH_ConfigCommon_PR_setup;
@@ -216,17 +216,17 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup->msg3_transformPrecoder       = CALLOC(1,sizeof(long));
   // 0 - ENABLE, 1 - DISABLE, hence explicitly setting to DISABLED.
   *scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup->msg3_transformPrecoder       = NR_PUSCH_Config__transformPrecoder_disabled;
-  scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon                 = CALLOC(1,sizeof(NR_SetupRelease_PUSCH_ConfigCommon_t)); 
+  scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon                 = CALLOC(1,sizeof(NR_SetupRelease_PUSCH_ConfigCommon_t));
   scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->present        = NR_SetupRelease_PUSCH_ConfigCommon_PR_setup;
   scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup   = CALLOC(1,sizeof(struct NR_PUSCH_ConfigCommon));
 
   scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->groupHoppingEnabledTransformPrecoding = NULL;
-  
+
   scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->pusch_TimeDomainAllocationList  = CALLOC(1,sizeof(struct NR_PUSCH_TimeDomainResourceAllocationList));
   scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->msg3_DeltaPreamble              = CALLOC(1,sizeof(long));
   scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->p0_NominalWithGrant             = CALLOC(1,sizeof(long));
-  
-  scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon                                                = CALLOC(1,sizeof(struct NR_SetupRelease_PUCCH_ConfigCommon)); 
+
+  scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon                                                = CALLOC(1,sizeof(struct NR_SetupRelease_PUCCH_ConfigCommon));
   scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->present= NR_SetupRelease_PUCCH_ConfigCommon_PR_setup;
   scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup                                  = CALLOC(1,sizeof(struct NR_PUCCH_ConfigCommon));
   scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->p0_nominal                      = CALLOC(1,sizeof(long));
@@ -236,7 +236,7 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   //  scc->ssb_PositionsInBurst->choice.shortBitmap.buf  = MALLOC(1);
   //  scc->ssb_PositionsInBurst->choice.mediumBitmap.buf = MALLOC(1);
   //  scc->ssb_PositionsInBurst->choice.longBitmap.buf   = MALLOC(8);
-  
+
 
   ul_scs_SpecificCarrierList  = CALLOC(1,sizeof(struct NR_SCS_SpecificCarrier));
   asn1cSeqAdd(&scc->uplinkConfigCommon->frequencyInfoUL->scs_SpecificCarrierList.list,ul_scs_SpecificCarrierList);
@@ -256,7 +256,7 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   //ratematchpattern->patternType.choice.bitmaps->periodicityAndPattern->choice.n40.buf       = MALLOC(5);
   //ratematchpattern->subcarrierSpacing           = CALLOC(1,sizeof(NR_SubcarrierSpacing_t));
   //ratematchpatternid                            = CALLOC(1,sizeof(NR_RateMatchPatternId_t));
-  
+
 }
 
 void fill_scc_sim(NR_ServingCellConfigCommon_t *scc,uint64_t *ssb_bitmap,int N_RB_DL,int N_RB_UL,int mu_dl,int mu_ul) {
@@ -330,7 +330,7 @@ void fill_scc_sim(NR_ServingCellConfigCommon_t *scc,uint64_t *ssb_bitmap,int N_R
   asn1cSeqAdd(&scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->pusch_TimeDomainAllocationList->list,pusch_timedomainresourceallocation1);
   *scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->msg3_DeltaPreamble=1;
   *scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->p0_NominalWithGrant=-90;
- scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->pucch_GroupHopping=NR_PUCCH_ConfigCommon__pucch_GroupHopping_neither; 
+ scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->pucch_GroupHopping=NR_PUCCH_ConfigCommon__pucch_GroupHopping_neither;
  *scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->hoppingId=40;
  *scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->p0_nominal=-90;
  scc->ssb_PositionsInBurst->present=NR_ServingCellConfigCommon__ssb_PositionsInBurst_PR_mediumBitmap;
@@ -375,7 +375,7 @@ void fix_scc(NR_ServingCellConfigCommon_t *scc,uint64_t ssbmap) {
         curr_bit = 0;
       else
         curr_bit = (ssbmap>>(7-i))&0x01;
-      scc->ssb_PositionsInBurst->choice.shortBitmap.buf[0] |= curr_bit<<i;   
+      scc->ssb_PositionsInBurst->choice.shortBitmap.buf[0] |= curr_bit<<i;
     }
   }else if(ssbmaplen==NR_ServingCellConfigCommon__ssb_PositionsInBurst_PR_mediumBitmap){
     scc->ssb_PositionsInBurst->choice.mediumBitmap.size = 1;
@@ -383,7 +383,7 @@ void fix_scc(NR_ServingCellConfigCommon_t *scc,uint64_t ssbmap) {
     scc->ssb_PositionsInBurst->choice.mediumBitmap.buf = CALLOC(1,1);
     scc->ssb_PositionsInBurst->choice.mediumBitmap.buf[0] = 0;
     for (int i=0; i<8; i++)
-      scc->ssb_PositionsInBurst->choice.mediumBitmap.buf[0] |= (((ssbmap>>(7-i))&0x01)<<i); 
+      scc->ssb_PositionsInBurst->choice.mediumBitmap.buf[0] |= (((ssbmap>>(7-i))&0x01)<<i);
   }else {
     scc->ssb_PositionsInBurst->choice.longBitmap.size = 8;
     scc->ssb_PositionsInBurst->choice.longBitmap.bits_unused = 0;
@@ -570,7 +570,7 @@ void fix_scd(NR_ServingCellConfig_t *scd) {
   for (int bwp_i = 0 ; bwp_i<scd->downlinkBWP_ToAddModList->list.count; bwp_i++) {
 
     NR_DMRS_DownlinkConfig_t *dmrs_dl_config = scd->downlinkBWP_ToAddModList->list.array[bwp_i]->bwp_Dedicated->pdsch_Config->choice.setup->dmrs_DownlinkForPDSCH_MappingTypeA->choice.setup;
-    
+
     if (dmrs_dl_config->phaseTrackingRS) {
       // If any of the frequencyDensity values are not set or are out of bounds, PTRS is assumed to be not present
       for (int i = dmrs_dl_config->phaseTrackingRS->choice.setup->frequencyDensity->list.count - 1; i >= 0; i--) {
@@ -615,7 +615,7 @@ void fix_scd(NR_ServingCellConfig_t *scd) {
   for (int bwp_i = 0 ; bwp_i<scd->uplinkConfig->uplinkBWP_ToAddModList->list.count; bwp_i++) {
 
     NR_DMRS_UplinkConfig_t *dmrs_ul_config = scd->uplinkConfig->uplinkBWP_ToAddModList->list.array[bwp_i]->bwp_Dedicated->pusch_Config->choice.setup->dmrs_UplinkForPUSCH_MappingTypeB->choice.setup;
-    
+
     if (dmrs_ul_config->phaseTrackingRS) {
       // If any of the frequencyDensity values are not set or are out of bounds, PTRS is assumed to be not present
       for (int i = dmrs_ul_config->phaseTrackingRS->choice.setup->transformPrecoderDisabled->frequencyDensity->list.count-1; i >= 0; i--) {
@@ -760,7 +760,7 @@ void RCconfig_nr_prs(void)
         for (int l = 0; l < PRS_ParamList.paramarray[j][PRS_MUTING_PATTERN1_LIST].numelt; l++)
         {
           prs_config->MutingPattern1[l]      = PRS_ParamList.paramarray[j][PRS_MUTING_PATTERN1_LIST].uptr[l];
-          if (k == 0) // print only for 0th resource 
+          if (k == 0) // print only for 0th resource
             snprintf(str[5]+strlen(str[5]),sizeof(str[5])-strlen(str[5]),"%d, ",prs_config->MutingPattern1[l]);
         }
         for (int l = 0; l < PRS_ParamList.paramarray[j][PRS_MUTING_PATTERN2_LIST].numelt; l++)
@@ -1181,7 +1181,8 @@ static f1ap_setup_req_t *RC_read_F1Setup(uint64_t id,
     sys_info->mib = calloc(buf_len, sizeof(*sys_info->mib));
     DevAssert(sys_info->mib != NULL);
     DevAssert(mib != NULL);
-    sys_info->mib_length = encode_MIB_NR(mib, 0, sys_info->mib, buf_len);
+    //encode only the mib message itself
+    sys_info->mib_length = encode_MIB_NR_setup(mib->message.choice.mib, 0, sys_info->mib, buf_len);
     DevAssert(sys_info->mib_length == buf_len);
 
     DevAssert(sib1 != NULL);
@@ -1563,7 +1564,7 @@ void RCconfig_NRRRC(gNB_RRC_INST *rrc)
     config_getlist(config_get_if(), &GNBParamList, GNBParams, sizeofArray(GNBParams), NULL);
     if (GNBParamList.paramarray[i][GNB_GNB_ID_IDX].uptr == NULL) {
     // Calculate a default gNB ID
-      if (get_softmodem_params()->sa) { 
+      if (get_softmodem_params()->sa) {
         uint32_t hash;
         hash = ngap_generate_gNB_id ();
         gnb_id = i + (hash & 0xFFFFFF8);
@@ -1598,12 +1599,12 @@ void RCconfig_NRRRC(gNB_RRC_INST *rrc)
       rrc->eth_params_s.transp_preference        = ETH_UDP_MODE;
     }
 
-   
+
 
     rrc->nr_cellid        = (uint64_t)*(GNBParamList.paramarray[i][GNB_NRCELLID_IDX].u64ptr);
 
     if (strcmp(*(GNBParamList.paramarray[i][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr), "local_mac") == 0) {
-      
+
     } else if (strcmp(*(GNBParamList.paramarray[i][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr), "cudu") == 0) {
       rrc->eth_params_s.local_if_name            = strdup(*(GNBParamList.paramarray[i][GNB_LOCAL_S_IF_NAME_IDX].strptr));
       rrc->eth_params_s.my_addr                  = strdup(*(GNBParamList.paramarray[i][GNB_LOCAL_S_ADDRESS_IDX].strptr));
@@ -1614,18 +1615,18 @@ void RCconfig_NRRRC(gNB_RRC_INST *rrc)
       rrc->eth_params_s.remote_portd             = *(GNBParamList.paramarray[i][GNB_REMOTE_S_PORTD_IDX].uptr);
       rrc->eth_params_s.transp_preference        = ETH_UDP_MODE;
     } else { // other midhaul
-    }       
-    
+    }
+
     // search if in active list
-    
+
     gNB_RrcConfigurationReq nrrrc_config = {0};
     for (k=0; k <num_gnbs ; k++) {
       if (strcmp(GNBSParams[GNB_ACTIVE_GNBS_IDX].strlistptr[k], *(GNBParamList.paramarray[i][GNB_GNB_NAME_IDX].strptr) )== 0) {
-	
+
         char gnbpath[MAX_OPTNAME_SIZE + 8];
         sprintf(gnbpath,"%s.[%i]",GNB_CONFIG_STRING_GNB_LIST,k);
 
-	
+
         paramdef_t PLMNParams[] = GNBPLMNPARAMS_DESC;
 
         paramlist_def_t PLMNParamList = {GNB_CONFIG_STRING_PLMN_LIST, NULL, 0};
@@ -1654,7 +1655,7 @@ void RCconfig_NRRRC(gNB_RRC_INST *rrc)
         nrrrc_config.num_plmn = PLMNParamList.numelt;
 
         for (int l = 0; l < PLMNParamList.numelt; ++l) {
-	
+
 	  nrrrc_config.mcc[l]               = *PLMNParamList.paramarray[l][GNB_MOBILE_COUNTRY_CODE_IDX].uptr;
 	  nrrrc_config.mnc[l]               = *PLMNParamList.paramarray[l][GNB_MOBILE_NETWORK_CODE_IDX].uptr;
 	  nrrrc_config.mnc_digit_length[l]  = *PLMNParamList.paramarray[l][GNB_MNC_DIGIT_LENGTH].u8ptr;
@@ -1685,7 +1686,7 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
   char             *address                       = NULL;
   char             *cidr                          = NULL;
 
-  // for no gcc warnings 
+  // for no gcc warnings
 
   (void)  my_int;
 
@@ -1705,8 +1706,8 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
   AssertFatal (i<GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt,
      "Failed to parse config file %s, %uth attribute %s \n",
      RC.config_file_name, i, GNB_CONFIG_STRING_ACTIVE_GNBS);
-    
-  
+
+
   if (GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt>0) {
     // Output a list of all gNBs.
     config_getlist(config_get_if(), &GNBParamList, GNBParams, sizeofArray(GNBParams), NULL);
@@ -1716,7 +1717,7 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
           // Calculate a default gNB ID
           if (get_softmodem_params()->sa) {
             uint32_t hash;
-          
+
           hash = ngap_generate_gNB_id ();
           gnb_id = k + (hash & 0xFFFFFF8);
           } else {
@@ -1725,8 +1726,8 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
         } else {
           gnb_id = *(GNBParamList.paramarray[k][GNB_GNB_ID_IDX].uptr);
         }
-  
-  
+
+
         // search if in active list
         for (j=0; j < GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt; j++) {
           if (strcmp(GNBSParams[GNB_ACTIVE_GNBS_IDX].strlistptr[j], *(GNBParamList.paramarray[k][GNB_GNB_NAME_IDX].strptr)) == 0) {
@@ -1745,14 +1746,14 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
 
             paramdef_t NGParams[]  = GNBNGPARAMS_DESC;
             paramlist_def_t NGParamList = {GNB_CONFIG_STRING_AMF_IP_ADDRESS,NULL,0};
-            
+
             paramdef_t SCTPParams[]  = GNBSCTPPARAMS_DESC;
             paramdef_t NETParams[]  =  GNBNETPARAMS_DESC;
             char aprefix[MAX_OPTNAME_SIZE*2 + 8];
             sprintf(aprefix, "%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, k);
-            
+
             NGAP_REGISTER_GNB_REQ (msg_p).gNB_id = gnb_id;
-            
+
             if (strcmp(*(GNBParamList.paramarray[k][GNB_CELL_TYPE_IDX].strptr), "CELL_MACRO_GNB") == 0) {
               NGAP_REGISTER_GNB_REQ (msg_p).cell_type = CELL_MACRO_GNB;
             } else  if (strcmp(*(GNBParamList.paramarray[k][GNB_CELL_TYPE_IDX].strptr), "CELL_HOME_GNB") == 0) {
@@ -1762,7 +1763,7 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
               "Failed to parse gNB configuration file %s, gnb %u unknown value \"%s\" for cell_type choice: CELL_MACRO_GNB or CELL_HOME_GNB !\n",
               RC.config_file_name, i, *(GNBParamList.paramarray[k][GNB_CELL_TYPE_IDX].strptr));
             }
-            
+
             NGAP_REGISTER_GNB_REQ (msg_p).gNB_name         = strdup(*(GNBParamList.paramarray[k][GNB_GNB_NAME_IDX].strptr));
             NGAP_REGISTER_GNB_REQ (msg_p).tac              = *GNBParamList.paramarray[k][GNB_TRACKING_AREA_CODE_IDX].uptr;
             AssertFatal(!GNBParamList.paramarray[k][GNB_MOBILE_COUNTRY_CODE_IDX_OLD].strptr
@@ -1810,16 +1811,16 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
             config_getlist(config_get_if(), &NGParamList, NGParams, sizeofArray(NGParams), aprefix);
 
             NGAP_REGISTER_GNB_REQ (msg_p).nb_amf = 0;
-            
+
             for (int l = 0; l < NGParamList.numelt; l++) {
-              
+
               NGAP_REGISTER_GNB_REQ (msg_p).nb_amf += 1;
-              
+
               strcpy(NGAP_REGISTER_GNB_REQ (msg_p).amf_ip_address[l].ipv4_address,*(NGParamList.paramarray[l][GNB_AMF_IPV4_ADDRESS_IDX].strptr));
               strcpy(NGAP_REGISTER_GNB_REQ (msg_p).amf_ip_address[l].ipv6_address,*(NGParamList.paramarray[l][GNB_AMF_IPV6_ADDRESS_IDX].strptr));
 
               if (strcmp(*(NGParamList.paramarray[l][GNB_AMF_IP_ADDRESS_ACTIVE_IDX].strptr), "yes") == 0) {
-              } 
+              }
               if (strcmp(*(NGParamList.paramarray[l][GNB_AMF_IP_ADDRESS_PREFERENCE_IDX].strptr), "ipv4") == 0) {
                 NGAP_REGISTER_GNB_REQ (msg_p).amf_ip_address[j].ipv4 = 1;
               } else if (strcmp(*(NGParamList.paramarray[l][GNB_AMF_IP_ADDRESS_PREFERENCE_IDX].strptr), "ipv6") == 0) {
@@ -1859,10 +1860,10 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
                 for (int el = 0; el < NGAP_REGISTER_GNB_REQ(msg_p).num_plmn; ++el)
                   NGAP_REGISTER_GNB_REQ(msg_p).broadcast_plmn_index[l][el] = el;
               }
-              
+
             }
 
-          
+
             // SCTP SETTING
             NGAP_REGISTER_GNB_REQ (msg_p).sctp_out_streams = SCTP_OUT_STREAMS;
             NGAP_REGISTER_GNB_REQ (msg_p).sctp_in_streams  = SCTP_IN_STREAMS;
@@ -1881,12 +1882,12 @@ int RCconfig_NR_NG(MessageDef *msg_p, uint32_t i) {
             cidr = *(NETParams[GNB_IPV4_ADDRESS_FOR_NG_AMF_IDX].strptr);
             char *save = NULL;
             address = strtok_r(cidr, "/", &save);
-            
+
             NGAP_REGISTER_GNB_REQ (msg_p).gnb_ip_address.ipv6 = 0;
             NGAP_REGISTER_GNB_REQ (msg_p).gnb_ip_address.ipv4 = 1;
-            
+
             strcpy(NGAP_REGISTER_GNB_REQ (msg_p).gnb_ip_address.ipv4_address, address);
-            
+
             break;
           }
         }
@@ -1931,7 +1932,7 @@ void NRRCConfig(void) {
   paramlist_def_t L1ParamList     = {CONFIG_STRING_L1_LIST,NULL,0};
   paramlist_def_t RUParamList     = {CONFIG_STRING_RU_LIST,NULL,0};
   paramdef_t GNBSParams[]         = GNBSPARAMS_DESC;
-  
+
 /* get global parameters, defined outside any section in the config file */
 
   LOG_I(GNB_APP, "Getting GNBSParams\n");
@@ -1945,13 +1946,13 @@ void NRRCConfig(void) {
   // Get num L1 instances
   config_getlist(config_get_if(), &L1ParamList, NULL, 0, NULL);
   RC.nb_nr_L1_inst = L1ParamList.numelt;
-  
+
   // Get num RU instances
   config_getlist(config_get_if(), &RUParamList, NULL, 0, NULL);
-  RC.nb_RU     = RUParamList.numelt; 
-  
+  RC.nb_RU     = RUParamList.numelt;
+
   RCconfig_nr_parallel();
-    
+
 
 }
 
@@ -2230,7 +2231,7 @@ int gNB_app_handle_f1ap_gnb_cu_configuration_update(f1ap_gnb_cu_configuration_up
     // generate gNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE
     msg_ack_p = itti_alloc_new_message (TASK_GNB_APP, 0, F1AP_GNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE);
     F1AP_GNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE(msg_ack_p).num_cells_failed_to_be_activated = 0;
-    F1AP_GNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE(msg_ack_p).have_criticality = 0; 
+    F1AP_GNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE(msg_ack_p).have_criticality = 0;
     F1AP_GNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE(msg_ack_p).noofTNLAssociations_to_setup =0;
     F1AP_GNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE(msg_ack_p).noofTNLAssociations_failed = 0;
     F1AP_GNB_CU_CONFIGURATION_UPDATE_ACKNOWLEDGE(msg_ack_p).noofDedicatedSIDeliveryNeededUEs = 0;
@@ -2260,7 +2261,7 @@ ngran_node_t get_node_type(void)
 
   config_getlist(config_get_if(), &GNBParamList, GNBParams, sizeofArray(GNBParams), NULL);
 
-  if (GNBParamList.numelt == 0) // We have no valid configuration, let's return a default 
+  if (GNBParamList.numelt == 0) // We have no valid configuration, let's return a default
     return ngran_gNB;
 
   config_getlist(config_get_if(), &MacRLC_ParamList, MacRLC_Params, sizeofArray(MacRLC_Params), NULL);
@@ -2268,7 +2269,7 @@ ngran_node_t get_node_type(void)
   sprintf(aprefix, "%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, 0);
   config_getlist(config_get_if(), &GNBE1ParamList, GNBE1Params, sizeofArray(GNBE1Params), aprefix);
   if ( MacRLC_ParamList.numelt > 0) {
-    RC.nb_nr_macrlc_inst = MacRLC_ParamList.numelt; 
+    RC.nb_nr_macrlc_inst = MacRLC_ParamList.numelt;
     for (int j = 0; j < RC.nb_nr_macrlc_inst; j++) {
       if (strcmp(*(MacRLC_ParamList.paramarray[j][MACRLC_TRANSPORT_N_PREFERENCE_IDX].strptr), "f1") == 0) {
         return ngran_gNB_DU; // MACRLCs present in config: it must be a DU

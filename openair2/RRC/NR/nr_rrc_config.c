@@ -842,7 +842,7 @@ void nr_rrc_config_ul_tda(NR_ServingCellConfigCommon_t *scc, int min_fb_delay){
   *pusch_timedomainresourceallocation->k2 = k2;
   pusch_timedomainresourceallocation->mappingType = NR_PUSCH_TimeDomainResourceAllocation__mappingType_typeB;
   pusch_timedomainresourceallocation->startSymbolAndLength = get_SLIV(0, 13);
-  asn1cSeqAdd(&scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->pusch_TimeDomainAllocationList->list,pusch_timedomainresourceallocation); 
+  asn1cSeqAdd(&scc->uplinkConfigCommon->initialUplinkBWP->pusch_ConfigCommon->choice.setup->pusch_TimeDomainAllocationList->list,pusch_timedomainresourceallocation);
 
   // UL TDA index 1 in case of SRS
   struct NR_PUSCH_TimeDomainResourceAllocation *pusch_timedomainresourceallocation1 = CALLOC(1,sizeof(struct NR_PUSCH_TimeDomainResourceAllocation));
@@ -1843,6 +1843,18 @@ int encode_MIB_NR(NR_BCCH_BCH_Message_t *mib, int frame, uint8_t *buf, int buf_s
   return (enc_rval.encoded + 7) / 8;
 }
 
+int encode_MIB_NR_setup(NR_MIB_t *mib, int frame, uint8_t *buf, int buf_size)
+{
+  DevAssert(mib != NULL);
+  uint8_t sfn_msb = (uint8_t)((frame >> 4) & 0x3f);
+  *mib->systemFrameNumber.buf = sfn_msb << 2;
+
+  asn_enc_rval_t enc_rval = uper_encode_to_buffer(&asn_DEF_NR_MIB, NULL, mib, buf, buf_size);
+  AssertFatal(enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n", enc_rval.failed_type->name, enc_rval.encoded);
+  LOG_D(NR_RRC, "Encoded MIB for frame %d sfn_msb %d, bits %lu\n", frame, sfn_msb, enc_rval.encoded);
+  return (enc_rval.encoded + 7) / 8;
+}
+
 NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc, const f1ap_plmn_t *plmn, uint64_t cellID, int tac)
 {
   AssertFatal(cellID < (1l << 36), "cellID must fit within 36 bits, but is %ld\n", cellID);
@@ -1961,7 +1973,7 @@ NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc, c
   LOG_I(NR_RRC,
 	"SIB1 freq: offsetToPointA %d\n",
         (int)sib1->servingCellConfigCommon->downlinkConfigCommon.frequencyInfoDL.offsetToPointA);
-  
+
   for (int i = 0; i < frequencyInfoDL->scs_SpecificCarrierList.list.count; i++) {
     asn1cSeqAdd(&ServCellCom->downlinkConfigCommon.frequencyInfoDL.scs_SpecificCarrierList.list,
                 frequencyInfoDL->scs_SpecificCarrierList.list.array[i]);
@@ -2452,7 +2464,7 @@ NR_CellGroupConfig_t *get_initial_cellGroupConfig(int uid,
 
   /* mac CellGroup Config */
   cellGroupConfig->mac_CellGroupConfig = configure_mac_cellgroup();
-  
+
   cellGroupConfig->physicalCellGroupConfig = configure_phy_cellgroup();
 
   cellGroupConfig->spCellConfig = get_initial_SpCellConfig(uid, scc, servingcellconfigdedicated, configuration);
