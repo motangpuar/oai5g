@@ -169,10 +169,12 @@ void rrc_gNB_process_f1_setup_req(f1ap_setup_req_t *req, sctp_assoc_t assoc_id)
   du->setup_req = calloc(1,sizeof(*du->setup_req));
   AssertFatal(du->setup_req != NULL, "out of memory\n");
   *du->setup_req = *req;
-  DevAssert(mib != NULL);
-  du->mib = mib->message.choice.mib;
-  mib->message.choice.mib = NULL;
-  ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_MessageType, mib);
+  // MIB can be null and configured later via DU Configuration Update
+  if (mib != NULL){
+    du->mib = mib->message.choice.mib;
+    mib->message.choice.mib = NULL;
+    ASN_STRUCT_FREE(asn_DEF_NR_BCCH_BCH_MessageType, mib);
+  }
   du->sib1 = sib1;
   RB_INSERT(rrc_du_tree, &rrc->dus, du);
   rrc->num_dus++;
@@ -182,7 +184,7 @@ void rrc_gNB_process_f1_setup_req(f1ap_setup_req_t *req, sctp_assoc_t assoc_id)
       .nr_cellid = cell_info->nr_cellid,
       .nrpci = cell_info->nr_pci,
       .num_SI = 0,
-  };  
+  };
 
   f1ap_setup_resp_t resp = {.transaction_id = req->transaction_id,
                             .num_cells_to_activate = 1,
