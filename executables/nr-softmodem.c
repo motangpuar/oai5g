@@ -594,6 +594,7 @@ int stop_L1L2(module_id_t gnb_id)
 }
 
 extern f1ap_tdd_info_t read_tdd_config(const NR_ServingCellConfigCommon_t *scc);
+extern f1ap_gnb_du_system_info_t *get_sys_info(NR_BCCH_BCH_Message_t *mib, const NR_BCCH_DL_SCH_Message_t *sib1);
 /*
  * Restart the nr-softmodem after it has been soft-stopped with stop_L1L2()
  */
@@ -627,6 +628,9 @@ int start_L1L2(module_id_t gnb_id)
   NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
   nr_mac_config_scc(mac, scc, &mac->radio_config);
 
+  NR_BCCH_BCH_Message_t *mib = mac->common_channels[0].mib;
+  const NR_BCCH_DL_SCH_Message_t *sib1 = mac->common_channels[0].sib1;
+
   /* update existing config in F1 Setup request structures */
   f1ap_setup_req_t *sr = mac->f1_config.setup_req;
   DevAssert(sr->num_cells_available == 1);
@@ -642,9 +646,10 @@ int start_L1L2(module_id_t gnb_id)
   };
   update.cell_to_modify[0].old_nr_cellid = info->nr_cellid;
   update.cell_to_modify[0].info = *info;
+  update.cell_to_modify[0].sys_info = get_sys_info(mib, sib1);
   mac->mac_rrc.gnb_du_configuration_update(&update);
 
-  sleep(2);
+  //sleep(2);
 
   init_NR_RU(config_get_if(), NULL);
 
