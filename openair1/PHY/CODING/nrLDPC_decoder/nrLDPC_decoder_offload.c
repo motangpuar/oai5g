@@ -1100,6 +1100,7 @@ int32_t LDPCencoder(unsigned char **input, unsigned char **output, encoder_imple
   // hardcoded to use the first found board
   struct active_device *ad = active_devs;
   int ret;
+  uint32_t Nref = 0;
   t_nrLDPCoffload_params offloadParams = {.E = impp->E,
                                           .n_cb = (impp->BG == 1) ? (66 * impp->Zc) : (50 * impp->Zc),
                                           .BG = impp->BG,
@@ -1111,6 +1112,10 @@ int32_t LDPCencoder(unsigned char **input, unsigned char **output, encoder_imple
                                           .Kr = (impp->K - impp->F + 7) / 8};
   for (int r = 0; r < impp->n_segments; r++) {
     offloadParams.E_cb[r] = impp->E_cb[r];
+  }
+  if (impp->Tbslbrm != 0){
+    Nref = 3*impp->Tbslbrm/(2*impp->n_segments);
+    offloadParams.n_cb = min(offloadParams.n_cb, Nref);
   }
   struct rte_bbdev_info info;
   rte_bbdev_info_get(ad->dev_id, &info);

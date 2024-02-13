@@ -365,6 +365,7 @@ int nr_dlsch_encoding(PHY_VARS_gNB *gNB,
   impp.harq = harq;
   if (gNB->ldpc_offload_flag) {
     impp.Qm = rel15->qamModOrder[0];
+    impp.Tbslbrm = rel15->maintenance_parms_v3.tbSizeLbrmBytes;
     impp.rv = rel15->rvIndex[0];
     int nb_re_dmrs =
         (rel15->dmrsConfigType == NFAPI_NR_DMRS_TYPE1) ? (6 * rel15->numDmrsCdmGrpsNoData) : (4 * rel15->numDmrsCdmGrpsNoData);
