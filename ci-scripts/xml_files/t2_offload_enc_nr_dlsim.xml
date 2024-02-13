@@ -33,29 +33,33 @@
 
 	<testCase id="000111">
 		<class>Run_T2Test</class>
-                <desc>Run nr_dlsim with CPU</desc>
+		<desc>Run nr_dlsim with CPU</desc>
 		<physim_run>nr_dlsim</physim_run>
+		<physim_time_threshold>200</physim_time_threshold>
 		<physim_run_args>-n100 -s30 -e5 -b106 -R106 -X8 -P</physim_run_args>
 	</testCase>
 
 	<testCase id="000112">
 		<class>Run_T2Test</class>
-                <desc>Run nr_dlsim with T2 LDPC offload</desc>
+		<desc>Run nr_dlsim with T2 LDPC offload</desc>
 		<physim_run>nr_dlsim</physim_run>
+		<physim_time_threshold>100</physim_time_threshold>
 		<physim_run_args>-n100 -s30 -e5 -b106 -R106 -c -P</physim_run_args>
 	</testCase>
 
 	<testCase id="000121">
 		<class>Run_T2Test</class>
-                <desc>Run nr_dlsim with CPU</desc>
-                <physim_run>nr_dlsim</physim_run>
+		<desc>Run nr_dlsim with CPU</desc>
+		<physim_run>nr_dlsim</physim_run>
+		<physim_time_threshold>3000</physim_time_threshold>
 		<physim_run_args>-n100 -s30 -e15 -b106 -R106 -X8 -P</physim_run_args>
 	</testCase>
 
 	<testCase id="000122">
 		<class>Run_T2Test</class>
-                <desc>Run nr_dlsim with T2 LDPC offload</desc>
-                <physim_run>nr_dlsim</physim_run>
+		<desc>Run nr_dlsim with T2 LDPC offload</desc>
+		<physim_run>nr_dlsim</physim_run>
+		<physim_time_threshold>100</physim_time_threshold>
 		<physim_run_args>-n100 -s30 -e15 -b106 -R106 -c -P</physim_run_args>
 	</testCase>
 
@@ -63,6 +67,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with CPU</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>400</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e25 -b106 -R106 -X8 -P</physim_run_args>
         </testCase>
 
@@ -70,6 +75,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with T2 LDPC offload</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>200</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e25 -b106 -R106 -c -P</physim_run_args>
         </testCase>
 
@@ -77,6 +83,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with CPU</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>300</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e5 -b273 -R273 -X8 -P</physim_run_args>
         </testCase>
 
@@ -84,6 +91,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with T2 LDPC offload</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>150</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e5 -b273 -R273 -c -P</physim_run_args>
 	</testCase>
 
@@ -91,6 +99,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with CPU</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>450</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e15 -b273 -R273 -X8 -P</physim_run_args>
         </testCase>
 
@@ -98,6 +107,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with T2 LDPC offload</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>250</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e15 -b273 -R273 -c -P</physim_run_args>
         </testCase>
 
@@ -105,6 +115,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with CPU</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>500</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e25 -b273 -R273 -X8 -P</physim_run_args>
         </testCase>
 
@@ -112,6 +123,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with T2 LDPC offload</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>400</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e25 -b273 -R273 -c -P</physim_run_args>
         </testCase>
 
@@ -119,6 +131,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with CPU</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>350</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e5 -b273 -R273 -X8 -x2 -z2 -y2 -P</physim_run_args>
         </testCase>
 
@@ -126,6 +139,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with T2 LDPC offload</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>200</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e5 -b273 -R273 -c -x2 -z2 -y2 -P</physim_run_args>
         </testCase>
 
@@ -133,6 +147,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with CPU</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>600</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e15 -b273 -R273 -X8 -x2 -z2 -y2 -P</physim_run_args>
         </testCase>
 
@@ -140,6 +155,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with T2 LDPC offload</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>500</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e15 -b273 -R273 -c -x2 -z2 -y2 -P</physim_run_args>
         </testCase>
 
@@ -147,6 +163,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with CPU</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>800</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e25 -b273 -R273 -X8 -x2 -z2 -y2 -P</physim_run_args>
         </testCase>
 
@@ -154,6 +171,7 @@
                 <class>Run_T2Test</class>
                 <desc>Run nr_dlsim with T2 LDPC offload</desc>
                 <physim_run>nr_dlsim</physim_run>
+                <physim_time_threshold>800</physim_time_threshold>
                 <physim_run_args>-n100 -s30 -e25 -b273 -R273 -c -x2 -z2 -y2 -P</physim_run_args>
         </testCase>
 

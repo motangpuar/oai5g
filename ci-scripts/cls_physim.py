@@ -86,14 +86,13 @@ class PhySim:
 		return HTML
 
 	def __CheckResults_LDPCt2Test(self,HTML,CONST,testcase_id):
-		thrs_NOK = 500
-		thrs_KO = 1000
+		thrs_KO = int(self.timethrs)
 		mySSH = sshconnection.SSHConnection()
 		mySSH.open(self.eNBIpAddr, self.eNBUserName, self.eNBPassWord)
 		#retrieve run log file and store it locally$
 		mySSH.copyin(self.eNBIpAddr, self.eNBUserName, self.eNBPassWord, self.__workSpacePath+self.__runLogFile, '.')
 		mySSH.close()
-		#parse results looking for Decoding values
+		#parse results looking for encoder/decoder processing time values
 		runResultsT2=[]
 		decTest = False
 		encTest = False
@@ -121,17 +120,15 @@ class PhySim:
 		if encTest:
 			info = runResultsT2[0][13:-13]
 		result = int(''.join(filter(str.isdigit, info)))/100
-		#once parsed move the local logfile to its folder for tidiness
+		#once parsed move the local logfile to its folder
 		os.system('mv '+self.__runLogFile+' '+ self.__runLogPath+'/.')
-		if result < thrs_NOK:
+		if result < thrs_KO:
 			HTML.CreateHtmlTestRowQueue(self.runargs, 'OK', [info])
-		elif result > thrs_KO:
-			error_msg = f'Decoding time exceeds a limit of {thrs_KO} us'
+		else:
+			error_msg = f'Processing time exceeds a limit of {thrs_KO} us'
 			logging.error(error_msg)
 			HTML.CreateHtmlTestRowQueue(self.runargs, 'KO', [info + '\n' + error_msg])
 			self.exitStatus = 1
-		else:
-			HTML.CreateHtmlTestRowQueue(self.runargs, 'NOK', [info])
 		return HTML
 
 	def __CheckResults_NRulsimTest(self, HTML, CONST, testcase_id):

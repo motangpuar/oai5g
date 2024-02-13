@@ -392,6 +392,7 @@ def GetParametersFromXML(action):
 	elif action == 'Run_LDPCTest' or action == 'Run_NRulsimTest' or action == 'Run_T2Test':
 		ldpc.runargs = test.findtext('physim_run_args')
 		ldpc.runsim = test.findtext('physim_run')
+		ldpc.timethrs = test.findtext('physim_time_threshold')
 
 	elif action == 'LicenceAndFormattingCheck':
 		pass
