@@ -1011,6 +1011,50 @@ int trx_usrp_reset_stats(openair0_device *device) {
   return(0);
 }
 
+int get_tx_sample_advance(dev_type_t device_type, int sampling_rate)
+{
+  switch (device_type) {
+    case USRP_B200_DEV:
+      switch (sampling_rate) {
+        case 46080000: // 40 MHz 30 kHz SCS 3/4 sampling rate
+          return 164;
+        case 30720000: // 20 MHz 30 kHz SCS
+          return 186;
+        default:
+          return -1;
+      }
+      break;
+    case USRP_N300_DEV:
+      switch (sampling_rate) {
+        case 122880000: // 100/80 MHz 30 kHz SCS
+          return 200;
+        case 61440000: // 60/40 MHz 30 kHz SCS
+          return 120;
+        case 30720000: // 20 MHz 30 kHz SCS
+          return 96;
+        default:
+          return -1;
+      }
+      break;
+    case USRP_X400_DEV:
+      switch (sampling_rate) {
+        case 122880000: // 100/80 MHz 30 kHz SCS
+          return 164;
+        case 61440000: // 60/40 MHz 30 kHz SCS
+          return 100;
+        case 30720000: // 20 MHz 30 kHz SCS
+          return 90;
+        default:
+          return -1;
+      }
+      break;
+    default:
+      return -1;
+  }
+
+  return -1;
+}
+
 extern "C" {
   int device_init(openair0_device *device, openair0_config_t *openair0_cfg) {
     LOG_I(HW, "openair0_cfg[0].sdr_addrs == '%s'\n", openair0_cfg[0].sdr_addrs);
@@ -1366,6 +1410,14 @@ extern "C" {
         exit(-1);
         break;
     }
+  }
+
+  int tx_sample_advance = get_tx_sample_advance(device->type, (int)openair0_cfg[0].sample_rate);
+  if (tx_sample_advance >= 0) {
+    openair0_cfg[0].tx_sample_advance = tx_sample_advance;
+    LOG_I(HW, "Applying USRP tx_sample_advance: %d\n", tx_sample_advance);
+  } else {
+    LOG_W(HW, "A calibration for USRP tx_sample_advance may be required! Applying default tx_sample_advance: %d\n", openair0_cfg[0].tx_sample_advance);
   }
 
   /* device specific */
