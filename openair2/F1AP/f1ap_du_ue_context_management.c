@@ -305,6 +305,7 @@ int DU_send_UE_CONTEXT_SETUP_RESPONSE(sctp_assoc_t assoc_id, f1ap_ue_context_set
     ie7->criticality                    = F1AP_Criticality_ignore;
     ie7->value.present                  = F1AP_UEContextSetupResponseIEs__value_PR_DRBs_Setup_List;
     for (int i=0;  i< resp->drbs_to_be_setup_length; i++) {
+      f1ap_drb_to_be_setup_t *drb = &resp->drbs_to_be_setup[i];
       //
       asn1cSequenceAdd(ie7->value.choice.DRBs_Setup_List.list,
           F1AP_DRBs_Setup_ItemIEs_t, drbs_setup_item_ies);
@@ -315,14 +316,27 @@ int DU_send_UE_CONTEXT_SETUP_RESPONSE(sctp_assoc_t assoc_id, f1ap_ue_context_set
       /* ADD */
       F1AP_DRBs_Setup_Item_t *drbs_setup_item=&drbs_setup_item_ies->value.choice.DRBs_Setup_Item;
       /* dRBID */
-      drbs_setup_item->dRBID = resp->drbs_to_be_setup[i].drb_id;
+      drbs_setup_item->dRBID = drb->drb_id;
 
       /* OPTIONAL */
       /* lCID */
       //drbs_setup_item.lCID = (F1AP_LCID_t *)calloc(1, sizeof(F1AP_LCID_t));
       //drbs_setup_item.lCID = 1L;
 
-      for (int j=0;  j<resp->drbs_to_be_setup[i].up_dl_tnl_length; j++) {
+      for (int j=0;  j<drb->up_dl_tnl_length; j++) {
+        transport_layer_addr_t tl_addr = {0};
+        memcpy(tl_addr.buffer, &drb->up_ul_tnl[0].tl_address, sizeof(drb->up_ul_tnl[0].tl_address));
+        tl_addr.length = sizeof(drb->up_ul_tnl[0].tl_address) * 8;
+        drb->up_dl_tnl[j].teid = newGtpuCreateTunnel(getCxt(0)->gtpInst,
+                                                     resp->gNB_DU_ue_id,
+                                                     drb->drb_id,
+                                                     drb->drb_id,
+                                                     drb->up_ul_tnl[j].teid,
+                                                     -1, // no qfi
+                                                     tl_addr,
+                                                     drb->up_ul_tnl[j].port,
+                                                     DURecvCb,
+                                                     NULL);
         /* ADD */
         asn1cSequenceAdd(drbs_setup_item->dLUPTNLInformation_ToBeSetup_List.list,
                        F1AP_DLUPTNLInformation_ToBeSetup_Item_t, dLUPTNLInformation_ToBeSetup_Item);

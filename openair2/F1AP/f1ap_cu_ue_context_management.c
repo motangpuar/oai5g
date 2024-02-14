@@ -689,7 +689,7 @@ int CU_handle_UE_CONTEXT_SETUP_RESPONSE(instance_t instance, sctp_assoc_t assoc_
       BIT_STRING_TO_TRANSPORT_LAYER_ADDRESS_IPv4(&dl_up_tnl0->transportLayerAddress, drb_p->up_dl_tnl[0].tl_address);
       OCTET_STRING_TO_UINT32(&dl_up_tnl0->gTP_TEID, drb_p->up_dl_tnl[0].teid);
       GtpuUpdateTunnelOutgoingAddressAndTeid(getCxt(instance)->gtpInst,
-                                             f1ap_ue_context_setup_resp->gNB_DU_ue_id,
+                                             f1ap_ue_context_setup_resp->gNB_CU_ue_id,
                                              (ebi_t)drbs_setup_item_p->dRBID,
                                              drb_p->up_dl_tnl[0].tl_address,
                                              drb_p->up_dl_tnl[0].teid);
