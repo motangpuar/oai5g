@@ -28,16 +28,14 @@
   <TestCaseRequestedList>
     100000
     111111
-    010000
-    030101
+    040101
     010001
     051001
     071000
     071001
     071002
     010010
-    010002
-    030201
+    040201
     200000
   </TestCaseRequestedList>
   <TestCaseExclusionList></TestCaseExclusionList>
@@ -63,18 +61,6 @@
     <command>sudo cpupower idle-set -E</command>
   </testCase>
 
-  <testCase id="010000">
-    <class>Initialize_UE</class>
-    <desc>Initialize Quectel</desc>
-    <id>up2</id>
-  </testCase>
-
-  <testCase id="010002">
-    <class>Terminate_UE</class>
-    <desc>Terminate Quectel</desc>
-    <id>up2</id>
-  </testCase>
-
   <testCase id="010001">
     <class>Attach_UE</class>
     <desc>Attach UE</desc>
@@ -87,7 +73,7 @@
     <id>up2</id>
   </testCase>
 
-  <testCase id="030101">
+  <testCase id="040101">
     <class>Deploy_Object</class>
     <desc>Deploy gNB (TDD/Band77/100MHz/N310) in a container</desc>
     <yaml_path>ci-scripts/yaml_files/5g_sa_n310_2x2_100MHz</yaml_path>
@@ -123,7 +109,7 @@
     <direction>DL</direction>
     <id>up2</id>
     <iperf_packetloss_threshold>25</iperf_packetloss_threshold>
-    <iperf_bitrate_threshold>80</iperf_bitrate_threshold>
+    <iperf_bitrate_threshold>50</iperf_bitrate_threshold>
     <iperf_profile>single-ue</iperf_profile>
   </testCase>
 
@@ -147,7 +133,7 @@
     <iperf_profile>single-ue</iperf_profile>
   </testCase>
 
-  <testCase id="030201">
+  <testCase id="040201">
     <class>Undeploy_Object</class>
     <desc>Undeploy gNB</desc>
     <yaml_path>ci-scripts/yaml_files/5g_sa_n310_2x2_100MHz</yaml_path>

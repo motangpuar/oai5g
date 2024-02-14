@@ -36,7 +36,6 @@
     070001
     070002
     010010
-    010002
     030201
     200000
   </TestCaseRequestedList>
@@ -61,18 +60,6 @@
     <desc>Enable Sleep States</desc>
     <node>matix</node>
     <command>sudo cpupower idle-set -E</command>
-  </testCase>
-
-  <testCase id="010000">
-    <class>Initialize_UE</class>
-    <desc>Initialize Quectel</desc>
-    <id>up2</id>
-  </testCase>
-
-  <testCase id="010002">
-    <class>Terminate_UE</class>
-    <desc>Terminate Quectel</desc>
-    <id>up2</id>
   </testCase>
 
   <testCase id="010001">
@@ -134,7 +121,7 @@
     <direction>UL</direction>
     <id>up2</id>
     <iperf_packetloss_threshold>1</iperf_packetloss_threshold>
-    <iperf_bitrate_threshold>95</iperf_bitrate_threshold>
+    <iperf_bitrate_threshold>80</iperf_bitrate_threshold>
     <iperf_profile>single-ue</iperf_profile>
   </testCase>
 

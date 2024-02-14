@@ -20,6 +20,16 @@ nrmodule2_quectel:
   MTU: 1500
   LogStore: /media/ci_qlogs
 
+up2:
+  Host: up2
+  AttachScript: sudo /opt/mbim/start_quectel_mbim.sh
+  DetachScript: sudo /opt/mbim/stop_quectel_mbim.sh
+  NetworkScript: ip a show dev wwan0
+  IF: wwan0
+  MTU: 1500
+  Trace: True
+  LogStore: /media/usb-drive/ci_qlogs
+
 adb_ue_1:
   Host: nano
   InitScript: /home/oaicicd/ci_ctl_adb.sh initialize R3CM40LZPHT
