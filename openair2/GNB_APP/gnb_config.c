@@ -91,7 +91,9 @@
 #include "RRC/NR/nr_rrc_extern.h"
 #include "openair2/LAYER2/nr_pdcp/nr_pdcp.h"
 #include "nfapi/oai_integration/vendor_ext.h"
+#ifdef ENABLE_AERIAL
 #include "fapi/oai-integration/fapi_vnf_p5.h"
+#endif
 
 extern uint16_t sf_ahead;
 

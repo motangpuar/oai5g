@@ -228,13 +228,23 @@ NR_pdsch_dmrs_t get_dl_dmrs_params(const NR_ServingCellConfigCommon_t *scc,
 
     switch (Layers) {
       case 1:
+#ifdef  ENABLE_AERIAL
         dmrs.dmrs_ports_id = 3;
         dmrs.numDmrsCdmGrpsNoData = 2;
+#else
+        dmrs.dmrs_ports_id = 0;
+        dmrs.numDmrsCdmGrpsNoData = 1;
+#endif
         frontloaded_symb = 1;
         break;
       case 2:
+#ifdef  ENABLE_AERIAL
         dmrs.dmrs_ports_id = 7;
         dmrs.numDmrsCdmGrpsNoData = 2;
+#else
+        dmrs.dmrs_ports_id = 2;
+        dmrs.numDmrsCdmGrpsNoData = 1;
+#endif
         frontloaded_symb = 1;
         break;
       case 3:
@@ -743,7 +753,11 @@ void config_uldci(const NR_UE_ServingCell_Info_t *sc_info,
 
       // antenna_ports.val = 0 for transform precoder is disabled, dmrs-Type=1, maxLength=1, Rank=1/2/3/4
       // Antenna Ports
-      dci_pdu_rel15->antenna_ports.val = 2;
+      if(NFAPI_MODE == NFAPI_MODE_AERIAL){
+        dci_pdu_rel15->antenna_ports.val = 2;
+      } else {
+        dci_pdu_rel15->antenna_ports.val = 0;
+      }
 
       // DMRS sequence initialization
       dci_pdu_rel15->dmrs_sequence_initialization.val = pusch_pdu->scid;

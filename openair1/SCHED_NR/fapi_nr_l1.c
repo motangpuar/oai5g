@@ -29,7 +29,9 @@
  * \note
  * \warning
  */
+#ifdef ENABLE_AERIAL
 #include <fapi/oai-integration/fapi_vnf_p5.h>
+#endif
 #include "fapi_nr_l1.h"
 #include "common/ran_context.h"
 #include "PHY/NR_TRANSPORT/nr_transport_proto.h"

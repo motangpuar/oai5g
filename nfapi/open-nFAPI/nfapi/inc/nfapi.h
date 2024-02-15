@@ -21,7 +21,6 @@
 extern "C" {
 #endif
 
-//#define FAPI_BYTE_ORDERING_BIG_ENDIAN
 // todo : move to public_inc so can be used by vendor extensions
 
 #define MAX_BAD_TAG 3

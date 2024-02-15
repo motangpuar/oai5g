@@ -27,8 +27,9 @@
 #include "vnf.h"
 #include "nfapi_nr_interface.h"
 #include "nfapi_nr_interface_scf.h"
-
+#ifdef ENABLE_AERIAL
 #include "fapi/oai-integration/fapi_nvIPC.h"
+#endif
 #include "nfapi/oai_integration/vendor_ext.h"
 
 void* vnf_malloc(nfapi_vnf_config_t* config, size_t size)
