@@ -736,7 +736,6 @@ int aerial_phy_nr_slot_indication(nfapi_nr_slot_indication_scf_t *ind)
 int aerial_phy_nr_srs_indication(nfapi_nr_srs_indication_t *ind)
 {
   struct PHY_VARS_gNB_s *gNB = RC.gNB[0];
-  pthread_mutex_lock(&gNB->UL_INFO_mutex);
 
   gNB->UL_INFO.srs_ind = *ind;
 
@@ -755,7 +754,6 @@ int aerial_phy_nr_srs_indication(nfapi_nr_srs_indication_t *ind)
           gNB->UL_INFO.srs_ind.number_of_pdus);
   }
 
-  pthread_mutex_unlock(&gNB->UL_INFO_mutex);
 
   return 1;
 }
