@@ -357,11 +357,11 @@ class Containerize():
 		if self.host == 'Ubuntu':
 			self.cli = 'docker'
 			self.dockerfileprefix = '.ubuntu20'
-			self.cliBuildOptions = '--no-cache'
+			self.cliBuildOptions = ''
 		elif self.host == 'Red Hat':
 			self.cli = 'sudo podman'
 			self.dockerfileprefix = '.rhel9'
-			self.cliBuildOptions = '--no-cache --disable-compression'
+			self.cliBuildOptions = '--disable-compression'
 
 		# we always build the ran-build image with all targets
 		# Creating a tupple with the imageName, the DockerFile prefix pattern, targetName and sanitized option
@@ -420,19 +420,23 @@ class Containerize():
 				if result is not None:
 					forceBaseImageBuild = True
 					baseTag = 'ci-temp'
+			# if the branch name contains integration_20xx_wyy, let rebuild ran-base
+			result = re.search('integration_20([0-9]{2})_w([0-9]{2})', self.ranBranch)
+			if not forceBaseImageBuild and result is not None:
+				forceBaseImageBuild = True
+				baseTag = 'ci-temp'
 		else:
 			forceBaseImageBuild = True
 
 		# Let's remove any previous run artifacts if still there
 		cmd.run(f"{self.cli} image prune --force")
-		if forceBaseImageBuild:
-			cmd.run(f"{self.cli} image rm {baseImage}:{baseTag}")
 		for image,pattern,name,option in imageNames:
 			cmd.run(f"{self.cli} image rm {name}:{imageTag}")
 
 		# Build the base image only on Push Events (not on Merge Requests)
 		# On when the base image docker file is being modified.
 		if forceBaseImageBuild:
+			cmd.run(f"{self.cli} image rm {baseImage}:{baseTag}")
 			cmd.run(f"{self.cli} build {self.cliBuildOptions} --target {baseImage} --tag {baseImage}:{baseTag} --file docker/Dockerfile.base{self.dockerfileprefix} . &> cmake_targets/log/ran-base.log", timeout=1600)
 		# First verify if the base image was properly created.
 		ret = cmd.run(f"{self.cli} image inspect --format=\'Size = {{{{.Size}}}} bytes\' {baseImage}:{baseTag}")
@@ -446,7 +450,7 @@ class Containerize():
 			logging.error('\u001B[1m Building OAI Images Failed\u001B[0m')
 			HTML.CreateHtmlTestRow(self.imageKind, 'KO', CONST.ALL_PROCESSES_OK)
 			HTML.CreateHtmlTabFooter(False)
-			sys.exit(1)
+			return False
 		else:
 			result = re.search('Size *= *(?P<size>[0-9\-]+) *bytes', cmd.getBefore())
 			if result is not None:
@@ -511,10 +515,11 @@ class Containerize():
 			cmd.run(f"{self.cli} image prune --force")
 
 		# Remove all intermediate build images and clean up
-		if self.ranAllowMerge and forceBaseImageBuild:
-			cmd.run(f"{self.cli} image rm {baseImage}:{baseTag}")
 		cmd.run(f"{self.cli} image rm ran-build:{imageTag} ran-build-asan:{imageTag}")
 		cmd.run(f"{self.cli} volume prune --force")
+		# Remove any cached artifacts: we don't use the cache for now, prevent
+		# out of diskspace problem
+		cmd.run(f"{self.cli} buildx prune --filter=until=6h --force")
 
 		# create a zip with all logs
 		build_log_name = f'build_log_{self.testCase_id}'
@@ -528,12 +533,13 @@ class Containerize():
 			logging.info('\u001B[1m Building OAI Image(s) Pass\u001B[0m')
 			HTML.CreateHtmlTestRow(self.imageKind, 'OK', CONST.ALL_PROCESSES_OK)
 			HTML.CreateHtmlNextTabHeaderTestRow(collectInfo, allImagesSize)
+			return True
 		else:
 			logging.error('\u001B[1m Building OAI Images Failed\u001B[0m')
 			HTML.CreateHtmlTestRow(self.imageKind, 'KO', CONST.ALL_PROCESSES_OK)
 			HTML.CreateHtmlNextTabHeaderTestRow(collectInfo, allImagesSize)
 			HTML.CreateHtmlTabFooter(False)
-			sys.exit(1)
+			return False
 
 	def BuildProxy(self, HTML):
 		if self.ranRepository == '' or self.ranBranch == '' or self.ranCommitID == '':
@@ -574,7 +580,7 @@ class Containerize():
 			sys.exit(1)
 
 		self.cli = 'docker'
-		self.cliBuildOptions = '--no-cache'
+		self.cliBuildOptions = ''
 
 		# Workaround for some servers, we need to erase completely the workspace
 		if self.forcedWorkspaceCleanup:
@@ -616,7 +622,7 @@ class Containerize():
 				mySSH.close()
 				HTML.CreateHtmlTestRow('commit ' + tag, 'KO', CONST.ALL_PROCESSES_OK)
 				HTML.CreateHtmlTabFooter(False)
-				sys.exit(1)
+				return False
 		else:
 			logging.debug('L2sim proxy image for tag ' + tag + ' already exists, skipping build')
 
@@ -677,6 +683,87 @@ class Containerize():
 		logging.info('\u001B[1m Building L2sim Proxy Image Pass\u001B[0m')
 		HTML.CreateHtmlTestRow('commit ' + tag, 'OK', CONST.ALL_PROCESSES_OK)
 		HTML.CreateHtmlNextTabHeaderTestRow(collectInfo, allImagesSize)
+
+	def BuildRunTests(self, HTML):
+		if self.ranRepository == '' or self.ranBranch == '' or self.ranCommitID == '':
+			HELP.GenericHelp(CONST.Version)
+			sys.exit('Insufficient Parameter')
+		if self.eNB_serverId[self.eNB_instance] == '0':
+			lIpAddr = self.eNBIPAddress
+			lUserName = self.eNBUserName
+			lPassWord = self.eNBPassword
+			lSourcePath = self.eNBSourceCodePath
+		elif self.eNB_serverId[self.eNB_instance] == '1':
+			lIpAddr = self.eNB1IPAddress
+			lUserName = self.eNB1UserName
+			lPassWord = self.eNB1Password
+			lSourcePath = self.eNB1SourceCodePath
+		elif self.eNB_serverId[self.eNB_instance] == '2':
+			lIpAddr = self.eNB2IPAddress
+			lUserName = self.eNB2UserName
+			lPassWord = self.eNB2Password
+			lSourcePath = self.eNB2SourceCodePath
+		if lIpAddr == '' or lUserName == '' or lPassWord == '' or lSourcePath == '':
+			HELP.GenericHelp(CONST.Version)
+			sys.exit('Insufficient Parameter')
+		logging.debug('Building on server: ' + lIpAddr)
+		cmd = cls_cmd.RemoteCmd(lIpAddr)
+		cmd.cd(lSourcePath)
+
+		ret = cmd.run('hostnamectl')
+		result = re.search('Ubuntu', ret.stdout)
+		host = result.group(0)
+		if host != 'Ubuntu':
+			cmd.close()
+			raise Exception("Can build unit tests only on Ubuntu server")
+		logging.debug('running on Ubuntu as expected')
+
+		if self.forcedWorkspaceCleanup:
+			cmd.run(f'sudo -S rm -Rf {lSourcePath}')
+		self.testCase_id = HTML.testCase_id
+	
+		# check that ran-base image exists as we expect it
+		baseImage = 'ran-base'
+		baseTag = 'develop'
+		if self.ranAllowMerge:
+			if self.ranTargetBranch == 'develop':
+				cmd.run(f'git diff HEAD..origin/develop -- cmake_targets/build_oai cmake_targets/tools/build_helper docker/Dockerfile.base{self.dockerfileprefix} | grep --colour=never -i INDEX')
+				result = re.search('index', cmd.getBefore())
+				if result is not None:
+					baseTag = 'develop'
+		ret = cmd.run(f"docker image inspect --format=\'Size = {{{{.Size}}}} bytes\' {baseImage}:{baseTag}")
+		if ret.returncode != 0:
+			logging.error(f'No {baseImage} image present, cannot build tests')
+			HTML.CreateHtmlTestRow(self.imageKind, 'KO', CONST.ALL_PROCESSES_OK)
+			HTML.CreateHtmlTabFooter(False)
+			return False
+
+		# build ran-unittests image
+		dockerfile = "ci-scripts/docker/Dockerfile.unittest.ubuntu20"
+		ret = cmd.run(f'docker build --progress=plain --tag ran-unittests:{baseTag} --file {dockerfile} . &> {lSourcePath}/cmake_targets/log/unittest-build.log')
+		if ret.returncode != 0:
+			logging.error(f'Cannot build unit tests')
+			HTML.CreateHtmlTestRow("Unit test build failed", 'KO', [dockerfile])
+			HTML.CreateHtmlTabFooter(False)
+			return False
+
+		HTML.CreateHtmlTestRowQueue("Build unit tests", 'OK', [dockerfile])
+
+		# it worked, build and execute tests, and close connection
+		ret = cmd.run(f'docker run -a STDOUT --rm ran-unittests:develop ctest --output-on-failure --no-label-summary -j$(nproc)')
+		cmd.run(f'docker rmi ran-unittests:develop')
+		build_log_name = f'build_log_{self.testCase_id}'
+		CopyLogsToExecutor(cmd, lSourcePath, build_log_name)
+		cmd.close()
+
+		if ret.returncode == 0:
+			HTML.CreateHtmlTestRowQueue('Unit tests succeeded', 'OK', [ret.stdout])
+			HTML.CreateHtmlTabFooter(True)
+			return True
+		else:
+			HTML.CreateHtmlTestRowQueue('Unit tests failed (see also doc/UnitTests.md)', 'KO', [ret.stdout])
+			HTML.CreateHtmlTabFooter(False)
+			return False
 
 	def Push_Image_to_Local_Registry(self, HTML):
 		if self.registrySvrId == '0':

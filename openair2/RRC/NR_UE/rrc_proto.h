@@ -33,7 +33,7 @@
 #ifndef _RRC_PROTO_H_
 #define _RRC_PROTO_H_
 
-
+#include "oai_asn1.h"
 #include "rrc_defs.h"
 #include "NR_RRCReconfiguration.h"
 #include "NR_MeasConfig.h"
@@ -108,6 +108,7 @@ extern void start_oai_nrue_threads(void);
 int get_from_lte_ue_fd();
 
 void nr_rrc_SI_timers(NR_UE_RRC_SI_INFO *SInfo);
+void init_SI_timers(NR_UE_RRC_SI_INFO *SInfo);
 
 void nr_ue_rrc_timer_trigger(int module_id, int frame, int gnb_id);
 void handle_t300_expiry(NR_UE_RRC_INST_t *rrc);
@@ -115,13 +116,25 @@ void handle_t300_expiry(NR_UE_RRC_INST_t *rrc);
 void reset_rlf_timers_and_constants(NR_UE_Timers_Constants_t *tac);
 void set_default_timers_and_constants(NR_UE_Timers_Constants_t *tac);
 void nr_rrc_set_sib1_timers_and_constants(NR_UE_Timers_Constants_t *tac, NR_SIB1_t *sib1);
-void nr_rrc_set_T304(NR_UE_Timers_Constants_t *tac, NR_ReconfigurationWithSync_t *reconfigurationWithSync);
-void handle_rlf_sync(NR_UE_Timers_Constants_t *tac,
-                     nr_sync_msg_t sync_msg);
+int nr_rrc_get_T304(long t304);
+void handle_rlf_sync(NR_UE_Timers_Constants_t *tac, nr_sync_msg_t sync_msg);
 void nr_rrc_handle_SetupRelease_RLF_TimersAndConstants(NR_UE_RRC_INST_t *rrc,
                                                        struct NR_SetupRelease_RLF_TimersAndConstants *rlf_TimersAndConstants);
 
-int configure_NR_SL_Preconfig(int sync_source);
+int configure_NR_SL_Preconfig(NR_UE_RRC_INST_t *rrc,int sync_source);
+
+void init_sidelink(NR_UE_RRC_INST_t *rrc);
+void start_sidelink(int instance);
+
+void rrc_ue_process_sidelink_Preconfiguration(NR_UE_RRC_INST_t *rrc_inst, int sync_ref);
+
+void nr_rrc_ue_decode_NR_SBCCH_SL_BCH_Message(NR_UE_RRC_INST_t *rrc,
+                                              const uint8_t gNB_index,
+                                              const frame_t frame,
+                                              const int slot,
+                                              uint8_t* pduP,
+                                              const sdu_size_t pdu_len,
+                                              const uint16_t rx_slss_id);
 
 /** @}*/
 #endif

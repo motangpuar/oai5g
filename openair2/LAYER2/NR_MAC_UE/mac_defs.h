@@ -47,6 +47,7 @@
 #include "LAYER2/NR_MAC_COMMON/nr_mac_common.h"
 #include "LAYER2/MAC/mac.h"
 #include "NR_MAC_COMMON/nr_mac_extern.h"
+#include "mac_defs_sl.h"
 
 /* RRC */
 #include "NR_DRX-Config.h"
@@ -181,12 +182,10 @@ typedef struct {
   int32_t LCID_buffer_remain;
   // buffer status for each lcid
   uint8_t LCID_status;
-  // Bj bucket usage per  lcid
+  // logical channel group id of this LCID
+  long LCGID;
+  // Bj bucket usage per lcid
   int32_t Bj;
-  // Bucket size per lcid
-  int32_t bucket_size;
-  // logical channel group id for each LCID
-  uint8_t LCGID;
 } NR_LC_SCHEDULING_INFO;
 
 typedef struct {
@@ -317,9 +316,11 @@ typedef struct {
   /// Received TPC command (in dB) from RAR
   int8_t Msg3_TPC;
   /// Flag to indicate whether it is the first Msg3 to be transmitted
-  uint8_t first_Msg3;
+  bool first_Msg3;
   /// RA Msg3 size in bytes
   uint8_t Msg3_size;
+  /// Msg3 buffer
+  uint8_t *Msg3_buffer;
 
   /// Random-access Contention Resolution Timer active flag
   uint8_t RA_contention_resolution_timer_active;
@@ -348,11 +349,13 @@ typedef struct {
   int8_t delta_pucch;
   uint32_t R;
   uint32_t TBS;
+  int last_ndi;
 } NR_UE_HARQ_STATUS_t;
 
 typedef struct {
   uint32_t R;
   uint32_t TBS;
+  int last_ndi;
 } NR_UL_HARQ_INFO_t;
 
 typedef struct {
@@ -432,10 +435,11 @@ typedef struct ssb_list_info {
 
 typedef struct nr_lcordered_info_s {
   // logical channels ids ordered as per priority
-  int lcids_ordered;
-
-  // logical channel configurations reordered as per priority
-  NR_LogicalChannelConfig_t *logicalChannelConfig_ordered;
+  NR_LogicalChannelIdentity_t lcid;
+  long priority;
+  long prioritisedBitRate;
+  // Bucket size per lcid
+  uint32_t bucket_size;
 } nr_lcordered_info_t;
 
 typedef struct {
@@ -450,7 +454,7 @@ typedef struct {
 } NR_BWP_PDCCH_t;
 
 /*!\brief Top level UE MAC structure */
-typedef struct {
+typedef struct NR_UE_MAC_INST_s {
   module_id_t ue_id;
   NR_UE_L2_STATE_t state;
   int servCellIndex;
@@ -480,10 +484,6 @@ typedef struct {
   bool phy_config_request_sent;
   frame_type_t frame_type;
 
-  /* PDUs */
-  /// Outgoing CCCH pdu for PHY
-  CCCH_PDU CCCH_pdu;
-
   /* Random Access */
   /// CRNTI
   uint16_t crnti;
@@ -499,8 +499,6 @@ typedef struct {
   /// measurements from CSI-RS
   fapi_nr_csirs_measurements_t csirs_measurements;
 
-  /// Last NDI of UL HARQ processes
-  int UL_ndi[NR_MAX_HARQ_PROCESSES];
   ////	FAPI-like interface message
   fapi_nr_ul_config_request_t *ul_config_request;
   fapi_nr_dl_config_request_t *dl_config_request;
@@ -513,11 +511,9 @@ typedef struct {
   /// BSR report flag management
   uint8_t BSR_reporting_active;
 
-  // Pointers to LogicalChannelConfig indexed by LogicalChannelIdentity. Note NULL means LCHAN is inactive.
-  NR_LogicalChannelConfig_t *logicalChannelConfig[NR_MAX_NUM_LCID];
-
   // order lc info
-  nr_lcordered_info_t lc_ordered_info[NR_MAX_NUM_LCID];
+  A_SEQUENCE_OF(nr_lcordered_info_t) lc_ordered_list;
+
   NR_UE_SCHEDULING_INFO scheduling_info;
 
   /// PHR
@@ -547,6 +543,9 @@ typedef struct {
   nr_emulated_l1_t nr_ue_emul_l1;
 
   pthread_mutex_t mutex_dl_info;
+
+  //SIDELINK MAC PARAMETERS
+  sl_nr_ue_mac_params_t *SL_MAC_PARAMS;
 
 } NR_UE_MAC_INST_t;
 
