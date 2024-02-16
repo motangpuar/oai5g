@@ -753,7 +753,7 @@ int aerial_nfapi_nr_vnf_p7_start(nfapi_vnf_p7_config_t *config)
                     "Calling NR_UL_indication for gNB->UL_INFO.frame = %d and slot %d\n",
                     gNB->UL_INFO.frame,
                     gNB->UL_INFO.slot);
-        gNB->if_inst->NR_UL_indication(&gNB->UL_INFO);
+        gNB->if_inst->NR_slot_indication(gNB->Mod_id,gNB->CC_id, slot_ind->sfn,slot_ind->slot);
         prev_slot = gNB->UL_INFO.slot;
       }
       free(slot_ind);
