@@ -406,7 +406,6 @@ static int nr_ulsch_procedures(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx, int
   //--------------------- ULSCH decoding ---------------------
   //----------------------------------------------------------
 
-  start_meas(&gNB->ulsch_decoding_stats);
   int const nbDecode = nr_ulsch_decoding(gNB, ULSCH_id, gNB->pusch_vars[ULSCH_id].llr, frame_parms, pusch_pdu, frame_rx, slot_rx, harq_pid, G, t_info);
   return nbDecode;
 }
@@ -741,10 +740,6 @@ int check_srs_pdu(const nfapi_nr_srs_pdu_t *srs_pdu, nfapi_nr_srs_pdu_t *saved_s
   return 0;
 }
 
-
-static int cnt = 0;
-
-
 int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
 {
   /* those variables to log T_GNB_PHY_PUCCH_PUSCH_IQ only when we try to decode */
@@ -959,8 +954,6 @@ int phy_procedures_gNB_uespec_RX(PHY_VARS_gNB *gNB, int frame_rx, int slot_rx)
   for(int i = 0; i < t_info.len; ++i){
      nr_postDecode(gNB, &arr[i]); 
   } 
-
-  stop_meas(&gNB->ulsch_decoding_stats);
 
   for (int i = 0; i < gNB->max_nb_srs; i++) {
     NR_gNB_SRS_t *srs = &gNB->srs[i];
