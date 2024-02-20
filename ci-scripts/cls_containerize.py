@@ -1072,11 +1072,11 @@ class Containerize():
 
 		mySSH.command(f'docker-compose -f ci-docker-compose.yml config --services', '\$', 5)
 		# first line has command, last line has next command prompt
-		allServices = mySSH.getBefore().split('\r\n')[1:-1]
+		allServices = mySSH.getBefore().splitlines()[1:-1]
 		services = []
 		for s in allServices:
 			mySSH.command(f'docker-compose -f ci-docker-compose.yml ps --all -- {s}', '\$', 5, silent=False)
-			running = mySSH.getBefore().split('\r\n')[2:-1]
+			running = mySSH.getBefore().splitlines()[2:-1]
 			logging.debug(f'running services: {running}')
 			if len(running) > 0: # something is running for that service
 				services.append(s)
