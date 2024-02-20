@@ -981,13 +981,13 @@ class Containerize():
 			logging.warning(f'service name given, but will stop all services in ci-docker-compose.yml!')
 			svcName = ''
 
-		mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml config --services')
+		ret = mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml config --services')
 		# first line has command, last line has next command prompt
-		allServices = mySSH.getBefore().split('\n')[:]
+		allServices = ret.stdout.splitlines()[:]
 		services = []
 		for s in allServices:
-			mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml ps --all -- {s}')
-			running = mySSH.getBefore().split('\r\n')[:]
+			ret = mySSH.run(f'docker-compose -f {yamlDir}/ci-docker-compose.yml ps --all -- {s}')
+			running = ret.stdout.splitlines()[:]
 			logging.debug(f'running services: {running}')
 			if len(running) > 0: # something is running for that service
 				services.append(s)
