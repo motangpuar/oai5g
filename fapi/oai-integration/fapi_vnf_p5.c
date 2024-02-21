@@ -127,6 +127,7 @@ void *aerial_vnf_nr_p7_thread_start(void *ptr)
 void aerial_oai_create_gnb(void)
 {
   int bodge_counter = 0;
+  /*
   if (RC.gNB == NULL) {
     RC.gNB = (PHY_VARS_gNB **)calloc(1, sizeof(PHY_VARS_gNB *));
     LOG_I(PHY, "gNB L1 structure RC.gNB allocated @ %p\n", RC.gNB);
@@ -163,6 +164,7 @@ void aerial_oai_create_gnb(void)
                 __FUNCTION__);
     usleep(50000);
   } while (gNB->configured != 1);
+  */
   NFAPI_TRACE(NFAPI_TRACE_INFO, "%s() gNB is now configured\n", __FUNCTION__);
 }
 
@@ -728,37 +730,6 @@ int aerial_nfapi_nr_vnf_p7_start(nfapi_vnf_p7_config_t *config)
       }
     }
 
-    nfapi_nr_slot_indication_scf_t *slot_ind = get_queue(&gnb_slot_ind_queue);
-    NFAPI_TRACE(NFAPI_TRACE_DEBUG,
-                "This is the slot_ind queue size %ld in %s():%d\n",
-                gnb_slot_ind_queue.num_items,
-                __FUNCTION__,
-                __LINE__);
-    if (slot_ind) {
-      gNB->UL_INFO.frame = slot_ind->sfn;
-      gNB->UL_INFO.slot = slot_ind->slot;
-
-      NFAPI_TRACE(NFAPI_TRACE_DEBUG,
-                  "gNB->UL_INFO.frame = %d and slot %d, prev_slot = %d\n",
-                  gNB->UL_INFO.frame,
-                  gNB->UL_INFO.slot,
-                  prev_slot);
-      if (setup_done && prev_slot != gNB->UL_INFO.slot) { // Give the VNF sufficient time to setup before starting scheduling  &&
-                                                          // prev_slot != gNB->UL_INFO.slot
-
-        // Call the scheduler
-        gNB->UL_INFO.module_id = gNB->Mod_id;
-        gNB->UL_INFO.CC_id = gNB->CC_id;
-        NFAPI_TRACE(NFAPI_TRACE_DEBUG,
-                    "Calling NR_UL_indication for gNB->UL_INFO.frame = %d and slot %d\n",
-                    gNB->UL_INFO.frame,
-                    gNB->UL_INFO.slot);
-        gNB->if_inst->NR_slot_indication(gNB->Mod_id,gNB->CC_id, slot_ind->sfn,slot_ind->slot);
-        prev_slot = gNB->UL_INFO.slot;
-      }
-      free(slot_ind);
-      slot_ind = NULL;
-    }
   }
   NFAPI_TRACE(NFAPI_TRACE_INFO, "Closing p7 socket\n");
   close(vnf_p7->socket);

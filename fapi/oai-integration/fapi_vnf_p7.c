@@ -711,6 +711,52 @@ int aerial_phy_nrach_indication(struct nfapi_vnf_p7_config *config, nfapi_nrach_
   return 1;
 }
 
+
+NR_Sched_Rsp_t g_sched_resp;
+void gNB_dlsch_ulsch_scheduler(module_id_t module_idP, frame_t frame, sub_frame_t slot, NR_Sched_Rsp_t* sched_info);
+int oai_fapi_dl_tti_req(nfapi_nr_dl_tti_request_t *dl_config_req);
+int oai_fapi_ul_tti_req(nfapi_nr_ul_tti_request_t *ul_tti_req);
+int oai_fapi_tx_data_req(nfapi_nr_tx_data_request_t* tx_data_req);
+int oai_fapi_ul_dci_req(nfapi_nr_ul_dci_request_t* ul_dci_req);
+int oai_fapi_send_end_request(int cell, uint32_t frame, uint32_t slot);
+
+int trigger_scheduler(nfapi_nr_slot_indication_scf_t *slot_ind)
+{
+
+  NR_UL_IND_t ind = {.frame = slot_ind->sfn, .slot = slot_ind->slot, };
+  NR_UL_indication(&ind);
+  // Call into the scheduler (this is hardcoded and should be init properly!)
+  // memset(sched_resp, 0, sizeof(*sched_resp));
+  gNB_dlsch_ulsch_scheduler(0, slot_ind->sfn, slot_ind->slot, &g_sched_resp);
+  if (NFAPI_MODE == NFAPI_MODE_AERIAL) {
+#ifdef ENABLE_AERIAL
+    bool send_slt_resp = false;
+    if (g_sched_resp.DL_req.dl_tti_request_body.nPDUs> 0) {
+      oai_fapi_dl_tti_req(&g_sched_resp.DL_req);
+      send_slt_resp = true;
+    }
+    if (g_sched_resp.UL_tti_req.n_pdus > 0) {
+      oai_fapi_ul_tti_req(&g_sched_resp.UL_tti_req);
+      send_slt_resp = true;
+    }
+    if (g_sched_resp.TX_req.Number_of_PDUs > 0) {
+      oai_fapi_tx_data_req(&g_sched_resp.TX_req);
+      send_slt_resp = true;
+    }
+    if (g_sched_resp.UL_dci_req.numPdus > 0) {
+      oai_fapi_ul_dci_req(&g_sched_resp.UL_dci_req);
+      send_slt_resp = true;
+    }
+    if (send_slt_resp) {
+      oai_fapi_send_end_request(0,slot_ind->sfn, slot_ind->slot);
+    }
+#endif
+  }
+
+  return 1;
+}
+
+
 int aerial_phy_nr_slot_indication(nfapi_nr_slot_indication_scf_t *ind)
 {
   uint8_t vnf_slot_ahead = 0;
@@ -719,16 +765,7 @@ int aerial_phy_nr_slot_indication(nfapi_nr_slot_indication_scf_t *ind)
   uint8_t vnf_slot = NFAPI_SFNSLOT2SLOT(vnf_sfn_slot);
   LOG_D(MAC, "VNF SFN/Slot %d.%d \n", vnf_sfn, vnf_slot);
   // printf( "VNF SFN/Slot %d.%d \n", vnf_sfn, vnf_slot);
-
-  nfapi_nr_slot_indication_scf_t *nr_slot_ind = CALLOC(1, sizeof(*nr_slot_ind));
-  nr_slot_ind->header = ind->header;
-  nr_slot_ind->sfn = vnf_sfn;
-  nr_slot_ind->slot = vnf_slot;
-  if (!put_queue(&gnb_slot_ind_queue, nr_slot_ind)) {
-    LOG_E(NR_MAC, "Put_queue failed for slot_ind\n");
-    free(nr_slot_ind);
-    nr_slot_ind = NULL;
-  }
+  trigger_scheduler(ind);
 
   return 1;
 }
