@@ -1072,7 +1072,7 @@ class Containerize():
 
 		mySSH.command(f'docker-compose -f ci-docker-compose.yml config --services', '\$', 5)
 		# first line has command, last line has next command prompt
-		allServices = mySSH.getBefore().splitlines()[1:-1]
+		allServices = mySSH.getBefore().splitlines()[2:-1]
 		services = []
 		for s in allServices:
 			mySSH.command(f'docker-compose -f ci-docker-compose.yml ps --all -- {s}', '\$', 5, silent=False)
