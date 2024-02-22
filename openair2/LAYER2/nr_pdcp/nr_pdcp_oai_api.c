@@ -1027,16 +1027,6 @@ bool nr_pdcp_data_req_drb(protocol_ctxt_t *ctxt_pP,
   nr_pdcp_entity_t *rb;
   ue_id_t ue_id = ctxt_pP->rntiMaybeUEid;
 
-  if (ctxt_pP->module_id != 0 ||
-      //ctxt_pP->enb_flag != 1 ||
-      ctxt_pP->instance != 0 ||
-      ctxt_pP->eNB_index != 0 /*||
-      ctxt_pP->configured != 1 ||
-      ctxt_pP->brOption != 0*/) {
-    LOG_E(PDCP, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
-    exit(1);
-  }
-
   nr_pdcp_manager_lock(nr_pdcp_ue_manager);
 
   ue = nr_pdcp_manager_get_ue(nr_pdcp_ue_manager, ue_id);

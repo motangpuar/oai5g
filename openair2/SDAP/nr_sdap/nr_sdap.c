@@ -55,13 +55,7 @@ static void *gnb_tun_read_thread(void *arg)
     if (!has_ue)
       continue;
 
-    ctxt.module_id = 0;
     ctxt.enb_flag = 1;
-    ctxt.instance = 0;
-    ctxt.frame = 0;
-    ctxt.subframe = 0;
-    ctxt.eNB_index = 0;
-    ctxt.brOption = 0;
     ctxt.rntiMaybeUEid = UEid;
 
     uint8_t qfi = 7;
@@ -134,13 +128,7 @@ static void *ue_tun_read_thread(void *arg)
 
     LOG_D(PDCP, "%s(): pdusession_sock read returns len %d\n", __func__, len);
 
-    ctxt.module_id = 0;
     ctxt.enb_flag = 0;
-    ctxt.instance = 0;
-    ctxt.frame = 0;
-    ctxt.subframe = 0;
-    ctxt.eNB_index = 0;
-    ctxt.brOption = 0;
     ctxt.rntiMaybeUEid = entity->ue_id;
 
     bool dc = SDAP_HDR_UL_DATA_PDU;

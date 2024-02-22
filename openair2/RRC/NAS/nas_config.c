@@ -410,23 +410,6 @@ int nas_config(int interface_id, int thirdOctet, int fourthOctet, char *ifname, 
   return returnValue;
 }
 
-// Blocking full configuration of the interface (address, net mask, and broadcast mask)
-int blocking_NAS_config(char *interfaceName, char *ipAddress, char *networkMask, char *broadcastAddress) {
-  char command[200];
-  command[0]='\0';
-  strcat(command, "ifconfig ");
-  strncat(command, interfaceName, sizeof(command) - strlen(command) - 1);
-  strncat(command, " ", sizeof(command) - strlen(command) - 1);
-  strncat(command, ipAddress, sizeof(command) - strlen(command) - 1);
-  strncat(command, " networkMask ", sizeof(command) - strlen(command) - 1);
-  strncat(command, networkMask, sizeof(command) - strlen(command) - 1);
-  strncat(command, " broadcast ", sizeof(command) - strlen(command) - 1);
-  strncat(command, broadcastAddress, sizeof(command) - strlen(command) - 1);
-  // ifconfig nasmesh0 10.0.1.1 networkMask 255.255.255.0 broadcast 10.0.1.255
-  int i = system (command);
-  return i;
-}
-
 // program help
 void helpOptions(char **argv) {
   printf("Help for %s\n",  argv[0]);
