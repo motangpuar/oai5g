@@ -1805,22 +1805,14 @@ static void fill_e1_bearer_modif(DRB_nGRAN_to_setup_t *drb_e1, const f1ap_drb_to
   drb_e1->DlUpParamList[0].teId = drb_f1->up_dl_tnl[0].teid;
 }
 
-/* \brief find existing PDU session inside E1AP Bearer Modif message, or
- * point to new one.
- * \param bearer_modif E1AP Bearer Modification Message
- * \param pdu_id PDU session ID
- * \return pointer to existing PDU session, or to new/unused one. */
-static pdu_session_to_setup_t *find_or_next_pdu_session(e1ap_bearer_setup_req_t *bearer_modif, int pdu_id)
+/**
+ * @brief Store F1-U DL TL and TEID in RRC
+*/
+static void f1u_gtp_update(rrc_pdu_session_param_t *pdu_ue, const f1ap_drb_to_be_setup_t *drb_f1)
 {
-  for (int i = 0; i < bearer_modif->numPDUSessionsMod; ++i) {
-    if (bearer_modif->pduSessionMod[i].sessionId == pdu_id)
-      return &bearer_modif->pduSessionMod[i];
-  }
-  /* E1AP Bearer Modification has no PDU session to modify with that ID, create
-   * new entry */
-  DevAssert(bearer_modif->numPDUSessionsMod < E1AP_MAX_NUM_PDU_SESSIONS - 1);
-  bearer_modif->numPDUSessionsMod += 1;
-  return &bearer_modif->pduSessionMod[bearer_modif->numPDUSessionsMod - 1];
+  pdu_ue->param.cuup_teid_f1u[drb_f1->drb_id] = drb_f1->up_dl_tnl[0].teid;
+  memcpy(&pdu_ue->param.cuup_addr_f1u.buffer, &drb_f1->up_dl_tnl[0].tl_address, sizeof(uint8_t) * 4);
+  pdu_ue->param.cuup_addr_f1u.length = sizeof(in_addr_t);
 }
 
 /* \brief use list of DRBs and send the corresponding bearer update message via
@@ -1844,6 +1836,8 @@ static void e1_send_bearer_updates(gNB_RRC_INST *rrc, gNB_RRC_UE_t *UE, int n, f
     DevAssert(pdu_e1 != NULL);
     pdu_e1->sessionId = pdu_ue->param.pdusession_id;
     DRB_nGRAN_to_setup_t *drb_e1 = &pdu_e1->DRBnGRanModList[pdu_e1->numDRB2Modify];
+    f1u_gtp_update(pdu_ue, drb_f1);
+    /* Fill E1 bearer context modification */
     fill_e1_bearer_modif(drb_e1, drb_f1);
     pdu_e1->numDRB2Modify += 1;
   }
