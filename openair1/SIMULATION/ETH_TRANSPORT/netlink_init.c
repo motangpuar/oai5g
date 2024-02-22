@@ -152,7 +152,8 @@ int init_single_tun(char *ifname)
   return sock;
 }
 
-int netlink_init_tun(char *ifprefix, int num_if, int id) {//for UE, id = 1, 2, ...,
+int init_tun(char *ifprefix, int num_if, int id)
+{ // for UE, id = 1, 2, ...,
   int ret;
   char ifname[64];
 
