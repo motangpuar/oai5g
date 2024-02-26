@@ -186,6 +186,7 @@ typedef struct {
   long LCGID;
   // Bj bucket usage per lcid
   int32_t Bj;
+  NR_timer_t Bj_timer;
 } NR_LC_SCHEDULING_INFO;
 
 typedef struct {
@@ -435,7 +436,7 @@ typedef struct nr_lcordered_info_s {
   // logical channels ids ordered as per priority
   NR_LogicalChannelIdentity_t lcid;
   long priority;
-  long prioritisedBitRate;
+  uint32_t pbr; // in B/s (UINT32_MAX = infinite)
   // Bucket size per lcid
   uint32_t bucket_size;
 } nr_lcordered_info_t;

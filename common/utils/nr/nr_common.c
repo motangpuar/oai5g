@@ -914,6 +914,11 @@ bool nr_timer_expired(NR_timer_t timer)
   return (timer.counter >= timer.target);
 }
 
+uint32_t nr_timer_elapsed_time(NR_timer_t timer)
+{
+  return timer.counter;
+}
+
 void nr_timer_setup(NR_timer_t *timer, const uint32_t target, const uint32_t step)
 {
   timer->target = target;
