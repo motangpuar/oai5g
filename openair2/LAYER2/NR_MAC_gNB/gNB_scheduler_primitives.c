@@ -1913,9 +1913,10 @@ void destroy_nr_list(NR_list_t *list)
  */
 void add_nr_list(NR_list_t *listP, int id)
 {
+  AssertFatal(id < listP->len, "id exceeds the size of NR_list.\n");
   int *cur = &listP->head;
   while (*cur >= 0) {
-    AssertFatal(*cur != id, "id %d already in NR_UE_list!\n", id);
+    AssertFatal(*cur != id, "id %d already in NR_list!\n", id);
     cur = &listP->next[*cur];
   }
   *cur = id;
